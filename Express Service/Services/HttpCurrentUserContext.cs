@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using Domain.Auditing;
+using System.Security.Claims;
 
 namespace Express_Service.Services;
 

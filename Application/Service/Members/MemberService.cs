@@ -3,7 +3,6 @@ using Application.Abstraction.Errors;
 using Application.Contracts.Members;
 using Domain;
 using Domain.Entities;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Service.Members;

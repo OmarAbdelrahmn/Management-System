@@ -8,7 +8,6 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
 
 namespace Application.Service.Minutes;
 

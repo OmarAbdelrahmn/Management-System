@@ -1,10 +1,9 @@
-using System.Text;
-using Application.Service.Boards;
 using Application.Service.Auth;
+using Application.Service.Boards;
 using Application.Service.Emails;
 using Application.Service.Invitations;
-using Application.Service.Members;
 using Application.Service.Meetings;
+using Application.Service.Members;
 using Application.Service.Minutes;
 using Application.Service.Permissions;
 using Application.Service.Realtime;
@@ -17,11 +16,11 @@ using Express_Service.Realtime;
 using Express_Service.Services;
 using Hangfire;
 using Hangfire.SqlServer;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace Express_Service;
 

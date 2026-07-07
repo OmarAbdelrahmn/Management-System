@@ -1,9 +1,9 @@
-using System.Reflection;
 using Domain.Auditing;
 using Domain.Entities;
 using Domain.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 
 namespace Domain;
 

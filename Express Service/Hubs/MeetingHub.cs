@@ -1,6 +1,6 @@
+using Application.Service.Permissions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using Application.Service.Permissions;
 
 namespace Express_Service.Hubs;
 

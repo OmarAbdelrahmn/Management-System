@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Application.Contracts.Invitations;
 using Application.Contracts.Meetings;
 using Application.Contracts.Minutes;
@@ -10,8 +9,8 @@ using Application.Service.SystemCatalog;
 using Application.Service.Voting;
 using Domain;
 using Domain.Entities;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Express_Service.Services;
 
