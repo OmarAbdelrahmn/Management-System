@@ -1,0 +1,48 @@
+@page "/members/canceled"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MemberUiService Members
+
+<h1 class="page-title">الأعضاء الملغاة عضوياتهم</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-user-clock"></i> العضويات الملغاة</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>رقم العضوية</th><th>الاسم</th><th>تاريخ الإلغاء</th><th>السبب</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var member in members)
+            {
+                <tr>
+                    <td>@member.MemberNumber</td>
+                    <td>@member.FullName</td>
+                    <td>@member.CancelledAt?.ToString("yyyy-MM-dd")</td>
+                    <td>@member.CancellationReason</td>
+                    <td><button class="primary" @onclick="() => RestoreAsync(member.Id)">استعادة</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<MemberResponse> members = [];
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync() => members = await Members.GetMembersAsync(MemberStatus.Cancelled);
+
+    private async Task RestoreAsync(int id)
+    {
+        var result = await Members.RestoreMemberAsync(id);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

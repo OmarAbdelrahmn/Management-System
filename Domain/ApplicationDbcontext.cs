@@ -32,6 +32,13 @@ public class ApplicationDbcontext(
     public DbSet<MeetingMinute> MeetingMinutes => Set<MeetingMinute>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<EmailOutbox> EmailOutbox => Set<EmailOutbox>();
+    public DbSet<SystemModule> SystemModules => Set<SystemModule>();
+    public DbSet<SystemPage> SystemPages => Set<SystemPage>();
+    public DbSet<MemberProfile> MemberProfiles => Set<MemberProfile>();
+    public DbSet<MembershipType> MembershipTypes => Set<MembershipType>();
+    public DbSet<MemberPayment> MemberPayments => Set<MemberPayment>();
+    public DbSet<MemberCard> MemberCards => Set<MemberCard>();
+    public DbSet<MemberReportShare> MemberReportShares => Set<MemberReportShare>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

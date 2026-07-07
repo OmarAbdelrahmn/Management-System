@@ -1,0 +1,92 @@
+@page "/members/types"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MemberUiService Members
+
+<h1 class="page-title">فئات العضويات</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-layer-group"></i><div><h2>@(editId.HasValue ? "تعديل فئة" : "إضافة فئة")</h2><p>الفئة تحدد الرسوم السنوية والوزن التصويتي الافتراضي.</p></div></div>
+    <div class="form-grid">
+        <label>الاسم العربي<input @bind="nameAr" /></label>
+        <label>الاسم الإنجليزي<input @bind="nameEn" /></label>
+        <label>الرسم السنوي<input type="number" step="0.01" @bind="annualFee" /></label>
+        <label>الوزن التصويتي<input type="number" step="0.01" @bind="votingWeight" /></label>
+        <label class="check-row"><input type="checkbox" @bind="isSupporterType" /> فئة داعمة</label>
+        <label class="check-row"><input type="checkbox" @bind="isActive" /> فعالة</label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الفئة</button><button class="secondary" @onclick="ResetForm">جديد</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-list"></i> الفئات الحالية</span></div>
+    <table>
+        <thead><tr><th>الفئة</th><th>الرسم</th><th>الوزن</th><th>داعم</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var type in types)
+            {
+                <tr>
+                    <td>@type.NameAr</td>
+                    <td>@type.AnnualFee</td>
+                    <td>@type.VotingWeight</td>
+                    <td>@(type.IsSupporterType ? "نعم" : "لا")</td>
+                    <td><span class="status @(type.IsActive ? "ok" : "warn")">@(type.IsActive ? "فعالة" : "موقوفة")</span></td>
+                    <td><button class="secondary" @onclick="() => Edit(type)">تعديل</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<MembershipTypeResponse> types = [];
+    private int? editId;
+    private string nameAr = string.Empty;
+    private string? nameEn;
+    private decimal annualFee;
+    private decimal votingWeight = 1;
+    private bool isSupporterType;
+    private bool isActive = true;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => types = await Members.GetTypesAsync();
+
+    private async Task SaveAsync()
+    {
+        var result = await Members.SaveTypeAsync(editId, new UpsertMembershipTypeRequest(nameAr, nameEn, annualFee, votingWeight, isSupporterType, isActive));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetForm();
+        await LoadAsync();
+    }
+
+    private void Edit(MembershipTypeResponse type)
+    {
+        editId = type.Id;
+        nameAr = type.NameAr;
+        nameEn = type.NameEn;
+        annualFee = type.AnnualFee;
+        votingWeight = type.VotingWeight;
+        isSupporterType = type.IsSupporterType;
+        isActive = type.IsActive;
+    }
+
+    private void ResetForm()
+    {
+        editId = null;
+        nameAr = string.Empty;
+        nameEn = null;
+        annualFee = 0;
+        votingWeight = 1;
+        isSupporterType = false;
+        isActive = true;
+    }
+}

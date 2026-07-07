@@ -1,32 +1,104 @@
 @page "/meetings/rafed"
+@attribute [Authorize(Roles = "Admin,BoardSecretary")]
+@rendermode InteractiveServer
+@inject MeetingUiService UiService
 
-<section class="page-band">
-    <h1>إدارة الاجتماعات حسب رافد</h1>
-    <p>تجميع الشاشات الناقصة في مسار واحد: اعتماد، جدولة، تكرار، إنهاء، أرشفة، تقويم، وإلغاء اعتماد المحاضر للمدير فقط.</p>
+<h1 class="page-title">إدارة الاجتماعات - شاشات رافد الموسعة</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="rafed-services">
+    <a href="/meetings/secretary"><i class="fa-solid fa-clipboard-list"></i> إدارة الاجتماعات</a>
+    <a href="#approval"><i class="fa-solid fa-circle-check"></i> اعتماد الاجتماعات</a>
+    <a href="#scheduled"><i class="fa-solid fa-calendar-days"></i> الاجتماعات المجدولة</a>
+    <a href="#archive"><i class="fa-solid fa-database"></i> قاعدة بيانات الاجتماعات</a>
 </section>
 
-<section class="action-grid compact">
-    <a>إدارة الاجتماعات</a>
-    <a>اعتماد الاجتماعات</a>
-    <a>الاجتماعات المجدولة</a>
-    <a>مسودة الاجتماعات المتكررة</a>
-    <a>إنهاء الاجتماعات</a>
-    <a>اعتماد محاضر الاجتماعات</a>
-    <a>قاعدة بيانات الاجتماعات</a>
-    <a>ملخصات الاجتماعات</a>
-    <a>تقويم الاجتماعات</a>
-    <a>اجتماعات مجلس الإدارة</a>
-    <a>اجتماعات الجمعية العمومية</a>
-    <a>إلغاء اعتماد محاضر الاجتماعات</a>
+<section class="table-section" id="scheduled" style="margin-top:12px">
+    <div class="table-title">
+        <span><i class="fa-solid fa-calendar-days"></i> الاجتماعات المجدولة من قاعدة البيانات</span>
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
+    @if (scheduled.Count == 0)
+    {
+        <div class="panel-body">لا توجد اجتماعات مجدولة.</div>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>العنوان</th><th>التاريخ</th><th>النوع</th><th>الحالة</th><th>المكان/المنصة</th><th>إجراءات</th></tr></thead>
+            <tbody>
+                @foreach (var meeting in scheduled)
+                {
+                    <tr>
+                        <td>@meeting.Title</td>
+                        <td>@meeting.ScheduledAt</td>
+                        <td>@meeting.Type</td>
+                        <td><span class="status">@meeting.Status</span></td>
+                        <td>@(meeting.IsOnline ? meeting.Platform : meeting.Location)</td>
+                        <td>
+                            <button class="secondary" @onclick="() => SubmitAsync(meeting.Id)" disabled="@busy">إرسال للاعتماد</button>
+                            <button class="primary" @onclick="() => ApproveAsync(meeting.Id)" disabled="@busy">اعتماد</button>
+                            <button class="danger" @onclick="() => RejectAsync(meeting.Id)" disabled="@busy">رفض</button>
+                            <button class="secondary" @onclick="() => FinishAsync(meeting.Id)" disabled="@busy">إنهاء</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 </section>
 
-<section class="form-grid">
-    <label>العنوان <input placeholder="عنوان الاجتماع" /></label>
-    <label>الرقم التسلسلي <input type="number" /></label>
-    <label>التصنيف الداخلي <input /></label>
-    <label>الأهمية <select><option>عادي</option><option>هام</option><option>عاجل</option></select></label>
-    <label>مدة الاجتماع بالدقائق <input type="number" /></label>
-    <label>التكرار <select><option>بدون</option><option>يومي</option><option>أسبوعي</option><option>شهري</option><option>سنوي</option></select></label>
-    <label>نهاية التكرار <input type="date" /></label>
-    <label>الحد الأدنى للحضور % <input type="number" min="1" max="100" /></label>
+<section class="table-section" id="archive">
+    <div class="table-title"><span><i class="fa-solid fa-box-archive"></i> الأرشيف حسب النوع</span></div>
+    @if (archive.Count == 0)
+    {
+        <div class="panel-body">لا توجد اجتماعات مؤرشفة.</div>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>العنوان</th><th>التاريخ</th><th>النوع</th><th>الحالة</th></tr></thead>
+            <tbody>
+                @foreach (var meeting in archive)
+                {
+                    <tr><td>@meeting.Title</td><td>@meeting.ScheduledAt</td><td>@meeting.Type</td><td><span class="status ok">@meeting.Status</span></td></tr>
+                }
+            </tbody>
+        </table>
+    }
 </section>
+
+@code {
+    private bool busy;
+    private bool success;
+    private string? message;
+    private List<MeetingListItemResponse> scheduled = [];
+    private List<MeetingListItemResponse> archive = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        scheduled = await UiService.GetScheduledMeetingsAsync();
+        archive = await UiService.GetArchivedMeetingsAsync();
+    }
+
+    private async Task RunAsync(Func<Task<(bool Success, string Message)>> action)
+    {
+        busy = true;
+        var result = await action();
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+        busy = false;
+    }
+
+    private Task SubmitAsync(int id) => RunAsync(() => UiService.SubmitMeetingForApprovalAsync(id));
+    private Task ApproveAsync(int id) => RunAsync(() => UiService.ApproveMeetingAsync(id));
+    private Task RejectAsync(int id) => RunAsync(() => UiService.RejectMeetingAsync(id));
+    private Task FinishAsync(int id) => RunAsync(() => UiService.FinishMeetingAsync(id));
+}

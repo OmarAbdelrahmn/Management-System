@@ -1,16 +1,65 @@
 @page "/meetings/chairman"
+@attribute [Authorize(Roles = "Admin,BoardChairman")]
+@rendermode InteractiveServer
+@inject MeetingUiService UiService
 
-<section class="page-band">
-    <h1>لوحة رئيس المجلس</h1>
-    <p>كل قرار ناجح يظهر مستقلاً مع كوده المركب قبل الاعتماد والتوقيع الرقمي.</p>
-</section>
+<h1 class="page-title">شاشة رئيس المجلس - لوحة الاعتماد والتوقيع</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
 
 <section class="table-section">
-    <table>
-        <thead><tr><th>كود القرار</th><th>البند</th><th>الحالة</th><th></th></tr></thead>
-        <tbody>
-            <tr><td>BD-2026-01-001</td><td>اعتماد الخطة التشغيلية</td><td>بانتظار توقيع الرئيس</td><td><button class="primary">اعتماد وتوقيع رقمي</button></td></tr>
-            <tr><td>BD-2026-01-002</td><td>اعتماد الميزانية</td><td>بانتظار توقيع الرئيس</td><td><button class="primary">اعتماد وتوقيع رقمي</button></td></tr>
-        </tbody>
-    </table>
+    <div class="table-title">
+        <span><i class="fa-solid fa-signature"></i> اجتماعات بانتظار توقيع الرئيس</span>
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
+    @if (meetings.Count == 0)
+    {
+        <div class="panel-body">لا توجد قرارات بانتظار توقيع الرئيس.</div>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>الاجتماع</th><th>التاريخ</th><th>القرارات</th><th>الإجراء</th></tr></thead>
+            <tbody>
+                @foreach (var meeting in meetings)
+                {
+                    <tr>
+                        <td>@meeting.Title</td>
+                        <td>@meeting.ScheduledAt</td>
+                        <td>
+                            @foreach (var item in meeting.AgendaItems.Where(x => x.Status == "DecisionApproved"))
+                            {
+                                <div>@item.ItemNumber - @item.Title</div>
+                            }
+                        </td>
+                        <td><button class="primary" @onclick="() => SignAsync(meeting.Id)" disabled="@busy">اعتماد وتوقيع رقمي</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 </section>
+
+@code {
+    private bool busy;
+    private bool success;
+    private string? message;
+    private List<MeetingResponse> meetings = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync() => meetings = await UiService.GetPendingChairmanMeetingsAsync();
+
+    private async Task SignAsync(int meetingId)
+    {
+        busy = true;
+        var result = await UiService.SignMinuteAsync(meetingId);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+        busy = false;
+    }
+}

@@ -1,0 +1,18 @@
+@page "/access-denied"
+@attribute [AllowAnonymous]
+@layout EmptyLayout
+
+<div class="login-shell">
+    <section class="login-card">
+        <div class="login-brand">
+            <strong>صلاحية غير كافية</strong>
+            <span>لا تملك صلاحية الوصول إلى هذه الشاشة</span>
+            <small>يرجى الرجوع للوحة الرئيسية أو تسجيل الدخول بحساب مناسب.</small>
+        </div>
+
+        <div class="login-form">
+            <a class="primary" href="/">العودة للوحة الرئيسية</a>
+            <a class="secondary" href="/logout">تسجيل الخروج</a>
+        </div>
+    </section>
+</div>

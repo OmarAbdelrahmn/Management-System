@@ -1,0 +1,37 @@
+@page "/members/due"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MemberUiService Members
+
+<h1 class="page-title">المتأخرون عن السداد</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-triangle-exclamation"></i></span><span>متأخرون</span><strong class="tile-number">@members.Count</strong><span class="tile-footer">عضو بحاجة متابعة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-star"></i></span><span>داعمون</span><strong class="tile-number">@members.Count(x => x.IsSupporter)</strong><span class="tile-footer">ضمن المتأخرين</span></article>
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-calendar-xmark"></i> قائمة المتأخرين</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>رقم العضوية</th><th>الاسم</th><th>الفئة</th><th>الجوال</th><th>البريد</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var member in members)
+            {
+                <tr>
+                    <td>@member.MemberNumber</td>
+                    <td>@member.FullName</td>
+                    <td>@member.MembershipTypeName</td>
+                    <td>@member.Mobile</td>
+                    <td>@member.Email</td>
+                    <td><a class="primary" href="@($"/members/payments?memberId={member.Id}")">تسجيل سداد</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<MemberResponse> members = [];
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => members = await Members.GetDueMembersAsync();
+}

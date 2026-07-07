@@ -1,0 +1,3456 @@
+{
+  "capturedAt": "2026-07-07T11:49:11.526Z",
+  "count": 690,
+  "pages": [
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/index.php",
+      "text": "نظام رافد الإلكتروني جمعية صرح العطاء النسائية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/",
+      "text": "جديدة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_tasks.php",
+      "text": "معاينة كافة المهام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_emails.php",
+      "text": "يوجد 1 رسائل جديدة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_password.php",
+      "text": "تغيير كلمة المرور"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/corporate_docs.php",
+      "text": "خارطة الملفات المؤسسية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/foundation_helper.php",
+      "text": "اسأل مساعد التأسيس الذكي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/request_credit.php",
+      "text": "إدارة رصيد لجنة المساعدات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/request_forms.php",
+      "text": "نماذج قرارات لجنة المساعدات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/approval_expenses_tameed.php",
+      "text": "اعتماد تعميدات الصرف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/approval_expenses_kafala.php",
+      "text": "اعتماد صرف الكفالات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/approval_expenses_order.php",
+      "text": "اعتماد اوامر الصرف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/forms_coupons.php",
+      "text": "اعتماد القسائم الشرائية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/forms_employee.php",
+      "text": "طلبات التوظيف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/forms_purchase.php",
+      "text": "طلبات الشراء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/forms_maintenance.php",
+      "text": "طلبات الصيانة العامة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/forms_car_maintenance.php",
+      "text": "طلبات صيانة السيارات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/tameed_manage.php",
+      "text": "إدارة تعميدات الصرف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/tameed_manage_rejected.php",
+      "text": "التعميدات المرفوضة مع ملاحظة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/tameed_data_rejected.php",
+      "text": "التعميدات المرفوضة نهائيا"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/tameed_database.php",
+      "text": "سجلات تعميدات الصرف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/notifications_management.php",
+      "text": "إدارة الإشعارات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/notifications_delete.php",
+      "text": "إلغاء إشعار"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/notifications_database.php",
+      "text": "قاعدة بيانات الإشعارات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/notifications_canceled.php",
+      "text": "الإشعارات الملغاة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/task_create.php",
+      "text": "إنشاء مهمة عامة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/task_update.php",
+      "text": "إدارة مهام الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/task_remove.php",
+      "text": "حذف مهمة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/task_complete.php",
+      "text": "انجاز مهمة منتهية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/task_redirect.php",
+      "text": "تحويل مهمة متعثرة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/tasks_database.php",
+      "text": "قواعد بيانات المهام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/task_removed.php",
+      "text": "استعادة مهمة محذوفة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/decisions_management.php",
+      "text": "إدارة القرارات الإدارية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/decisions_meetings.php",
+      "text": "إدارة قرارات الاجتماعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/decision_tasks_management.php",
+      "text": "إدارة مهام القرارات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/decisions_export.php",
+      "text": "تصدير نماذج القرارات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/pps_report.php",
+      "text": "تقرير مقياس الآداء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/pps_statistics.php",
+      "text": "إحصائيات مقياس الآداء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_attendance.php",
+      "text": "تسجيل الحضور والانصراف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_reminders.php",
+      "text": "إدارة المذكرات الشخصية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_calendar.php",
+      "text": "نتيجة الأعمال"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_questions.php",
+      "text": "مسائلات بحاجة إلي رد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_warnings.php",
+      "text": "إنذارات بحاجة إلي رد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/common_tasks.php",
+      "text": "المهام المعينة للإدارة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/common_tasks_create.php",
+      "text": "إنشاء مهمة لموظف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/common_tasks_update.php",
+      "text": "إدارة مهام الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/common_tasks_complete.php",
+      "text": "إنجاز مهمة منتهية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/common_tasks_remove.php",
+      "text": "حذف مهمة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/common_evaluation.php",
+      "text": "إدارة تقييمات الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/common_notification.php",
+      "text": "إدارة إشعارات الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/common_strategy_indicators.php",
+      "text": "إدارة المؤشرات المملوكة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/common_present.php",
+      "text": "سجل حضور الموظفين الحالي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_emails_drafts.php",
+      "text": "المسودات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_emails_templates.php",
+      "text": "إدارة القوالب"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_emails_preferences.php",
+      "text": "تفضيلات البريد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/demands_request_vacation.php",
+      "text": "تقديم طلب إجازة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/demands_request_execuse.php",
+      "text": "تقديم طلب إذن"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/demands_request_finance.php",
+      "text": "تقديم طلب مالي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/demands_request_general.php",
+      "text": "تقديم طلب عام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_volunteer.php",
+      "text": "تقديم طلب مجموعة تطوعية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/demands_cancel.php",
+      "text": "إلغاء تقديم طلب"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/demands_status_pending.php",
+      "text": "سجل الطلبات قيد الاعتماد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/demands_status_update.php",
+      "text": "الطلبات المرفوضة مع ملاحظة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/demands_status_approved.php",
+      "text": "سجل الطلبات المعتمدة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/demands_status_rejected.php",
+      "text": "سجل الطلبات المرفوضة نهائيا"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/demands_status_completed.php",
+      "text": "سجل الطلبات المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/demands_status_canceled.php",
+      "text": "سجل الطلبات الملغاة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_purchase.php",
+      "text": "تقديم طلب شراء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_car.php",
+      "text": "طلب توفير سيارة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/operations_request.php",
+      "text": "طلب معاملة داخلية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/operations_cancel.php",
+      "text": "إلغاء طلب معاملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/operations_step_required.php",
+      "text": "معاملات بحاجة للمتابعة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/operations_task_complete.php",
+      "text": "إنجاز مهمة منتهية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/operations_step_rejected.php",
+      "text": "متابعات مرفوضة مع ملاحظة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/operations_step_managed.php",
+      "text": "معاملات قمت بمتابعتها"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/operations_status_pending.php",
+      "text": "سجل المعاملات الجارية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/operations_status_rejected.php",
+      "text": "سجل المعاملات المرفوضة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/operations_status_canceled.php",
+      "text": "سجل المعاملات الملغاة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/operations_status_completed.php",
+      "text": "سجل المعاملات المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_ngo_information.php",
+      "text": "بطاقة التعريف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_profile.php",
+      "text": "الملف الوظيفي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_record.php",
+      "text": "السجل الوظيفي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_tutorials.php",
+      "text": "شروحات النظام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_local_notifications.php",
+      "text": "التنبيهات الداخلية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_notifications.php",
+      "text": "الإشعارات الموجهة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_reminders_notifications.php",
+      "text": "تنبيهات المذكرات الشخصية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_vacation_credit.php",
+      "text": "سجلات ارصدة الأجازات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_attendance_report.php",
+      "text": "سجلات الحضور و الإنصراف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_attendance_rejected.php",
+      "text": "سجلات الحضور المرفوضة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_tasks_projects.php",
+      "text": "سجل مهام المشاريع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_tasks_strategy.php",
+      "text": "خارطة مهام الخطة الإستراتيجية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/personnel_strategy_indicators.php",
+      "text": "مؤشرات الخطة المسندة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_board_create.php",
+      "text": "إضافة عضو مجلس إدارة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_board_update.php",
+      "text": "تحديث بيانات عضو"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_board_database.php",
+      "text": "قاعدة بيانات الأعضاء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/board_members.php",
+      "text": "إدارة حسابات الأعضاء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/board_database.php",
+      "text": "قاعدة بيانات الأعضاء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/board_cancel.php",
+      "text": "إلغاء اشتراك عضو"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/board_database_canceled.php",
+      "text": "الأعضاء الملغاة عضوياتهم"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/board_payments.php",
+      "text": "سجل سداد الإشتراكات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/board_database_due.php",
+      "text": "المتأخرين عن السداد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/board_share_report.php",
+      "text": "مشاركة تقرير مع الأعضاء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/board_cards.php",
+      "text": "إصدار بطاقات الأعضاء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/board_membership_types.php",
+      "text": "إدارة فئات العضويات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/board_payments_external.php",
+      "text": "سداد اشتراكات خارج النظام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/profiles_create.php",
+      "text": "إضافة ملف مستفيد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/profiles_update.php",
+      "text": "تحديث ملف مستفيد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/profiles_remove.php",
+      "text": "حذف ملف مستفيد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/profiles_database.php",
+      "text": "قاعدة بيانات المستفيدين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/profiles_relatives_database.php",
+      "text": "قاعدة بيانات التابعين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/profiles_update_status.php",
+      "text": "تحديث حالة ملف مستفيد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/profiles_update_grade.php",
+      "text": "تحديث فئة ملف مستفيد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/profiles_update_grade_relative.php",
+      "text": "تحديث فئة ملف تابع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/profiles_deleted.php",
+      "text": "سجل الملفات المحذوفة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/profiles_relatives_deleted.php",
+      "text": "ملفات التابعين المحذوفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/profiles_cards.php",
+      "text": "تصدير بطاقات المستفيدين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/profiles_barcode.php",
+      "text": "قارئ باركود الملفات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/profiles_external.php",
+      "text": "طلبات الانضمام من الموقع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/profiles_search.php",
+      "text": "البحث في الجمعيات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/guardians_manage.php",
+      "text": "إدارة حسابات الأوصياء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/guardians_database.php",
+      "text": "قاعدة بيانات الأوصياء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/guardians_convert_from.php",
+      "text": "تحويل مستفيد إلي وصي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/guardians_convert_to.php",
+      "text": "تحويل وصي إلي مستفيد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/guardians_remove.php",
+      "text": "حذف ملف وصي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/guardians_deleted.php",
+      "text": "سجل الأوصياء المحذوفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/update_task_create.php",
+      "text": "إنشاء مهمة تحديث جماعي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/update_task_manage.php",
+      "text": "إدارة مهام التحديث الجماعي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/update_tasks_approve.php",
+      "text": "اعتمادات التحديث الجماعي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/update_tasks.php",
+      "text": "مهام التحديث الجماعي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/update_self_create.php",
+      "text": "إدارة طلبات التحديث الذاتي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/update_self_requests.php",
+      "text": "طلبات التحديث الذاتي المستلمة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/update_self_tasks.php",
+      "text": "مهام اعتمادات التحديث الذاتي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/update_request_tasks.php",
+      "text": "تحديث ملف لطلب إعانة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/update_manual_status.php",
+      "text": "تحديث حالة بيانات مستفيد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/update_report_none.php",
+      "text": "ملفات غير محدثة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/update_report_wrong.php",
+      "text": "ملفات محدثة خاطئة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/update_report_self.php",
+      "text": "ملفات تحديث ذاتي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/update_report_field.php",
+      "text": "ملفات تحديث ميداني"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/gehat_accounts.php",
+      "text": "إدارة حسابات الجهات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/gehat_representatives_accounts.php",
+      "text": "إدارة حسابات الممثلين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/gehat_remove.php",
+      "text": "حذف ملف جهة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/gehat_restore.php",
+      "text": "استعادة ملف جهة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/gehat_database.php",
+      "text": "قاعدة بيانات الجهات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/gehat_representatives_database.php",
+      "text": "قاعدة بيانات الممثلين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/gehat_accounts_external.php",
+      "text": "طلبات تسجيل الجهات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/governance_activation.php",
+      "text": "تفعيل حوكمة 2025"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/governance_helper_bot.php",
+      "text": "اسأل مساعد الحوكمة الذكي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/governance_helper.php",
+      "text": "خارطة طريق الحوكمة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/governance_answers.php",
+      "text": "تسجيل إجابات المعايير"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/governance_attachments.php",
+      "text": "إدارة مرفقات التحقق"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/governance_sheets.php",
+      "text": "نموذج تقييم الحوكمة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/governance_statistics.php",
+      "text": "تقرير تقييم الحوكمة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/governance_finance.php",
+      "text": "حساب مؤشرات الآداء المالي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/governance_tasks_manage.php",
+      "text": "إدارة مهام الحوكمة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/statistics_governance_tasks.php",
+      "text": "إحصائيات مهام الحوكمة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/strategy_balance.php",
+      "text": "إدارة الخطط الإستراتيجية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/strategy_balance_variables.php",
+      "text": "متغيرات الخطة الإستراتيجية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/strategy_balance_fetch.php",
+      "text": "تحديث قيم التحقق المؤتمتة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/strategy_balance_categories.php",
+      "text": "إدارة مناظير الخطة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/strategy_balance_goals.php",
+      "text": "إدارة الأهداف الإستراتيجية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/strategy_balance_indicators_main.php",
+      "text": "إدارة المؤشرات الرئيسية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/strategy_balance_indicators_sub.php",
+      "text": "إدارة المؤشرات الفرعية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/strategy_balance_achieved.php",
+      "text": "إدارة المؤشرات المملوكة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/strategy_balance_projects.php",
+      "text": "إدارة مؤشرات المشاريع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/strategy_balance_programs.php",
+      "text": "إدارة مؤشرات البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/strategy_balance_map.php",
+      "text": "خارطة الخطة الإستراتيجية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/strategy_balance_tree.php",
+      "text": "شجرة الخطة الإستراتيجية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/strategy_goals_2030_alignment.php",
+      "text": "تناغم أهداف رؤية 2030"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/strategy_goals_sustainability_alignment.php",
+      "text": "تناغم أهداف التنمية المستدامة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_create.php",
+      "text": "إضافة مشروع جديد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_update.php",
+      "text": "تحديث بيانات مشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_database.php",
+      "text": "قواعد بيانات المشاريع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_tasks.php",
+      "text": "إدارة مهام المشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_milestones.php",
+      "text": "إدارة أنشطة المشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_contracts.php",
+      "text": "إدارة العقود و الدفعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_income.php",
+      "text": "تسجيل إيراد مشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_expenses.php",
+      "text": "تسجيل صرف مشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_assigned_users.php",
+      "text": "إلحاق مستفيدين بمشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_assigned_gehats.php",
+      "text": "إلحاق جهات بمشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_reports.php",
+      "text": "إدارة تقارير المشاريع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_dashboard.php",
+      "text": "لوحة مديرين المشروعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_followup.php",
+      "text": "لوحة المتابعة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_gantt.php",
+      "text": "إدارة مخطط المشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_kanban.php",
+      "text": "لوحة كانبان"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_pm_indicators.php",
+      "text": "تقرير مؤشرآت الآداء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_statistics.php",
+      "text": "إحصائيات المشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_databases.php",
+      "text": "قواعد بيانات المشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_balance_transfer.php",
+      "text": "تحويل رصيد مشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_complete.php",
+      "text": "إكمال مشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_open.php",
+      "text": "فتح مشروع مكتمل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_delete.php",
+      "text": "حذف مشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_restore.php",
+      "text": "استعادة مشروع محذوف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/suppliers_accounts.php",
+      "text": "إدارة حسابات الموردين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/suppliers_database.php",
+      "text": "قاعدة بيانات الموردين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/suppliers_remove.php",
+      "text": "حذف حساب مورد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/suppliers_restore.php",
+      "text": "استعادة حساب مورد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_idea_create.php",
+      "text": "تقديم اقتراح برنامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_idea_pending.php",
+      "text": "المقترحات قيد الاعتماد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_idea_marketing.php",
+      "text": "المقترحات قيد التسويق"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_idea_approved.php",
+      "text": "المقترحات المعتمدة / الجارية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_idea_note.php",
+      "text": "المقترحات المرفوضة مع ملاحظه"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_idea_rejected.php",
+      "text": "المقترحات المرفوضة نهائياً"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_idea_cancelled.php",
+      "text": "المقترحات الملغاة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_idea_completed.php",
+      "text": "مقترحات البرامج المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_approval_idea.php",
+      "text": "اعتمادات مقترحات البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_approval_update_team.php",
+      "text": "برامج بحاجة لتسجيل الفريق"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_approval_team.php",
+      "text": "اعتمادات فرق البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_approval_update_budget.php",
+      "text": "برامج بحاجة لتقديم الميزانية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_approval_budget.php",
+      "text": "اعتمادات الخطط و الميزانية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_approval_marketing.php",
+      "text": "نشر برنامج للتسويق"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_approval_marketing_complete.php",
+      "text": "برامج مكتملة التسويق"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_approval_complete.php",
+      "text": "برامج منتهية بحاجة للإكمال"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_approval_history.php",
+      "text": "برامج قمت باعتمادها"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manage_dashboard.php",
+      "text": "لوحة تحكم البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manage_register.php",
+      "text": "تسجيل مستفيدين البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manage_register_database.php",
+      "text": "سجلات مستفيدين البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manage_requests.php",
+      "text": "طلبات الانضمام للبرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manage_schedule.php",
+      "text": "إيام و فعاليات البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manage_attendance.php",
+      "text": "تسجيل غياب و حضور الفعاليات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manage_certificates_issue.php",
+      "text": "إصدار شهادات البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manage_followup.php",
+      "text": "طلب متابعة حالة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manage_reports.php",
+      "text": "إدارة تقارير البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manage_survey.php",
+      "text": "إدارة استبيانات البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manage_survey_records.php",
+      "text": "سجلات استبيانات البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_zap_special.php",
+      "text": "إضافة برنامج مؤرشف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_zap_update.php",
+      "text": "تحديث بيانات برنامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_zap_cancel.php",
+      "text": "إلغاء برنامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_zap_database_pending.php",
+      "text": "البرامج قيد الاعتماد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_zap_database_marketing.php",
+      "text": "البرامج قيد التسويق"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_zap_database_approved.php",
+      "text": "البرامج المعتمدة / الجارية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_zap_database_completed.php",
+      "text": "البرامج المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_zap_database_note.php",
+      "text": "البرامج المرفوضة مع ملاحظة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_zap_database_rejected.php",
+      "text": "البرامج المرفوضة نهائيا"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_zap_database_cancelled.php",
+      "text": "البرامج الملغاة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_zap_database.php",
+      "text": "قاعدة بيانات البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_zap_registered.php",
+      "text": "سجل المستفيدين من البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_zap_statistics.php",
+      "text": "إحصائيات البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_zap_special_database.php",
+      "text": "قاعدة بيانات البرامج المؤرشفة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_dashboard.php",
+      "text": "لوحة تحكم البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_update.php",
+      "text": "تحديث بيانات البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_tasks.php",
+      "text": "إدارة مهام البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_tasks_new.php",
+      "text": "مهام البرامج الجديدة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_tasks_running.php",
+      "text": "مهام البرامج الجارية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_tasks_failed.php",
+      "text": "مهام البرامج المتعثرة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_tasks_completed.php",
+      "text": "مهام البرامج المنجزة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_tasks_finished.php",
+      "text": "مهام البرامج المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_publish.php",
+      "text": "نشر برنامج للتسجيل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_certificates_templates.php",
+      "text": "إدارة نماذج شهادات البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_statistics.php",
+      "text": "إحصائيات البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_custody.php",
+      "text": "تسجيل عهدة علي برنامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_expenses.php",
+      "text": "تسجيل مصروفات البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_income.php",
+      "text": "تسجيل إيرادات البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_financials.php",
+      "text": "سجل المصروفات و الإيرادات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/program_manager_forms.php",
+      "text": "إدارة نماذج التسجيل للبرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/qual_required.php",
+      "text": "مستفيدين بحاجة لتأهيل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/qual_opinion.php",
+      "text": "رأي إدارة التأهيل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/qual_projects.php",
+      "text": "تسجيل مشروع مستفيد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/qual_projects_database.php",
+      "text": "قاعدة بيانات المشاريع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/qual_installments.php",
+      "text": "قاعدة بيانات الأقساط"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/qual_late.php",
+      "text": "المتأخرين عن السداد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/qual_paid.php",
+      "text": "قاعدة بيانات المسددين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/qual_qualified.php",
+      "text": "قاعدة بيانات المؤهلين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/qual_reports.php",
+      "text": "تقارير المشاريع التأهيلية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/request_create.php",
+      "text": "إضافة طلب إعانة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/request_update.php",
+      "text": "تحديث طلب إعانة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/request_approval_initial.php",
+      "text": "اعتماد طلبات الإعانة المبدأي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/request_note.php",
+      "text": "الطلبات المرفوضة مع ملاحظة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/request_approval_search_task.php",
+      "text": "طلبات بحاجة للبحث الاجتماعي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/request_approval_search_opinion.php",
+      "text": "اعتمادات رأي الباحث"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/request_approval_manager.php",
+      "text": "مراجعة و اعتماد رئيس اللجنة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/request_approval_committee.php",
+      "text": "اعتماد اللجنة المختصة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/request_approval_transfer.php",
+      "text": "طلبات تحول للإدارة المختصة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/request_zap_database.php",
+      "text": "قاعدة بيانات طلبات الإعانة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/request_external.php",
+      "text": "طلبات الإعانة من الموقع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/order_finance.php",
+      "text": "اوامر الصرف المالية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/order_storage.php",
+      "text": "اوامر الصرف العينية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/order_manage_rejected.php",
+      "text": "الأوامر المرفوضة مع ملاحظة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/order_zap_rejected.php",
+      "text": "الأوامر المرفوضة نهائيا"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/order_zap_remove.php",
+      "text": "حذف امر صرف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/order_zap_close.php",
+      "text": "إنهاء امر صرف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/order_zap_database.php",
+      "text": "سجلات اوامر الصرف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_users_manage.php",
+      "text": "إدارة حسابات الكافلين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_users_database.php",
+      "text": "قاعدة بيانات الكافلين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_users_remove.php",
+      "text": "حذف ملف كافل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_users_removed.php",
+      "text": "حسابات الكافلين المحذوفة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_requires_manage.php",
+      "text": "تحديد من بحاجة لكفالة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_requires_database.php",
+      "text": "سجلات من بحاجة لكفالة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_records.php",
+      "text": "إدارة تعيين الكفالات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_records_expired.php",
+      "text": "سجل الكفالات المنتهية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_records_due_collection.php",
+      "text": "كفالات بحاجة لتحصيل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_records_remove.php",
+      "text": "حذف تعيين كفالة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_records_removed.php",
+      "text": "سجل الكفالات المحذوفة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_records_database.php",
+      "text": "قاعدة بيانات الكفالات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_records_reassign.php",
+      "text": "تعيين كفالة لمكفول"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_assignments.php",
+      "text": "سجلات المكفولين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_assignments_due.php",
+      "text": "سجل الكفالات المستحقة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_assignments_canceled.php",
+      "text": "سجلات المكفولين المحذوفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_assignments_expired.php",
+      "text": "مكفولين تخطوا شروط الكفالة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_payment_requests.php",
+      "text": "طلب صرف كفالة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_payment_rejected.php",
+      "text": "طلبات الصرف المرفوضة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_payment_database.php",
+      "text": "سجلات طلبات الصرف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafeel_payment_close.php",
+      "text": "تسجيل إتمام الكفالات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/kafala_payment_report.php",
+      "text": "تقرير صرف الكفالات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/gehat_supports.php",
+      "text": "إدارة طلبات الجهات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/gehat_supports_external.php",
+      "text": "طلبات الجهات من الموقع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/coupons_require.php",
+      "text": "مستفيدين بحاجة إلى قسائم"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/coupons_issue.php",
+      "text": "إصدار قسيمة شراء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/coupons_approved.php",
+      "text": "القسائم المعتمدة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/coupons_deliver.php",
+      "text": "تسليم القسائم"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/media_partners.php",
+      "text": "إدارة الشراكات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/media_events.php",
+      "text": "إدارة الفعاليات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/media_visits.php",
+      "text": "إدارة الزيارات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/users_website_manage.php",
+      "text": "إدارة حسابات الموقع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/users_website_database.php",
+      "text": "قاعدة بيانات حسابات الموقع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/users_website_login.php",
+      "text": "تسجيل الدخول بحساب موقع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/channel_sms_template.php",
+      "text": "نماذج التواصل الخارجية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/channel_sms_lists.php",
+      "text": "قوائم المراسلات النصية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/channel_sms.php",
+      "text": "رسالة نصية جماعية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/channel_sms_list.php",
+      "text": "رسالة نصية لقائمة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/channel_records_sms.php",
+      "text": "سجل المراسلات النصية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/channel_whatsapp.php",
+      "text": "رسالة واتساب جماعية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/channel_whatsapp_list.php",
+      "text": "رسالة واتساب لقائمة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/channel_records_whatsapp.php",
+      "text": "سجل مراسلات الواتساب"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/channel_email.php",
+      "text": "إرسال بريد إلكتروني"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/channel_records_email.php",
+      "text": "سجل المراسلات البريدية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/channel_push.php",
+      "text": "إرسال تنبيه لحظي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/channel_push_subscribers.php",
+      "text": "مشتركين التنبيهات اللحظية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/channel_records_push.php",
+      "text": "سجل مراسلات التنبيهات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_design.php",
+      "text": "إدارة تصميم الموقع الإلكتروني"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_fonts.php",
+      "text": "إدارة الخطوط في الموقع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_design_templates.php",
+      "text": "أنماط تصميم الموقع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_module_custom.php",
+      "text": "إدارة القوالب العامة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_sections.php",
+      "text": "إدارة الصفحات المدمجة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_short_links.php",
+      "text": "إدارة الروابط المختصرة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_menu.php",
+      "text": "إدارة القائمة الرئيسية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_module_slider.php",
+      "text": "إدارة قالب السلايدر"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_module_counter.php",
+      "text": "إدارة قالب العداد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_about.php",
+      "text": "إدارة صفحة نبذة عنا"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_news.php",
+      "text": "إدارة الأخبار"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_gallery.php",
+      "text": "إدارة مكتبة الصور"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_videos.php",
+      "text": "إدارة مكتبة الفيديو"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_partners.php",
+      "text": "إدارة الشركاء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_regulations.php",
+      "text": "إدارة اللوائح و السياسات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_annual_report.php",
+      "text": "إدارة التقارير السنوية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_initiatives.php",
+      "text": "إدارة المبادرات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_testimonials.php",
+      "text": "إدارة التزكيات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_services.php",
+      "text": "إدارة الخدمات الإلكترونية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_links.php",
+      "text": "إدارة الروابط الهامة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_popup.php",
+      "text": "إدارة النوافذ المنبثقة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_contests.php",
+      "text": "إدارة المسابقات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_contests_withdraw.php",
+      "text": "سحب علي مسابقة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_forms.php",
+      "text": "إدارة صفحات النماذج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_forms_records.php",
+      "text": "سجلات النماذج المستلمة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_pages.php",
+      "text": "إدارة الصفحات العامة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_contact_requests.php",
+      "text": "طلبات اتصال الزوار"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_settings.php",
+      "text": "إعدادات النظام المحاسبي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_bank_accounts.php",
+      "text": "إدارة حسابات البنوك"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_accounts.php",
+      "text": "إدارة الدليل المحاسبي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_accounts_operations.php",
+      "text": "عمليات الدليل المحاسبي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_cost_accounts.php",
+      "text": "إدارة مراكز التكلفة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_cost_accounts_operations.php",
+      "text": "عمليات مراكز التكلفة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_ledgers.php",
+      "text": "إضافة قيد يومية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_ledgers_manage.php",
+      "text": "إدارة قيود اليومية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_renumber.php",
+      "text": "إعادة ترقيم القيود"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_closing.php",
+      "text": "إقفال السنة المالية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_opening.php",
+      "text": "فتح سنة مالية جديدة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_donation.php",
+      "text": "تحصيل تبرع عام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_project.php",
+      "text": "تحصيل تبرع لمشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_user.php",
+      "text": "تحصيل تبرع لمستفيد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_relative.php",
+      "text": "تحصيل تبرع لتابع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_case.php",
+      "text": "تحصيل تبرع لطلب اعانة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_kafala.php",
+      "text": "تحصيل كفالة مالية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_program.php",
+      "text": "تحصيل تبرع لبرنامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_deferred_generic.php",
+      "text": "تسجيل قبض عام آجل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_deferred_project_income.php",
+      "text": "تسجيل ايراد مشروع آجل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_deferred_investment.php",
+      "text": "تسجيل ايراد استثمار آجل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_deferred_income_general.php",
+      "text": "تسجيل ايراد متنوع آجل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_deferred_receive.php",
+      "text": "استلام قبض آجل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_deferred_due.php",
+      "text": "المطالبات المالية المستحقة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_deferred_completed.php",
+      "text": "المطالبات المالية المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_generic.php",
+      "text": "إصدار سند قبض عام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_board.php",
+      "text": "تحصيل اشتراك جمعية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_project_income.php",
+      "text": "تسجيل ايراد مشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_investment.php",
+      "text": "تسجيل ايراد استثمار"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_income_general.php",
+      "text": "تسجيل ايراد متنوع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_qualification.php",
+      "text": "تحصيل قسط مشروع تأهيلي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_credit.php",
+      "text": "تحصيل رصيد داعم"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_return.php",
+      "text": "إشعار مدين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_return_expenses.php",
+      "text": "إشعار دائن"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sanad_zap_rejected.php",
+      "text": "سندات القبض المرفوضة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_generic.php",
+      "text": "إصدار سند صرف عام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_tameed.php",
+      "text": "صرف تعميد بالصرف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_order.php",
+      "text": "تسليم امر صرف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_kafala.php",
+      "text": "صرف كفالة مالية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_demand.php",
+      "text": "صرف طلب إداري مالي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_due_tameed.php",
+      "text": "سجل تعميدات الصرف المستحقة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_due_order.php",
+      "text": "سجل اوامر الصرف المستحقة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_due_kafala.php",
+      "text": "سجل الكفالات المستحقة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_due_demand.php",
+      "text": "سجل الطلبات المالية المستحقة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_custody_settle.php",
+      "text": "تسوية عهدة موظف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_custody_records.php",
+      "text": "سجل عهد الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_tabadol_order.php",
+      "text": "تسليم امر صرف بنظام تبادل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_tabadol_kafala.php",
+      "text": "صرف كفالة بنظام تبادل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_tabadol_kafala_multiple.php",
+      "text": "صرف الكفالات الجماعي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_zap_tabadol.php",
+      "text": "نماذج مصروفات نظام تبادل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_zap_tabadol_multiple.php",
+      "text": "دمج نماذج نظام تبادل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/expenses_zap_rejected.php",
+      "text": "سندات الصرف المرفوضة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/salaries_manage.php",
+      "text": "إدارة سجلات الرواتب"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/salaries_export.php",
+      "text": "تصدير مسير الرواتب"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/salaries_rajhi.php",
+      "text": "تصدير رواتب الراجحي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_income_donations.php",
+      "text": "مراجعة التبرعات النقدية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_income_approved_donations.php",
+      "text": "سجل التبرعات المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_income_rejected_donations.php",
+      "text": "سجل التبرعات المرفوضة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_income.php",
+      "text": "مراجعة المقبوضات النقدية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_income_approved.php",
+      "text": "سجل المقبوضات المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_income_rejected.php",
+      "text": "سجل المقبوضات المرفوضة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_income_canceled.php",
+      "text": "سندات القبض الملغاة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_income_database.php",
+      "text": "دفتر سجلات المقبوضات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_expenses.php",
+      "text": "مراجعة المصروفات النقدية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_expenses_approved.php",
+      "text": "سجل المصروفات المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_expenses_rejected.php",
+      "text": "سجل المصروفات المرفوضة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_expenses_canceled.php",
+      "text": "سندات الصرف الملغاة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_expenses_database.php",
+      "text": "دفتر سجلات المصروفات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_marketing_online.php",
+      "text": "مراجعة المدفوعات الإلكترونية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_marketing_bank.php",
+      "text": "مراجعة المدفوعات البنكية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_marketing_bank_approved.php",
+      "text": "المدفوعات البنكية المعتمدة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_marketing_balance.php",
+      "text": "مراجعة المدفوعات من الرصيد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_marketing_location.php",
+      "text": "مراجعة المدفوعات في المقر"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/revision_marketing_failed.php",
+      "text": "مدفوعات المتجر المعلقة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_report_tree.php",
+      "text": "تقرير الدليل المحاسبي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_report_account.php",
+      "text": "تقرير كشف حساب"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_report_daily.php",
+      "text": "دفتر اليومية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_report_ostaz.php",
+      "text": "الاستاذ العام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_report_ostaz_monthly.php",
+      "text": "الاستاذ العام الشهري"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_report_revision.php",
+      "text": "ميزان المراجعة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_report_ledger.php",
+      "text": "تقرير قيد يومية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_report_records.php",
+      "text": "الدفاتر المحاسبية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_report_cost_account.php",
+      "text": "تقرير كشف مركز تكلفة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_report_cost_ostaz.php",
+      "text": "الاستاذ العام لمراكز التكلفة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_report_cost_revision.php",
+      "text": "ميزان مراجعة مراكز التكلفة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_report_dynamic_create.php",
+      "text": "إنشاء تقرير مالي ذكي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_report_dynamic_preview.php",
+      "text": "معاينة تقرير مالي ذكي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_statements_preview.php",
+      "text": "معاينة نموذج قائمة ديناميكية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/statistics_income.php",
+      "text": "إحصائيات الإيرادات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/statistics_expenses.php",
+      "text": "إحصائيات المصروفات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/statistics_income_period.php",
+      "text": "إحصائيات نمو الإيرادات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/statistics_expenses_period.php",
+      "text": "إحصائيات تغير المصروفات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_archive_income_approved_donations.php",
+      "text": "سجل التبرعات المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_archive_income_approved.php",
+      "text": "سجل المقبوضات المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_archive_income_canceled.php",
+      "text": "سندات القبض الملغاة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_archive_income_database.php",
+      "text": "دفتر سجلات المقبوضات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_archive_expenses_approved.php",
+      "text": "سجل المصروفات المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_archive_expenses_canceled.php",
+      "text": "سندات الصرف الملغاة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_archive_expenses_database.php",
+      "text": "دفتر سجلات المصروفات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_budgets.php",
+      "text": "إدارة الموازنات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/finance_budgets_deviation.php",
+      "text": "تقرير إنحراف الموازنة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_request.php",
+      "text": "طلب متابعة حالة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_request_rejected.php",
+      "text": "الطلبات المرفوضة مع ملاحظة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_running.php",
+      "text": "الحالات قيد المتابعة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_requests.php",
+      "text": "طلبات متابعة الحالات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_complete.php",
+      "text": "حالات منتهية بحاجة للاعتماد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_manage.php",
+      "text": "إدارة متابعة الحالات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_zap_database_running.php",
+      "text": "سجل المتابعات الجارية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_zap_database_completed.php",
+      "text": "سجل المتابعات المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_zap_database_rejected.php",
+      "text": "سجل المتابعات المرفوضة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_zap_database.php",
+      "text": "قاعدة بيانات المتابعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_records.php",
+      "text": "إضافة نشاط"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_records_database.php",
+      "text": "سجل النشاطات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_records_user.php",
+      "text": "إضافة نشاط مستفيد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_records_relative.php",
+      "text": "إضافة نشاط تابع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_records_request.php",
+      "text": "إضافة نشاط طلب إعانة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_records_kafeel.php",
+      "text": "إضافة نشاط كافل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_records_kafala.php",
+      "text": "إضافة نشاط كفالة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/followup_records_supporter.php",
+      "text": "إضافة نشاط داعم"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/cars_management.php",
+      "text": "إدارة السيارات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/cars_requests.php",
+      "text": "طلبات توفير السيارات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/cars_hand.php",
+      "text": "تسليم سيارة لموظف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/cars_receive.php",
+      "text": "استلام سيارة من موظف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/cars_movements.php",
+      "text": "قاعدة بيانات حركة السيارات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/cars_maintenance.php",
+      "text": "إدارات طلبات صيانة السيارات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/maintenance_request.php",
+      "text": "إدارة طلبات الصيانة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_users.php",
+      "text": "تقارير المستفيدين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_users_income.php",
+      "text": "تقارير مصادر دخل المستفيدين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_relatives.php",
+      "text": "تقارير التابعين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_personnel.php",
+      "text": "تقارير الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_requests.php",
+      "text": "تقارير طلبات الإعانة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_tasks.php",
+      "text": "تقارير المهام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_kafeel.php",
+      "text": "تقارير الكافلين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_kafeel_matrix.php",
+      "text": "تقارير الكفالات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_supporters.php",
+      "text": "تقارير الداعمين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_board.php",
+      "text": "تقارير الجمعية العمومية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_projects.php",
+      "text": "تقارير المشاريع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_media_events.php",
+      "text": "تقارير الفعاليات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_media_partners.php",
+      "text": "تقارير الشراكات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_media_visits.php",
+      "text": "تقارير الزيارات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_marketing.php",
+      "text": "تقارير التسويق"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_mail.php",
+      "text": "تقارير الصادر و الوارد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_website_users.php",
+      "text": "تقارير حسابات الموقع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_orders.php",
+      "text": "تقارير أوامر الصرف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_programs.php",
+      "text": "تقارير البرامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_followup.php",
+      "text": "تقارير متابعة الحالات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_qual.php",
+      "text": "تقارير المشاريع التأهيلية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_expenses.php",
+      "text": "تقارير المصروفات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_income.php",
+      "text": "تقارير المقبوضات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_analytics.php",
+      "text": "تقارير إحصائيات جووجل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_finance_reports.php",
+      "text": "التقارير المالية للمشاريع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/statistics_users.php",
+      "text": "إحصائيات المستفيدين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/statistics_relatives.php",
+      "text": "إحصائيات التابعين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/statistics_orphans.php",
+      "text": "إحصائيات الأيتام و الكفالات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/statistics_requests.php",
+      "text": "إحصائيات طلبات الإعانة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/statistics_projects.php",
+      "text": "إحصائيات المشاريع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/statistics_tasks.php",
+      "text": "إحصائيات المهام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/statistics_finance.php",
+      "text": "الإحصائيات المالية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/statistics_areas.php",
+      "text": "إحصائيات القري - الأحياء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_management.php",
+      "text": "إدارة الاجتماعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_approval.php",
+      "text": "اعتماد الاجتماعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_manage_schedule.php",
+      "text": "الاجتماعات المجدولة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_repeated.php",
+      "text": "مسودة الاجتماعات المتكررة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_finish.php",
+      "text": "إنهاء الاجتماعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_mom_approve.php",
+      "text": "اعتماد محاضر الاجتماعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_database.php",
+      "text": "قاعدة بيانات الاجتماعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_reports.php",
+      "text": "ملخصات الاجتماعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_calendar.php",
+      "text": "تقويم الاجتماعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_delegation_requests.php",
+      "text": "إدارة طلبات الإنابة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_general.php",
+      "text": "إدارة الاجتماعات العامة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_admins.php",
+      "text": "اجتماعات مجلس الإدارة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_board.php",
+      "text": "اجتماعات الجمعية العمومية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_database_general.php",
+      "text": "الاجتماعات العامة المعتمدة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_database_admins.php",
+      "text": "اجتماعات مجلس الإدارة المعتمدة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_database_board.php",
+      "text": "اجتماعات الجمعية العمومية المعتمدة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_approve.php",
+      "text": "اعتمادات محاضر الإجتماعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/meetings_approved.php",
+      "text": "إلغاء اعتمادات محاضر الإجتماعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/corporate_docs_manage.php",
+      "text": "إدارة سجلات الملفات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/archives_general.php",
+      "text": "أرشيف الملفات العامة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/archives_finance.php",
+      "text": "أرشيف التقارير المالية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/archives_budget.php",
+      "text": "أرشيف تقارير الميزانية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/archives_admins.php",
+      "text": "أرشيف طلبات الإدارة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/archives_secret.php",
+      "text": "أرشيف الملفات السرية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/mail_outgoing_add.php",
+      "text": "إضافة بريد صادر"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/mail_incoming_add.php",
+      "text": "إضافة بريد وارد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/mail_outgoing_update.php",
+      "text": "تحديث بريد صادر"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/mail_incoming_update.php",
+      "text": "تحديث بريد وارد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/mail_database.php",
+      "text": "قاعدة بيانات الصادر و الوارد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/mail_reply.php",
+      "text": "رسائل تحتاج إلى رد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/mail_operations_create.php",
+      "text": "إنشاء معاملة لرسالة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/mail_operations_completed.php",
+      "text": "معاملات الرسائل المنتهية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/mail_operations.php",
+      "text": "المعاملات المتعلقة بالبريد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/mail_operations_database.php",
+      "text": "قاعدة بيانات المعاملات الداخلية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/mail_remove.php",
+      "text": "حذف صادر او وارد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/mail_remove_approval.php",
+      "text": "تأكيد حذف صادر او وارد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/mail_barcode.php",
+      "text": "قارئ باركود الصادر و الوارد"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_supporters_manage.php",
+      "text": "إدارة حسابات الداعمين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_supporters_database.php",
+      "text": "قاعدة بيانات الداعمين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/projects_supporters_sms.php",
+      "text": "رسالة نصية للداعمين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/marketing_general.php",
+      "text": "تسويق عام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/marketing_project.php",
+      "text": "تسويق مشروع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/marketing_request.php",
+      "text": "تسويق طلب إعانة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/marketing_program.php",
+      "text": "تسويق برنامج"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/marketing_complete.php",
+      "text": "التسويقات المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/marketing_database_donations.php",
+      "text": "سجل تبرعات الموقع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/marketing_external.php",
+      "text": "روابط التبرعات الخارجية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/marketing_gifts.php",
+      "text": "سجل الإهداءات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/marketing_certificates.php",
+      "text": "سجل الشهادات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/marketing_campaigns.php",
+      "text": "إنشاء حملة تسويقية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/marketing_campaigns_database.php",
+      "text": "قاعدة بيانات الحملات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/abandoned_carts.php",
+      "text": "السلال المتروكة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/donations_supporter_category_reports.php",
+      "text": "تقرير فئات المتبرعين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/donations_frequency_reports.php",
+      "text": "تقرير معدل تكرار التبرعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/donations_private_campaigns_reports.php",
+      "text": "تقرير الحملات المخصصة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/donations_comparison_reports.php",
+      "text": "تقرير مقارنة الحملات المخصصة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/donations_urgent_campaigns_report.php",
+      "text": "تقرير الحملات العاجلة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/donations_peak_hours_by_day.php",
+      "text": "تقرير التبرعات حسب الأيام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/donations_categories_reports.php",
+      "text": "تقرير تصنيفات الفرص"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/donations_gifts_reports.php",
+      "text": "تقرير حسب الإهداءات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/donations_device_report.php",
+      "text": "تقرير التبرعات حسب جهاز المتبرع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/report_donations.php",
+      "text": "تقارير تبرعات المشاريع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/donations_smart_marketer.php",
+      "text": "تقرير المسوق الذكي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/awqaf.php",
+      "text": "إضافة وقف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/awqaf_database.php",
+      "text": "قاعدة بيانات الأوقاف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/awqaf_contracts.php",
+      "text": "إدارة عقود الأوقاف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/awqaf_invoices.php",
+      "text": "قاعدة بيانات الدفعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/awqaf_invoices_due.php",
+      "text": "الدفعات المستحقة قريباً"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_personnel_create.php",
+      "text": "تعيين موظف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_personnel_update.php",
+      "text": "تحديث بيانات موظف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_personnel_database.php",
+      "text": "قاعدة بيانات الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_volunteer_create.php",
+      "text": "إضافة موظف متطوع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_volunteer_update.php",
+      "text": "تحديث بيانات متطوع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_volunteer_database.php",
+      "text": "قاعدة بيانات المتطوعين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_personnel_type.php",
+      "text": "تغيير نوع حساب الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_personnel_warnings.php",
+      "text": "إدارة إنذارات الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_personnel_questions.php",
+      "text": "إدارة مسائلات الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_personnel_vacations_manage.php",
+      "text": "إدارة ارصدة الإجازات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_personnel_vacations.php",
+      "text": "إدارة إجازات الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_personnel_evaluation.php",
+      "text": "إدارة تقييمات الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_personnel_resign.php",
+      "text": "إنهاء خدمة موظف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_personnel_cards.php",
+      "text": "إصدار بطاقات الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_personnel_testahel.php",
+      "text": "إصدار بطاقة تستاهل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_personnel_letter.php",
+      "text": "إصدار خطاب شخصي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_letters_general.php",
+      "text": "إصدار خطاب عام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_salaries_export.php",
+      "text": "معاينة سجلات الرواتب"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/demands_zap_approve.php",
+      "text": "اعتماد الطلبات الإدارية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/demands_zap_managed.php",
+      "text": "طلبات قمت بإدارتها"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/demands_zap_database.php",
+      "text": "سجلات الطلبات الإدارية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/attendance_settings.php",
+      "text": "إعدادات الحضور و الانصراف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/attendance_locations.php",
+      "text": "إدارة اماكن التسجيل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/attendance_official_vacations.php",
+      "text": "إعدادات الإجازات الرسمية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/attendance_record.php",
+      "text": "تسجيل الحضور والانصراف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/attendance_execuses.php",
+      "text": "تسجيل الاذونات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/attendance_present.php",
+      "text": "سجل الحضور الحالي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/attendance_report.php",
+      "text": "سجلات الحضور والانصراف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/attendance_report_general.php",
+      "text": "تقارير الحضور والانصراف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/attendance_vacation_credit.php",
+      "text": "سجل أجازات الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_safety_categories.php",
+      "text": "إدارة تصنيفات المخاطر المهنية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_safety_operations.php",
+      "text": "إدارة التدابير و الإجراءات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_safety_answers.php",
+      "text": "تسجيل نموذج الإجراءات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_safety_report.php",
+      "text": "تقرير السلامة و الصحة المهنية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_request_create.php",
+      "text": "طلب تعيين موظف"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_request_approved.php",
+      "text": "الإعلان عن وظيفة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_request_received.php",
+      "text": "طلبات التوظيف المستلمة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_request_completed.php",
+      "text": "طلبات التوظيف المكتملة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/hr_request_interview.php",
+      "text": "تسجيل مقابلة شخصية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_information.php",
+      "text": "إدارة معلومات الجمعية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_settings.php",
+      "text": "إعدادات مقدمي الخدمات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_sections.php",
+      "text": "إدارة اقسام لوحة التحكم"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_google_auth.php",
+      "text": "تسجيل حساب جووجل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_microsoft_auth.php",
+      "text": "تسجيل حساب مايكروسوفت"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_zoom_auth.php",
+      "text": "تسجيل حساب زووم"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/channel_whatsapp_templates.php",
+      "text": "إدارة نماذج الواتساب"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_warehouses.php",
+      "text": "إدارة المستودعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_template_evaluation.php",
+      "text": "نماذج تقييم الموظفين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_template_letters.php",
+      "text": "نماذج خطابات الموارد البشرية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_template_pdf_text.php",
+      "text": "إدارة نصوص المستندات الثابتة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_grade_equation.php",
+      "text": "إدارة معادلة الدخل"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_grade_update.php",
+      "text": "تحديث فئات الملفات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_news.php",
+      "text": "إدارة شريط الأخبار"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_variables.php",
+      "text": "إدارة متغيرات النظام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_demands.php",
+      "text": "إدارة الطلبات الإدارية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_operations.php",
+      "text": "إدارة المعاملات الداخلية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_cycles.php",
+      "text": "إدارة مسارات الاعتمادات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_forms_fields.php",
+      "text": "إدارة حقول الحسابات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_worker_log.php",
+      "text": "سجلات العمليات المجدولة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_tutorials_update.php",
+      "text": "تحديث ملفات الشروحات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_tutorials_permissions.php",
+      "text": "تحديث صلاحيات الشروحات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/website_settings.php",
+      "text": "إعدادات الموقع الإلكتروني"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/ecommerce_settings.php",
+      "text": "إعدادات المتجر الإلكتروني"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/seo_settings.php",
+      "text": "أدوات تحسين محركات البحث"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/social_media_settings.php",
+      "text": "ربط ادوات التواصل الإجتماعي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/organizational_chart.php",
+      "text": "إدارة الهيكل الإداري"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_organization.php",
+      "text": "تعيينات المناصب الإعتبارية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_organization_committees.php",
+      "text": "تعيينات اللجان"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_template_pdf_signatures.php",
+      "text": "إدارة تواقيع المستندات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_organization_record.php",
+      "text": "تسجيل دورة هيكل إداري"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_design_panel.php",
+      "text": "إدارة ثمة لوحة التحكم"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_template_images.php",
+      "text": "إدارة قوالب المطبوعات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_template_gifts.php",
+      "text": "إدارة قوالب كروت الإهداء"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_template_greetings.php",
+      "text": "إدارة قوالب المعايدات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_template_pdf_design.php",
+      "text": "تصميم قالب المستندات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_template_certificates.php",
+      "text": "إدارة قوالب شهادات التبرع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_template_channels_panel.php",
+      "text": "نماذج التواصل الداخلية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_channel_records_sms.php",
+      "text": "سجل المراسلات النصية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_channel_records_whatsapp.php",
+      "text": "سجل مراسلات الواتساب"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_channel_records_email.php",
+      "text": "سجل المراسلات البريدية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_channel_push_subscribers.php",
+      "text": "مشتركين التنبيهات اللحظية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_channel_push.php",
+      "text": "إرسال تنبيه لحظي"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_channel_records_push.php",
+      "text": "سجل مراسلات التنبيهات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_channel_local.php",
+      "text": "سجل التنبيهات الداخلية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_administrators.php",
+      "text": "مستخدمو النظام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_register.php",
+      "text": "سجلات الدخول للنظام"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_permissions.php",
+      "text": "صلاحيات المستخدمين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/system_security_report.php",
+      "text": "تقرير الامن السيبراني"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/sensitive_pages_report.php",
+      "text": "حوكمة ومتابعة الصلاحيات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/ncnp_invalid_helps.php",
+      "text": "مساعدات بحاجة لتحديث"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/ncnp_helps_dates.php",
+      "text": "تحديث تواريخ المساعدات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/ncnp_helps_costs.php",
+      "text": "تحديث تكاليف المساعدات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/ncnp_helps_register.php",
+      "text": "مساعدات جاهزة للإرسال"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/ncnp_helps_removed.php",
+      "text": "المساعدات المعلقة و المحذوفة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/support_external.php",
+      "text": "إدارة أرشيف الدعوم السابقة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/ncnp_helps_registered.php",
+      "text": "المساعدات المسجلة بمنصة تبين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/ncnp_settings.php",
+      "text": "صلاحيات مشاركة البيانات"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/volunteer_users_manage.php",
+      "text": "إدارة حسابات المتطوعين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/volunteer_users_database.php",
+      "text": "قاعدة بيانات المتطوعين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/volunteer_requests_internal.php",
+      "text": "طلبات التطوع الداخلية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/volunteer_requests_external.php",
+      "text": "طلبات التطوع الخارجية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/volunteer_chances_manage.php",
+      "text": "إدارة الفرص التطوعية"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/volunteer_manage_procedures.php",
+      "text": "إدارة اجراءات الفرص"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/volunteer_manage_reports.php",
+      "text": "إرفاق تقارير فرصة"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/volunteer_manage_applications.php",
+      "text": "إدارة طلبات التطوع"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/volunteer_manage_applicants.php",
+      "text": "إدارة المتطوعين"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/volunteer_manage_tasks.php",
+      "text": "إدارة مهام الفرص"
+    },
+    {
+      "error": "TypeError: fetch is not a function",
+      "href": "https://www.sarh.org.sa/rafed/volunteer_manage_attendance.php",
+      "text": "إدارة سجلات الحضور"
+    }
+  ]
+}

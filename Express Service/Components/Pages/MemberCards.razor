@@ -1,0 +1,57 @@
+@page "/members/cards"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MemberUiService Members
+
+<h1 class="page-title">بطاقات الأعضاء</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-id-card"></i><div><h2>إصدار بطاقة عضو</h2><p>إصدار رقم بطاقة مرتبط بالعضو وتاريخ انتهاء.</p></div></div>
+    <div class="form-grid">
+        <label>العضو<select @bind="memberId">@foreach (var member in members){<option value="@member.Id">@member.MemberNumber - @member.FullName</option>}</select></label>
+        <label>تاريخ الانتهاء<input type="date" @bind="expiresAt" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="IssueAsync">إصدار البطاقة</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-address-card"></i> البطاقات الصادرة</span></div>
+    <table>
+        <thead><tr><th>رقم البطاقة</th><th>العضو</th><th>الإصدار</th><th>الانتهاء</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var card in cards)
+            {
+                <tr><td>@card.CardNumber</td><td>@card.MemberName</td><td>@card.IssuedAt.ToString("yyyy-MM-dd")</td><td>@card.ExpiresAt.ToString("yyyy-MM-dd")</td><td><span class="status @(card.IsActive ? "ok" : "warn")">@(card.IsActive ? "فعالة" : "موقوفة")</span></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<MemberResponse> members = [];
+    private List<MemberCardResponse> cards = [];
+    private int memberId;
+    private DateTime expiresAt = DateTime.UtcNow.AddHours(3).AddYears(1).Date;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        members = await Members.GetMembersAsync(MemberStatus.Active);
+        memberId = members.FirstOrDefault()?.Id ?? 0;
+        cards = await Members.GetCardsAsync();
+    }
+
+    private async Task IssueAsync()
+    {
+        var result = await Members.IssueCardAsync(memberId, expiresAt);
+        success = result.Success;
+        message = result.Message;
+        cards = await Members.GetCardsAsync();
+    }
+}

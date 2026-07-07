@@ -1,32 +1,131 @@
 @page "/meetings/waiting-room"
+@attribute [Authorize(Roles = "Admin,BoardMember,BoardChairman,BoardSecretary")]
 @rendermode InteractiveServer
+@inject MeetingUiService UiService
 
-<section class="page-band">
-    <h1>بوابة انتظار العضو</h1>
-    <p>زر دخول الاجتماع يفتح فقط بعد قبول الدعوة والإقرار بقراءة جدول الأعمال.</p>
+<h1 class="page-title">بوابة انتظار العضو والتحقق داخل التطبيق</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="table-section">
+    <div class="table-title">
+        <span><i class="fa-solid fa-envelope-open-text"></i> دعواتي pending من قاعدة البيانات</span>
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
+    @if (invitations.Count == 0)
+    {
+        <div class="panel-body">لا توجد دعوات بانتظار القبول لهذا الحساب.</div>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>اختر</th><th>الاجتماع</th><th>موعد الاجتماع</th><th>تنتهي المهلة</th><th>عدد البنود</th></tr></thead>
+            <tbody>
+                @foreach (var invitation in invitations)
+                {
+                    <tr>
+                        <td><input type="radio" name="invitation" checked="@(selectedInvitationId == invitation.Id)" @onchange="() => SelectInvitation(invitation.Id)" /></td>
+                        <td>@invitation.MeetingTitle</td>
+                        <td>@invitation.ScheduledAt</td>
+                        <td>@invitation.ExpiresAt</td>
+                        <td>@invitation.AgendaItems.Count</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 </section>
 
-<section class="split">
-    <div>
-        <h2>الدعوة</h2>
-        <p>اجتماع مجلس الإدارة - الأربعاء 10:00 صباحاً</p>
-        <button class="primary" @onclick="() => accepted = true">قبول الدعوة</button>
-        <label class="check"><input type="checkbox" @bind="agendaRead" /> أقر بقراءة جدول الأعمال كاملاً</label>
-        <textarea @bind="note" placeholder="ملاحظة اختيارية"></textarea>
-        <div class="inline-options">
-            <label><input type="radio" name="noteVisibility" checked /> تظهر قبل المجلس</label>
-            <label><input type="radio" name="noteVisibility" /> تظهر أثناء المجلس</label>
+@if (SelectedInvitation is not null)
+{
+    <section class="split">
+        <div class="panel">
+            <div class="panel-heading">
+                <i class="fa-solid fa-list-check"></i>
+                <div>
+                    <h2>جدول أعمال: @SelectedInvitation.MeetingTitle</h2>
+                    <p>يجب الإقرار بقراءة البنود قبل تفعيل دخول الاجتماع.</p>
+                </div>
+                <i class="fa-solid fa-angle-down"></i>
+            </div>
+            <div class="panel-body">
+                <table>
+                    <thead><tr><th>رقم البند</th><th>العنوان</th><th>الوصف</th><th>يحتاج قرار؟</th></tr></thead>
+                    <tbody>
+                        @foreach (var item in SelectedInvitation.AgendaItems)
+                        {
+                            <tr>
+                                <td>@item.ItemNumber</td>
+                                <td>@item.Title</td>
+                                <td>@item.Description</td>
+                                <td><span class="status @(item.RequiresDecision ? "ok" : "")">@(item.RequiresDecision ? "نعم" : "لا")</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
-    <div class="entry-panel">
-        <strong>@(CanEnter ? "جاهز للدخول" : "بانتظار استكمال المتطلبات")</strong>
-        <button class="primary" disabled="@(!CanEnter)">دخول الاجتماع</button>
-    </div>
-</section>
+
+        <aside class="entry-panel">
+            <strong>@(CanEnter ? "تم فتح دخول الاجتماع" : "بوابة الانتظار")</strong>
+            <label class="check"><input type="checkbox" @bind="agendaRead" /> أقر بقراءة جدول الأعمال كاملاً</label>
+            <label>ملاحظة اختيارية
+                <textarea @bind="note" placeholder="اكتب ملاحظة للإدارة أو للمجلس"></textarea>
+            </label>
+            <div class="inline-options">
+                <label><input type="radio" name="noteVisibility" checked="@(noteVisibility == Domain.Entities.MeetingNoteVisibility.BeforeCouncil)" @onchange="() => noteVisibility = Domain.Entities.MeetingNoteVisibility.BeforeCouncil" /> تظهر قبل المجلس</label>
+                <label><input type="radio" name="noteVisibility" checked="@(noteVisibility == Domain.Entities.MeetingNoteVisibility.DuringAgendaItem)" @onchange="() => noteVisibility = Domain.Entities.MeetingNoteVisibility.DuringAgendaItem" /> تظهر أثناء المجلس</label>
+            </div>
+            <button class="primary" @onclick="AcceptAsync" disabled="@(!agendaRead || busy)">قبول الدعوة</button>
+            <button class="secondary" disabled="@(!CanEnter)">دخول الاجتماع</button>
+        </aside>
+    </section>
+}
 
 @code {
+    private bool busy;
+    private bool success;
     private bool accepted;
     private bool agendaRead;
+    private string? message;
     private string? note;
+    private int? selectedInvitationId;
+    private Domain.Entities.MeetingNoteVisibility noteVisibility = Domain.Entities.MeetingNoteVisibility.BeforeCouncil;
+    private List<InvitationUiModel> invitations = [];
+
+    private InvitationUiModel? SelectedInvitation => invitations.FirstOrDefault(x => x.Id == selectedInvitationId);
     private bool CanEnter => accepted && agendaRead;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        invitations = await UiService.GetCurrentUserInvitationsAsync();
+        selectedInvitationId ??= invitations.FirstOrDefault()?.Id;
+    }
+
+    private void SelectInvitation(int id)
+    {
+        selectedInvitationId = id;
+        accepted = false;
+        agendaRead = false;
+        note = null;
+    }
+
+    private async Task AcceptAsync()
+    {
+        if (selectedInvitationId is null)
+            return;
+
+        busy = true;
+        var result = await UiService.AcceptInvitationAsync(selectedInvitationId.Value, agendaRead, note, noteVisibility, null);
+        success = result.Success;
+        message = result.Message;
+        accepted = result.Success;
+        await LoadAsync();
+        busy = false;
+    }
 }

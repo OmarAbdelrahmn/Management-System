@@ -1,0 +1,3452 @@
+[
+  {
+    "file": "index.php",
+    "href": "https://www.sarh.org.sa/rafed/index.php",
+    "text": "نظام رافد الإلكتروني جمعية صرح العطاء النسائية"
+  },
+  {
+    "file": "index.php",
+    "href": "https://www.sarh.org.sa/rafed/",
+    "text": "جديدة"
+  },
+  {
+    "file": "personnel_tasks.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_tasks.php",
+    "text": "معاينة كافة المهام"
+  },
+  {
+    "file": "personnel_emails.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_emails.php",
+    "text": "يوجد 1 رسائل جديدة"
+  },
+  {
+    "file": "personnel_password.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_password.php",
+    "text": "تغيير كلمة المرور"
+  },
+  {
+    "file": "corporate_docs.php",
+    "href": "https://www.sarh.org.sa/rafed/corporate_docs.php",
+    "text": "خارطة الملفات المؤسسية"
+  },
+  {
+    "file": "foundation_helper.php",
+    "href": "https://www.sarh.org.sa/rafed/foundation_helper.php",
+    "text": "اسأل مساعد التأسيس الذكي"
+  },
+  {
+    "file": "request_credit.php",
+    "href": "https://www.sarh.org.sa/rafed/request_credit.php",
+    "text": "إدارة رصيد لجنة المساعدات"
+  },
+  {
+    "file": "request_forms.php",
+    "href": "https://www.sarh.org.sa/rafed/request_forms.php",
+    "text": "نماذج قرارات لجنة المساعدات"
+  },
+  {
+    "file": "approval_expenses_tameed.php",
+    "href": "https://www.sarh.org.sa/rafed/approval_expenses_tameed.php",
+    "text": "اعتماد تعميدات الصرف"
+  },
+  {
+    "file": "approval_expenses_kafala.php",
+    "href": "https://www.sarh.org.sa/rafed/approval_expenses_kafala.php",
+    "text": "اعتماد صرف الكفالات"
+  },
+  {
+    "file": "approval_expenses_order.php",
+    "href": "https://www.sarh.org.sa/rafed/approval_expenses_order.php",
+    "text": "اعتماد اوامر الصرف"
+  },
+  {
+    "file": "forms_coupons.php",
+    "href": "https://www.sarh.org.sa/rafed/forms_coupons.php",
+    "text": "اعتماد القسائم الشرائية"
+  },
+  {
+    "file": "forms_employee.php",
+    "href": "https://www.sarh.org.sa/rafed/forms_employee.php",
+    "text": "طلبات التوظيف"
+  },
+  {
+    "file": "forms_purchase.php",
+    "href": "https://www.sarh.org.sa/rafed/forms_purchase.php",
+    "text": "طلبات الشراء"
+  },
+  {
+    "file": "forms_maintenance.php",
+    "href": "https://www.sarh.org.sa/rafed/forms_maintenance.php",
+    "text": "طلبات الصيانة العامة"
+  },
+  {
+    "file": "forms_car_maintenance.php",
+    "href": "https://www.sarh.org.sa/rafed/forms_car_maintenance.php",
+    "text": "طلبات صيانة السيارات"
+  },
+  {
+    "file": "tameed_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/tameed_manage.php",
+    "text": "إدارة تعميدات الصرف"
+  },
+  {
+    "file": "tameed_manage_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/tameed_manage_rejected.php",
+    "text": "التعميدات المرفوضة مع ملاحظة"
+  },
+  {
+    "file": "tameed_data_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/tameed_data_rejected.php",
+    "text": "التعميدات المرفوضة نهائيا"
+  },
+  {
+    "file": "tameed_database.php",
+    "href": "https://www.sarh.org.sa/rafed/tameed_database.php",
+    "text": "سجلات تعميدات الصرف"
+  },
+  {
+    "file": "notifications_management.php",
+    "href": "https://www.sarh.org.sa/rafed/notifications_management.php",
+    "text": "إدارة الإشعارات"
+  },
+  {
+    "file": "notifications_delete.php",
+    "href": "https://www.sarh.org.sa/rafed/notifications_delete.php",
+    "text": "إلغاء إشعار"
+  },
+  {
+    "file": "notifications_database.php",
+    "href": "https://www.sarh.org.sa/rafed/notifications_database.php",
+    "text": "قاعدة بيانات الإشعارات"
+  },
+  {
+    "file": "notifications_canceled.php",
+    "href": "https://www.sarh.org.sa/rafed/notifications_canceled.php",
+    "text": "الإشعارات الملغاة"
+  },
+  {
+    "file": "task_create.php",
+    "href": "https://www.sarh.org.sa/rafed/task_create.php",
+    "text": "إنشاء مهمة عامة"
+  },
+  {
+    "file": "task_update.php",
+    "href": "https://www.sarh.org.sa/rafed/task_update.php",
+    "text": "إدارة مهام الموظفين"
+  },
+  {
+    "file": "task_remove.php",
+    "href": "https://www.sarh.org.sa/rafed/task_remove.php",
+    "text": "حذف مهمة"
+  },
+  {
+    "file": "task_complete.php",
+    "href": "https://www.sarh.org.sa/rafed/task_complete.php",
+    "text": "انجاز مهمة منتهية"
+  },
+  {
+    "file": "task_redirect.php",
+    "href": "https://www.sarh.org.sa/rafed/task_redirect.php",
+    "text": "تحويل مهمة متعثرة"
+  },
+  {
+    "file": "tasks_database.php",
+    "href": "https://www.sarh.org.sa/rafed/tasks_database.php",
+    "text": "قواعد بيانات المهام"
+  },
+  {
+    "file": "task_removed.php",
+    "href": "https://www.sarh.org.sa/rafed/task_removed.php",
+    "text": "استعادة مهمة محذوفة"
+  },
+  {
+    "file": "decisions_management.php",
+    "href": "https://www.sarh.org.sa/rafed/decisions_management.php",
+    "text": "إدارة القرارات الإدارية"
+  },
+  {
+    "file": "decisions_meetings.php",
+    "href": "https://www.sarh.org.sa/rafed/decisions_meetings.php",
+    "text": "إدارة قرارات الاجتماعات"
+  },
+  {
+    "file": "decision_tasks_management.php",
+    "href": "https://www.sarh.org.sa/rafed/decision_tasks_management.php",
+    "text": "إدارة مهام القرارات"
+  },
+  {
+    "file": "decisions_export.php",
+    "href": "https://www.sarh.org.sa/rafed/decisions_export.php",
+    "text": "تصدير نماذج القرارات"
+  },
+  {
+    "file": "pps_report.php",
+    "href": "https://www.sarh.org.sa/rafed/pps_report.php",
+    "text": "تقرير مقياس الآداء"
+  },
+  {
+    "file": "pps_statistics.php",
+    "href": "https://www.sarh.org.sa/rafed/pps_statistics.php",
+    "text": "إحصائيات مقياس الآداء"
+  },
+  {
+    "file": "personnel_attendance.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_attendance.php",
+    "text": "تسجيل الحضور والانصراف"
+  },
+  {
+    "file": "personnel_reminders.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_reminders.php",
+    "text": "إدارة المذكرات الشخصية"
+  },
+  {
+    "file": "personnel_calendar.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_calendar.php",
+    "text": "نتيجة الأعمال"
+  },
+  {
+    "file": "personnel_questions.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_questions.php",
+    "text": "مسائلات بحاجة إلي رد"
+  },
+  {
+    "file": "personnel_warnings.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_warnings.php",
+    "text": "إنذارات بحاجة إلي رد"
+  },
+  {
+    "file": "common_tasks.php",
+    "href": "https://www.sarh.org.sa/rafed/common_tasks.php",
+    "text": "المهام المعينة للإدارة"
+  },
+  {
+    "file": "common_tasks_create.php",
+    "href": "https://www.sarh.org.sa/rafed/common_tasks_create.php",
+    "text": "إنشاء مهمة لموظف"
+  },
+  {
+    "file": "common_tasks_update.php",
+    "href": "https://www.sarh.org.sa/rafed/common_tasks_update.php",
+    "text": "إدارة مهام الموظفين"
+  },
+  {
+    "file": "common_tasks_complete.php",
+    "href": "https://www.sarh.org.sa/rafed/common_tasks_complete.php",
+    "text": "إنجاز مهمة منتهية"
+  },
+  {
+    "file": "common_tasks_remove.php",
+    "href": "https://www.sarh.org.sa/rafed/common_tasks_remove.php",
+    "text": "حذف مهمة"
+  },
+  {
+    "file": "common_evaluation.php",
+    "href": "https://www.sarh.org.sa/rafed/common_evaluation.php",
+    "text": "إدارة تقييمات الموظفين"
+  },
+  {
+    "file": "common_notification.php",
+    "href": "https://www.sarh.org.sa/rafed/common_notification.php",
+    "text": "إدارة إشعارات الموظفين"
+  },
+  {
+    "file": "common_strategy_indicators.php",
+    "href": "https://www.sarh.org.sa/rafed/common_strategy_indicators.php",
+    "text": "إدارة المؤشرات المملوكة"
+  },
+  {
+    "file": "common_present.php",
+    "href": "https://www.sarh.org.sa/rafed/common_present.php",
+    "text": "سجل حضور الموظفين الحالي"
+  },
+  {
+    "file": "personnel_emails_drafts.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_emails_drafts.php",
+    "text": "المسودات"
+  },
+  {
+    "file": "personnel_emails_templates.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_emails_templates.php",
+    "text": "إدارة القوالب"
+  },
+  {
+    "file": "personnel_emails_preferences.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_emails_preferences.php",
+    "text": "تفضيلات البريد"
+  },
+  {
+    "file": "demands_request_vacation.php",
+    "href": "https://www.sarh.org.sa/rafed/demands_request_vacation.php",
+    "text": "تقديم طلب إجازة"
+  },
+  {
+    "file": "demands_request_execuse.php",
+    "href": "https://www.sarh.org.sa/rafed/demands_request_execuse.php",
+    "text": "تقديم طلب إذن"
+  },
+  {
+    "file": "demands_request_finance.php",
+    "href": "https://www.sarh.org.sa/rafed/demands_request_finance.php",
+    "text": "تقديم طلب مالي"
+  },
+  {
+    "file": "demands_request_general.php",
+    "href": "https://www.sarh.org.sa/rafed/demands_request_general.php",
+    "text": "تقديم طلب عام"
+  },
+  {
+    "file": "personnel_volunteer.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_volunteer.php",
+    "text": "تقديم طلب مجموعة تطوعية"
+  },
+  {
+    "file": "demands_cancel.php",
+    "href": "https://www.sarh.org.sa/rafed/demands_cancel.php",
+    "text": "إلغاء تقديم طلب"
+  },
+  {
+    "file": "demands_status_pending.php",
+    "href": "https://www.sarh.org.sa/rafed/demands_status_pending.php",
+    "text": "سجل الطلبات قيد الاعتماد"
+  },
+  {
+    "file": "demands_status_update.php",
+    "href": "https://www.sarh.org.sa/rafed/demands_status_update.php",
+    "text": "الطلبات المرفوضة مع ملاحظة"
+  },
+  {
+    "file": "demands_status_approved.php",
+    "href": "https://www.sarh.org.sa/rafed/demands_status_approved.php",
+    "text": "سجل الطلبات المعتمدة"
+  },
+  {
+    "file": "demands_status_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/demands_status_rejected.php",
+    "text": "سجل الطلبات المرفوضة نهائيا"
+  },
+  {
+    "file": "demands_status_completed.php",
+    "href": "https://www.sarh.org.sa/rafed/demands_status_completed.php",
+    "text": "سجل الطلبات المكتملة"
+  },
+  {
+    "file": "demands_status_canceled.php",
+    "href": "https://www.sarh.org.sa/rafed/demands_status_canceled.php",
+    "text": "سجل الطلبات الملغاة"
+  },
+  {
+    "file": "personnel_purchase.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_purchase.php",
+    "text": "تقديم طلب شراء"
+  },
+  {
+    "file": "personnel_car.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_car.php",
+    "text": "طلب توفير سيارة"
+  },
+  {
+    "file": "operations_request.php",
+    "href": "https://www.sarh.org.sa/rafed/operations_request.php",
+    "text": "طلب معاملة داخلية"
+  },
+  {
+    "file": "operations_cancel.php",
+    "href": "https://www.sarh.org.sa/rafed/operations_cancel.php",
+    "text": "إلغاء طلب معاملة"
+  },
+  {
+    "file": "operations_step_required.php",
+    "href": "https://www.sarh.org.sa/rafed/operations_step_required.php",
+    "text": "معاملات بحاجة للمتابعة"
+  },
+  {
+    "file": "operations_task_complete.php",
+    "href": "https://www.sarh.org.sa/rafed/operations_task_complete.php",
+    "text": "إنجاز مهمة منتهية"
+  },
+  {
+    "file": "operations_step_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/operations_step_rejected.php",
+    "text": "متابعات مرفوضة مع ملاحظة"
+  },
+  {
+    "file": "operations_step_managed.php",
+    "href": "https://www.sarh.org.sa/rafed/operations_step_managed.php",
+    "text": "معاملات قمت بمتابعتها"
+  },
+  {
+    "file": "operations_status_pending.php",
+    "href": "https://www.sarh.org.sa/rafed/operations_status_pending.php",
+    "text": "سجل المعاملات الجارية"
+  },
+  {
+    "file": "operations_status_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/operations_status_rejected.php",
+    "text": "سجل المعاملات المرفوضة"
+  },
+  {
+    "file": "operations_status_canceled.php",
+    "href": "https://www.sarh.org.sa/rafed/operations_status_canceled.php",
+    "text": "سجل المعاملات الملغاة"
+  },
+  {
+    "file": "operations_status_completed.php",
+    "href": "https://www.sarh.org.sa/rafed/operations_status_completed.php",
+    "text": "سجل المعاملات المكتملة"
+  },
+  {
+    "file": "personnel_ngo_information.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_ngo_information.php",
+    "text": "بطاقة التعريف"
+  },
+  {
+    "file": "personnel_profile.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_profile.php",
+    "text": "الملف الوظيفي"
+  },
+  {
+    "file": "personnel_record.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_record.php",
+    "text": "السجل الوظيفي"
+  },
+  {
+    "file": "personnel_tutorials.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_tutorials.php",
+    "text": "شروحات النظام"
+  },
+  {
+    "file": "personnel_local_notifications.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_local_notifications.php",
+    "text": "التنبيهات الداخلية"
+  },
+  {
+    "file": "personnel_notifications.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_notifications.php",
+    "text": "الإشعارات الموجهة"
+  },
+  {
+    "file": "personnel_reminders_notifications.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_reminders_notifications.php",
+    "text": "تنبيهات المذكرات الشخصية"
+  },
+  {
+    "file": "personnel_vacation_credit.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_vacation_credit.php",
+    "text": "سجلات ارصدة الأجازات"
+  },
+  {
+    "file": "personnel_attendance_report.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_attendance_report.php",
+    "text": "سجلات الحضور و الإنصراف"
+  },
+  {
+    "file": "personnel_attendance_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_attendance_rejected.php",
+    "text": "سجلات الحضور المرفوضة"
+  },
+  {
+    "file": "personnel_tasks_projects.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_tasks_projects.php",
+    "text": "سجل مهام المشاريع"
+  },
+  {
+    "file": "personnel_tasks_strategy.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_tasks_strategy.php",
+    "text": "خارطة مهام الخطة الإستراتيجية"
+  },
+  {
+    "file": "personnel_strategy_indicators.php",
+    "href": "https://www.sarh.org.sa/rafed/personnel_strategy_indicators.php",
+    "text": "مؤشرات الخطة المسندة"
+  },
+  {
+    "file": "hr_board_create.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_board_create.php",
+    "text": "إضافة عضو مجلس إدارة"
+  },
+  {
+    "file": "hr_board_update.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_board_update.php",
+    "text": "تحديث بيانات عضو"
+  },
+  {
+    "file": "hr_board_database.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_board_database.php",
+    "text": "قاعدة بيانات الأعضاء"
+  },
+  {
+    "file": "board_members.php",
+    "href": "https://www.sarh.org.sa/rafed/board_members.php",
+    "text": "إدارة حسابات الأعضاء"
+  },
+  {
+    "file": "board_database.php",
+    "href": "https://www.sarh.org.sa/rafed/board_database.php",
+    "text": "قاعدة بيانات الأعضاء"
+  },
+  {
+    "file": "board_cancel.php",
+    "href": "https://www.sarh.org.sa/rafed/board_cancel.php",
+    "text": "إلغاء اشتراك عضو"
+  },
+  {
+    "file": "board_database_canceled.php",
+    "href": "https://www.sarh.org.sa/rafed/board_database_canceled.php",
+    "text": "الأعضاء الملغاة عضوياتهم"
+  },
+  {
+    "file": "board_payments.php",
+    "href": "https://www.sarh.org.sa/rafed/board_payments.php",
+    "text": "سجل سداد الإشتراكات"
+  },
+  {
+    "file": "board_database_due.php",
+    "href": "https://www.sarh.org.sa/rafed/board_database_due.php",
+    "text": "المتأخرين عن السداد"
+  },
+  {
+    "file": "board_share_report.php",
+    "href": "https://www.sarh.org.sa/rafed/board_share_report.php",
+    "text": "مشاركة تقرير مع الأعضاء"
+  },
+  {
+    "file": "board_cards.php",
+    "href": "https://www.sarh.org.sa/rafed/board_cards.php",
+    "text": "إصدار بطاقات الأعضاء"
+  },
+  {
+    "file": "board_membership_types.php",
+    "href": "https://www.sarh.org.sa/rafed/board_membership_types.php",
+    "text": "إدارة فئات العضويات"
+  },
+  {
+    "file": "board_payments_external.php",
+    "href": "https://www.sarh.org.sa/rafed/board_payments_external.php",
+    "text": "سداد اشتراكات خارج النظام"
+  },
+  {
+    "file": "profiles_create.php",
+    "href": "https://www.sarh.org.sa/rafed/profiles_create.php",
+    "text": "إضافة ملف مستفيد"
+  },
+  {
+    "file": "profiles_update.php",
+    "href": "https://www.sarh.org.sa/rafed/profiles_update.php",
+    "text": "تحديث ملف مستفيد"
+  },
+  {
+    "file": "profiles_remove.php",
+    "href": "https://www.sarh.org.sa/rafed/profiles_remove.php",
+    "text": "حذف ملف مستفيد"
+  },
+  {
+    "file": "profiles_database.php",
+    "href": "https://www.sarh.org.sa/rafed/profiles_database.php",
+    "text": "قاعدة بيانات المستفيدين"
+  },
+  {
+    "file": "profiles_relatives_database.php",
+    "href": "https://www.sarh.org.sa/rafed/profiles_relatives_database.php",
+    "text": "قاعدة بيانات التابعين"
+  },
+  {
+    "file": "profiles_update_status.php",
+    "href": "https://www.sarh.org.sa/rafed/profiles_update_status.php",
+    "text": "تحديث حالة ملف مستفيد"
+  },
+  {
+    "file": "profiles_update_grade.php",
+    "href": "https://www.sarh.org.sa/rafed/profiles_update_grade.php",
+    "text": "تحديث فئة ملف مستفيد"
+  },
+  {
+    "file": "profiles_update_grade_relative.php",
+    "href": "https://www.sarh.org.sa/rafed/profiles_update_grade_relative.php",
+    "text": "تحديث فئة ملف تابع"
+  },
+  {
+    "file": "profiles_deleted.php",
+    "href": "https://www.sarh.org.sa/rafed/profiles_deleted.php",
+    "text": "سجل الملفات المحذوفة"
+  },
+  {
+    "file": "profiles_relatives_deleted.php",
+    "href": "https://www.sarh.org.sa/rafed/profiles_relatives_deleted.php",
+    "text": "ملفات التابعين المحذوفين"
+  },
+  {
+    "file": "profiles_cards.php",
+    "href": "https://www.sarh.org.sa/rafed/profiles_cards.php",
+    "text": "تصدير بطاقات المستفيدين"
+  },
+  {
+    "file": "profiles_barcode.php",
+    "href": "https://www.sarh.org.sa/rafed/profiles_barcode.php",
+    "text": "قارئ باركود الملفات"
+  },
+  {
+    "file": "profiles_external.php",
+    "href": "https://www.sarh.org.sa/rafed/profiles_external.php",
+    "text": "طلبات الانضمام من الموقع"
+  },
+  {
+    "file": "profiles_search.php",
+    "href": "https://www.sarh.org.sa/rafed/profiles_search.php",
+    "text": "البحث في الجمعيات"
+  },
+  {
+    "file": "guardians_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/guardians_manage.php",
+    "text": "إدارة حسابات الأوصياء"
+  },
+  {
+    "file": "guardians_database.php",
+    "href": "https://www.sarh.org.sa/rafed/guardians_database.php",
+    "text": "قاعدة بيانات الأوصياء"
+  },
+  {
+    "file": "guardians_convert_from.php",
+    "href": "https://www.sarh.org.sa/rafed/guardians_convert_from.php",
+    "text": "تحويل مستفيد إلي وصي"
+  },
+  {
+    "file": "guardians_convert_to.php",
+    "href": "https://www.sarh.org.sa/rafed/guardians_convert_to.php",
+    "text": "تحويل وصي إلي مستفيد"
+  },
+  {
+    "file": "guardians_remove.php",
+    "href": "https://www.sarh.org.sa/rafed/guardians_remove.php",
+    "text": "حذف ملف وصي"
+  },
+  {
+    "file": "guardians_deleted.php",
+    "href": "https://www.sarh.org.sa/rafed/guardians_deleted.php",
+    "text": "سجل الأوصياء المحذوفين"
+  },
+  {
+    "file": "update_task_create.php",
+    "href": "https://www.sarh.org.sa/rafed/update_task_create.php",
+    "text": "إنشاء مهمة تحديث جماعي"
+  },
+  {
+    "file": "update_task_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/update_task_manage.php",
+    "text": "إدارة مهام التحديث الجماعي"
+  },
+  {
+    "file": "update_tasks_approve.php",
+    "href": "https://www.sarh.org.sa/rafed/update_tasks_approve.php",
+    "text": "اعتمادات التحديث الجماعي"
+  },
+  {
+    "file": "update_tasks.php",
+    "href": "https://www.sarh.org.sa/rafed/update_tasks.php",
+    "text": "مهام التحديث الجماعي"
+  },
+  {
+    "file": "update_self_create.php",
+    "href": "https://www.sarh.org.sa/rafed/update_self_create.php",
+    "text": "إدارة طلبات التحديث الذاتي"
+  },
+  {
+    "file": "update_self_requests.php",
+    "href": "https://www.sarh.org.sa/rafed/update_self_requests.php",
+    "text": "طلبات التحديث الذاتي المستلمة"
+  },
+  {
+    "file": "update_self_tasks.php",
+    "href": "https://www.sarh.org.sa/rafed/update_self_tasks.php",
+    "text": "مهام اعتمادات التحديث الذاتي"
+  },
+  {
+    "file": "update_request_tasks.php",
+    "href": "https://www.sarh.org.sa/rafed/update_request_tasks.php",
+    "text": "تحديث ملف لطلب إعانة"
+  },
+  {
+    "file": "update_manual_status.php",
+    "href": "https://www.sarh.org.sa/rafed/update_manual_status.php",
+    "text": "تحديث حالة بيانات مستفيد"
+  },
+  {
+    "file": "update_report_none.php",
+    "href": "https://www.sarh.org.sa/rafed/update_report_none.php",
+    "text": "ملفات غير محدثة"
+  },
+  {
+    "file": "update_report_wrong.php",
+    "href": "https://www.sarh.org.sa/rafed/update_report_wrong.php",
+    "text": "ملفات محدثة خاطئة"
+  },
+  {
+    "file": "update_report_self.php",
+    "href": "https://www.sarh.org.sa/rafed/update_report_self.php",
+    "text": "ملفات تحديث ذاتي"
+  },
+  {
+    "file": "update_report_field.php",
+    "href": "https://www.sarh.org.sa/rafed/update_report_field.php",
+    "text": "ملفات تحديث ميداني"
+  },
+  {
+    "file": "gehat_accounts.php",
+    "href": "https://www.sarh.org.sa/rafed/gehat_accounts.php",
+    "text": "إدارة حسابات الجهات"
+  },
+  {
+    "file": "gehat_representatives_accounts.php",
+    "href": "https://www.sarh.org.sa/rafed/gehat_representatives_accounts.php",
+    "text": "إدارة حسابات الممثلين"
+  },
+  {
+    "file": "gehat_remove.php",
+    "href": "https://www.sarh.org.sa/rafed/gehat_remove.php",
+    "text": "حذف ملف جهة"
+  },
+  {
+    "file": "gehat_restore.php",
+    "href": "https://www.sarh.org.sa/rafed/gehat_restore.php",
+    "text": "استعادة ملف جهة"
+  },
+  {
+    "file": "gehat_database.php",
+    "href": "https://www.sarh.org.sa/rafed/gehat_database.php",
+    "text": "قاعدة بيانات الجهات"
+  },
+  {
+    "file": "gehat_representatives_database.php",
+    "href": "https://www.sarh.org.sa/rafed/gehat_representatives_database.php",
+    "text": "قاعدة بيانات الممثلين"
+  },
+  {
+    "file": "gehat_accounts_external.php",
+    "href": "https://www.sarh.org.sa/rafed/gehat_accounts_external.php",
+    "text": "طلبات تسجيل الجهات"
+  },
+  {
+    "file": "governance_activation.php",
+    "href": "https://www.sarh.org.sa/rafed/governance_activation.php",
+    "text": "تفعيل حوكمة 2025"
+  },
+  {
+    "file": "governance_helper_bot.php",
+    "href": "https://www.sarh.org.sa/rafed/governance_helper_bot.php",
+    "text": "اسأل مساعد الحوكمة الذكي"
+  },
+  {
+    "file": "governance_helper.php",
+    "href": "https://www.sarh.org.sa/rafed/governance_helper.php",
+    "text": "خارطة طريق الحوكمة"
+  },
+  {
+    "file": "governance_answers.php",
+    "href": "https://www.sarh.org.sa/rafed/governance_answers.php",
+    "text": "تسجيل إجابات المعايير"
+  },
+  {
+    "file": "governance_attachments.php",
+    "href": "https://www.sarh.org.sa/rafed/governance_attachments.php",
+    "text": "إدارة مرفقات التحقق"
+  },
+  {
+    "file": "governance_sheets.php",
+    "href": "https://www.sarh.org.sa/rafed/governance_sheets.php",
+    "text": "نموذج تقييم الحوكمة"
+  },
+  {
+    "file": "governance_statistics.php",
+    "href": "https://www.sarh.org.sa/rafed/governance_statistics.php",
+    "text": "تقرير تقييم الحوكمة"
+  },
+  {
+    "file": "governance_finance.php",
+    "href": "https://www.sarh.org.sa/rafed/governance_finance.php",
+    "text": "حساب مؤشرات الآداء المالي"
+  },
+  {
+    "file": "governance_tasks_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/governance_tasks_manage.php",
+    "text": "إدارة مهام الحوكمة"
+  },
+  {
+    "file": "statistics_governance_tasks.php",
+    "href": "https://www.sarh.org.sa/rafed/statistics_governance_tasks.php",
+    "text": "إحصائيات مهام الحوكمة"
+  },
+  {
+    "file": "strategy_balance.php",
+    "href": "https://www.sarh.org.sa/rafed/strategy_balance.php",
+    "text": "إدارة الخطط الإستراتيجية"
+  },
+  {
+    "file": "strategy_balance_variables.php",
+    "href": "https://www.sarh.org.sa/rafed/strategy_balance_variables.php",
+    "text": "متغيرات الخطة الإستراتيجية"
+  },
+  {
+    "file": "strategy_balance_fetch.php",
+    "href": "https://www.sarh.org.sa/rafed/strategy_balance_fetch.php",
+    "text": "تحديث قيم التحقق المؤتمتة"
+  },
+  {
+    "file": "strategy_balance_categories.php",
+    "href": "https://www.sarh.org.sa/rafed/strategy_balance_categories.php",
+    "text": "إدارة مناظير الخطة"
+  },
+  {
+    "file": "strategy_balance_goals.php",
+    "href": "https://www.sarh.org.sa/rafed/strategy_balance_goals.php",
+    "text": "إدارة الأهداف الإستراتيجية"
+  },
+  {
+    "file": "strategy_balance_indicators_main.php",
+    "href": "https://www.sarh.org.sa/rafed/strategy_balance_indicators_main.php",
+    "text": "إدارة المؤشرات الرئيسية"
+  },
+  {
+    "file": "strategy_balance_indicators_sub.php",
+    "href": "https://www.sarh.org.sa/rafed/strategy_balance_indicators_sub.php",
+    "text": "إدارة المؤشرات الفرعية"
+  },
+  {
+    "file": "strategy_balance_achieved.php",
+    "href": "https://www.sarh.org.sa/rafed/strategy_balance_achieved.php",
+    "text": "إدارة المؤشرات المملوكة"
+  },
+  {
+    "file": "strategy_balance_projects.php",
+    "href": "https://www.sarh.org.sa/rafed/strategy_balance_projects.php",
+    "text": "إدارة مؤشرات المشاريع"
+  },
+  {
+    "file": "strategy_balance_programs.php",
+    "href": "https://www.sarh.org.sa/rafed/strategy_balance_programs.php",
+    "text": "إدارة مؤشرات البرامج"
+  },
+  {
+    "file": "strategy_balance_map.php",
+    "href": "https://www.sarh.org.sa/rafed/strategy_balance_map.php",
+    "text": "خارطة الخطة الإستراتيجية"
+  },
+  {
+    "file": "strategy_balance_tree.php",
+    "href": "https://www.sarh.org.sa/rafed/strategy_balance_tree.php",
+    "text": "شجرة الخطة الإستراتيجية"
+  },
+  {
+    "file": "strategy_goals_2030_alignment.php",
+    "href": "https://www.sarh.org.sa/rafed/strategy_goals_2030_alignment.php",
+    "text": "تناغم أهداف رؤية 2030"
+  },
+  {
+    "file": "strategy_goals_sustainability_alignment.php",
+    "href": "https://www.sarh.org.sa/rafed/strategy_goals_sustainability_alignment.php",
+    "text": "تناغم أهداف التنمية المستدامة"
+  },
+  {
+    "file": "projects_create.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_create.php",
+    "text": "إضافة مشروع جديد"
+  },
+  {
+    "file": "projects_update.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_update.php",
+    "text": "تحديث بيانات مشروع"
+  },
+  {
+    "file": "projects_database.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_database.php",
+    "text": "قواعد بيانات المشاريع"
+  },
+  {
+    "file": "projects_tasks.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_tasks.php",
+    "text": "إدارة مهام المشروع"
+  },
+  {
+    "file": "projects_milestones.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_milestones.php",
+    "text": "إدارة أنشطة المشروع"
+  },
+  {
+    "file": "projects_contracts.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_contracts.php",
+    "text": "إدارة العقود و الدفعات"
+  },
+  {
+    "file": "projects_income.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_income.php",
+    "text": "تسجيل إيراد مشروع"
+  },
+  {
+    "file": "projects_expenses.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_expenses.php",
+    "text": "تسجيل صرف مشروع"
+  },
+  {
+    "file": "projects_assigned_users.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_assigned_users.php",
+    "text": "إلحاق مستفيدين بمشروع"
+  },
+  {
+    "file": "projects_assigned_gehats.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_assigned_gehats.php",
+    "text": "إلحاق جهات بمشروع"
+  },
+  {
+    "file": "projects_reports.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_reports.php",
+    "text": "إدارة تقارير المشاريع"
+  },
+  {
+    "file": "projects_dashboard.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_dashboard.php",
+    "text": "لوحة مديرين المشروعات"
+  },
+  {
+    "file": "projects_followup.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_followup.php",
+    "text": "لوحة المتابعة"
+  },
+  {
+    "file": "projects_gantt.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_gantt.php",
+    "text": "إدارة مخطط المشروع"
+  },
+  {
+    "file": "projects_kanban.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_kanban.php",
+    "text": "لوحة كانبان"
+  },
+  {
+    "file": "projects_pm_indicators.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_pm_indicators.php",
+    "text": "تقرير مؤشرآت الآداء"
+  },
+  {
+    "file": "projects_statistics.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_statistics.php",
+    "text": "إحصائيات المشروع"
+  },
+  {
+    "file": "projects_databases.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_databases.php",
+    "text": "قواعد بيانات المشروع"
+  },
+  {
+    "file": "projects_balance_transfer.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_balance_transfer.php",
+    "text": "تحويل رصيد مشروع"
+  },
+  {
+    "file": "projects_complete.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_complete.php",
+    "text": "إكمال مشروع"
+  },
+  {
+    "file": "projects_open.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_open.php",
+    "text": "فتح مشروع مكتمل"
+  },
+  {
+    "file": "projects_delete.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_delete.php",
+    "text": "حذف مشروع"
+  },
+  {
+    "file": "projects_restore.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_restore.php",
+    "text": "استعادة مشروع محذوف"
+  },
+  {
+    "file": "suppliers_accounts.php",
+    "href": "https://www.sarh.org.sa/rafed/suppliers_accounts.php",
+    "text": "إدارة حسابات الموردين"
+  },
+  {
+    "file": "suppliers_database.php",
+    "href": "https://www.sarh.org.sa/rafed/suppliers_database.php",
+    "text": "قاعدة بيانات الموردين"
+  },
+  {
+    "file": "suppliers_remove.php",
+    "href": "https://www.sarh.org.sa/rafed/suppliers_remove.php",
+    "text": "حذف حساب مورد"
+  },
+  {
+    "file": "suppliers_restore.php",
+    "href": "https://www.sarh.org.sa/rafed/suppliers_restore.php",
+    "text": "استعادة حساب مورد"
+  },
+  {
+    "file": "program_idea_create.php",
+    "href": "https://www.sarh.org.sa/rafed/program_idea_create.php",
+    "text": "تقديم اقتراح برنامج"
+  },
+  {
+    "file": "program_idea_pending.php",
+    "href": "https://www.sarh.org.sa/rafed/program_idea_pending.php",
+    "text": "المقترحات قيد الاعتماد"
+  },
+  {
+    "file": "program_idea_marketing.php",
+    "href": "https://www.sarh.org.sa/rafed/program_idea_marketing.php",
+    "text": "المقترحات قيد التسويق"
+  },
+  {
+    "file": "program_idea_approved.php",
+    "href": "https://www.sarh.org.sa/rafed/program_idea_approved.php",
+    "text": "المقترحات المعتمدة / الجارية"
+  },
+  {
+    "file": "program_idea_note.php",
+    "href": "https://www.sarh.org.sa/rafed/program_idea_note.php",
+    "text": "المقترحات المرفوضة مع ملاحظه"
+  },
+  {
+    "file": "program_idea_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/program_idea_rejected.php",
+    "text": "المقترحات المرفوضة نهائياً"
+  },
+  {
+    "file": "program_idea_cancelled.php",
+    "href": "https://www.sarh.org.sa/rafed/program_idea_cancelled.php",
+    "text": "المقترحات الملغاة"
+  },
+  {
+    "file": "program_idea_completed.php",
+    "href": "https://www.sarh.org.sa/rafed/program_idea_completed.php",
+    "text": "مقترحات البرامج المكتملة"
+  },
+  {
+    "file": "program_approval_idea.php",
+    "href": "https://www.sarh.org.sa/rafed/program_approval_idea.php",
+    "text": "اعتمادات مقترحات البرامج"
+  },
+  {
+    "file": "program_approval_update_team.php",
+    "href": "https://www.sarh.org.sa/rafed/program_approval_update_team.php",
+    "text": "برامج بحاجة لتسجيل الفريق"
+  },
+  {
+    "file": "program_approval_team.php",
+    "href": "https://www.sarh.org.sa/rafed/program_approval_team.php",
+    "text": "اعتمادات فرق البرامج"
+  },
+  {
+    "file": "program_approval_update_budget.php",
+    "href": "https://www.sarh.org.sa/rafed/program_approval_update_budget.php",
+    "text": "برامج بحاجة لتقديم الميزانية"
+  },
+  {
+    "file": "program_approval_budget.php",
+    "href": "https://www.sarh.org.sa/rafed/program_approval_budget.php",
+    "text": "اعتمادات الخطط و الميزانية"
+  },
+  {
+    "file": "program_approval_marketing.php",
+    "href": "https://www.sarh.org.sa/rafed/program_approval_marketing.php",
+    "text": "نشر برنامج للتسويق"
+  },
+  {
+    "file": "program_approval_marketing_complete.php",
+    "href": "https://www.sarh.org.sa/rafed/program_approval_marketing_complete.php",
+    "text": "برامج مكتملة التسويق"
+  },
+  {
+    "file": "program_approval_complete.php",
+    "href": "https://www.sarh.org.sa/rafed/program_approval_complete.php",
+    "text": "برامج منتهية بحاجة للإكمال"
+  },
+  {
+    "file": "program_approval_history.php",
+    "href": "https://www.sarh.org.sa/rafed/program_approval_history.php",
+    "text": "برامج قمت باعتمادها"
+  },
+  {
+    "file": "program_manage_dashboard.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manage_dashboard.php",
+    "text": "لوحة تحكم البرامج"
+  },
+  {
+    "file": "program_manage_register.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manage_register.php",
+    "text": "تسجيل مستفيدين البرامج"
+  },
+  {
+    "file": "program_manage_register_database.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manage_register_database.php",
+    "text": "سجلات مستفيدين البرامج"
+  },
+  {
+    "file": "program_manage_requests.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manage_requests.php",
+    "text": "طلبات الانضمام للبرامج"
+  },
+  {
+    "file": "program_manage_schedule.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manage_schedule.php",
+    "text": "إيام و فعاليات البرامج"
+  },
+  {
+    "file": "program_manage_attendance.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manage_attendance.php",
+    "text": "تسجيل غياب و حضور الفعاليات"
+  },
+  {
+    "file": "program_manage_certificates_issue.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manage_certificates_issue.php",
+    "text": "إصدار شهادات البرامج"
+  },
+  {
+    "file": "program_manage_followup.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manage_followup.php",
+    "text": "طلب متابعة حالة"
+  },
+  {
+    "file": "program_manage_reports.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manage_reports.php",
+    "text": "إدارة تقارير البرامج"
+  },
+  {
+    "file": "program_manage_survey.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manage_survey.php",
+    "text": "إدارة استبيانات البرامج"
+  },
+  {
+    "file": "program_manage_survey_records.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manage_survey_records.php",
+    "text": "سجلات استبيانات البرامج"
+  },
+  {
+    "file": "program_zap_special.php",
+    "href": "https://www.sarh.org.sa/rafed/program_zap_special.php",
+    "text": "إضافة برنامج مؤرشف"
+  },
+  {
+    "file": "program_zap_update.php",
+    "href": "https://www.sarh.org.sa/rafed/program_zap_update.php",
+    "text": "تحديث بيانات برنامج"
+  },
+  {
+    "file": "program_zap_cancel.php",
+    "href": "https://www.sarh.org.sa/rafed/program_zap_cancel.php",
+    "text": "إلغاء برنامج"
+  },
+  {
+    "file": "program_zap_database_pending.php",
+    "href": "https://www.sarh.org.sa/rafed/program_zap_database_pending.php",
+    "text": "البرامج قيد الاعتماد"
+  },
+  {
+    "file": "program_zap_database_marketing.php",
+    "href": "https://www.sarh.org.sa/rafed/program_zap_database_marketing.php",
+    "text": "البرامج قيد التسويق"
+  },
+  {
+    "file": "program_zap_database_approved.php",
+    "href": "https://www.sarh.org.sa/rafed/program_zap_database_approved.php",
+    "text": "البرامج المعتمدة / الجارية"
+  },
+  {
+    "file": "program_zap_database_completed.php",
+    "href": "https://www.sarh.org.sa/rafed/program_zap_database_completed.php",
+    "text": "البرامج المكتملة"
+  },
+  {
+    "file": "program_zap_database_note.php",
+    "href": "https://www.sarh.org.sa/rafed/program_zap_database_note.php",
+    "text": "البرامج المرفوضة مع ملاحظة"
+  },
+  {
+    "file": "program_zap_database_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/program_zap_database_rejected.php",
+    "text": "البرامج المرفوضة نهائيا"
+  },
+  {
+    "file": "program_zap_database_cancelled.php",
+    "href": "https://www.sarh.org.sa/rafed/program_zap_database_cancelled.php",
+    "text": "البرامج الملغاة"
+  },
+  {
+    "file": "program_zap_database.php",
+    "href": "https://www.sarh.org.sa/rafed/program_zap_database.php",
+    "text": "قاعدة بيانات البرامج"
+  },
+  {
+    "file": "program_zap_registered.php",
+    "href": "https://www.sarh.org.sa/rafed/program_zap_registered.php",
+    "text": "سجل المستفيدين من البرامج"
+  },
+  {
+    "file": "program_zap_statistics.php",
+    "href": "https://www.sarh.org.sa/rafed/program_zap_statistics.php",
+    "text": "إحصائيات البرامج"
+  },
+  {
+    "file": "program_zap_special_database.php",
+    "href": "https://www.sarh.org.sa/rafed/program_zap_special_database.php",
+    "text": "قاعدة بيانات البرامج المؤرشفة"
+  },
+  {
+    "file": "program_manager_dashboard.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_dashboard.php",
+    "text": "لوحة تحكم البرامج"
+  },
+  {
+    "file": "program_manager_update.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_update.php",
+    "text": "تحديث بيانات البرامج"
+  },
+  {
+    "file": "program_manager_tasks.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_tasks.php",
+    "text": "إدارة مهام البرامج"
+  },
+  {
+    "file": "program_manager_tasks_new.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_tasks_new.php",
+    "text": "مهام البرامج الجديدة"
+  },
+  {
+    "file": "program_manager_tasks_running.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_tasks_running.php",
+    "text": "مهام البرامج الجارية"
+  },
+  {
+    "file": "program_manager_tasks_failed.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_tasks_failed.php",
+    "text": "مهام البرامج المتعثرة"
+  },
+  {
+    "file": "program_manager_tasks_completed.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_tasks_completed.php",
+    "text": "مهام البرامج المنجزة"
+  },
+  {
+    "file": "program_manager_tasks_finished.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_tasks_finished.php",
+    "text": "مهام البرامج المكتملة"
+  },
+  {
+    "file": "program_manager_publish.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_publish.php",
+    "text": "نشر برنامج للتسجيل"
+  },
+  {
+    "file": "program_manager_certificates_templates.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_certificates_templates.php",
+    "text": "إدارة نماذج شهادات البرامج"
+  },
+  {
+    "file": "program_manager_statistics.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_statistics.php",
+    "text": "إحصائيات البرامج"
+  },
+  {
+    "file": "program_manager_custody.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_custody.php",
+    "text": "تسجيل عهدة علي برنامج"
+  },
+  {
+    "file": "program_manager_expenses.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_expenses.php",
+    "text": "تسجيل مصروفات البرامج"
+  },
+  {
+    "file": "program_manager_income.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_income.php",
+    "text": "تسجيل إيرادات البرامج"
+  },
+  {
+    "file": "program_manager_financials.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_financials.php",
+    "text": "سجل المصروفات و الإيرادات"
+  },
+  {
+    "file": "program_manager_forms.php",
+    "href": "https://www.sarh.org.sa/rafed/program_manager_forms.php",
+    "text": "إدارة نماذج التسجيل للبرامج"
+  },
+  {
+    "file": "qual_required.php",
+    "href": "https://www.sarh.org.sa/rafed/qual_required.php",
+    "text": "مستفيدين بحاجة لتأهيل"
+  },
+  {
+    "file": "qual_opinion.php",
+    "href": "https://www.sarh.org.sa/rafed/qual_opinion.php",
+    "text": "رأي إدارة التأهيل"
+  },
+  {
+    "file": "qual_projects.php",
+    "href": "https://www.sarh.org.sa/rafed/qual_projects.php",
+    "text": "تسجيل مشروع مستفيد"
+  },
+  {
+    "file": "qual_projects_database.php",
+    "href": "https://www.sarh.org.sa/rafed/qual_projects_database.php",
+    "text": "قاعدة بيانات المشاريع"
+  },
+  {
+    "file": "qual_installments.php",
+    "href": "https://www.sarh.org.sa/rafed/qual_installments.php",
+    "text": "قاعدة بيانات الأقساط"
+  },
+  {
+    "file": "qual_late.php",
+    "href": "https://www.sarh.org.sa/rafed/qual_late.php",
+    "text": "المتأخرين عن السداد"
+  },
+  {
+    "file": "qual_paid.php",
+    "href": "https://www.sarh.org.sa/rafed/qual_paid.php",
+    "text": "قاعدة بيانات المسددين"
+  },
+  {
+    "file": "qual_qualified.php",
+    "href": "https://www.sarh.org.sa/rafed/qual_qualified.php",
+    "text": "قاعدة بيانات المؤهلين"
+  },
+  {
+    "file": "qual_reports.php",
+    "href": "https://www.sarh.org.sa/rafed/qual_reports.php",
+    "text": "تقارير المشاريع التأهيلية"
+  },
+  {
+    "file": "request_create.php",
+    "href": "https://www.sarh.org.sa/rafed/request_create.php",
+    "text": "إضافة طلب إعانة"
+  },
+  {
+    "file": "request_update.php",
+    "href": "https://www.sarh.org.sa/rafed/request_update.php",
+    "text": "تحديث طلب إعانة"
+  },
+  {
+    "file": "request_approval_initial.php",
+    "href": "https://www.sarh.org.sa/rafed/request_approval_initial.php",
+    "text": "اعتماد طلبات الإعانة المبدأي"
+  },
+  {
+    "file": "request_note.php",
+    "href": "https://www.sarh.org.sa/rafed/request_note.php",
+    "text": "الطلبات المرفوضة مع ملاحظة"
+  },
+  {
+    "file": "request_approval_search_task.php",
+    "href": "https://www.sarh.org.sa/rafed/request_approval_search_task.php",
+    "text": "طلبات بحاجة للبحث الاجتماعي"
+  },
+  {
+    "file": "request_approval_search_opinion.php",
+    "href": "https://www.sarh.org.sa/rafed/request_approval_search_opinion.php",
+    "text": "اعتمادات رأي الباحث"
+  },
+  {
+    "file": "request_approval_manager.php",
+    "href": "https://www.sarh.org.sa/rafed/request_approval_manager.php",
+    "text": "مراجعة و اعتماد رئيس اللجنة"
+  },
+  {
+    "file": "request_approval_committee.php",
+    "href": "https://www.sarh.org.sa/rafed/request_approval_committee.php",
+    "text": "اعتماد اللجنة المختصة"
+  },
+  {
+    "file": "request_approval_transfer.php",
+    "href": "https://www.sarh.org.sa/rafed/request_approval_transfer.php",
+    "text": "طلبات تحول للإدارة المختصة"
+  },
+  {
+    "file": "request_zap_database.php",
+    "href": "https://www.sarh.org.sa/rafed/request_zap_database.php",
+    "text": "قاعدة بيانات طلبات الإعانة"
+  },
+  {
+    "file": "request_external.php",
+    "href": "https://www.sarh.org.sa/rafed/request_external.php",
+    "text": "طلبات الإعانة من الموقع"
+  },
+  {
+    "file": "order_finance.php",
+    "href": "https://www.sarh.org.sa/rafed/order_finance.php",
+    "text": "اوامر الصرف المالية"
+  },
+  {
+    "file": "order_storage.php",
+    "href": "https://www.sarh.org.sa/rafed/order_storage.php",
+    "text": "اوامر الصرف العينية"
+  },
+  {
+    "file": "order_manage_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/order_manage_rejected.php",
+    "text": "الأوامر المرفوضة مع ملاحظة"
+  },
+  {
+    "file": "order_zap_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/order_zap_rejected.php",
+    "text": "الأوامر المرفوضة نهائيا"
+  },
+  {
+    "file": "order_zap_remove.php",
+    "href": "https://www.sarh.org.sa/rafed/order_zap_remove.php",
+    "text": "حذف امر صرف"
+  },
+  {
+    "file": "order_zap_close.php",
+    "href": "https://www.sarh.org.sa/rafed/order_zap_close.php",
+    "text": "إنهاء امر صرف"
+  },
+  {
+    "file": "order_zap_database.php",
+    "href": "https://www.sarh.org.sa/rafed/order_zap_database.php",
+    "text": "سجلات اوامر الصرف"
+  },
+  {
+    "file": "kafeel_users_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_users_manage.php",
+    "text": "إدارة حسابات الكافلين"
+  },
+  {
+    "file": "kafeel_users_database.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_users_database.php",
+    "text": "قاعدة بيانات الكافلين"
+  },
+  {
+    "file": "kafeel_users_remove.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_users_remove.php",
+    "text": "حذف ملف كافل"
+  },
+  {
+    "file": "kafeel_users_removed.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_users_removed.php",
+    "text": "حسابات الكافلين المحذوفة"
+  },
+  {
+    "file": "kafeel_requires_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_requires_manage.php",
+    "text": "تحديد من بحاجة لكفالة"
+  },
+  {
+    "file": "kafeel_requires_database.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_requires_database.php",
+    "text": "سجلات من بحاجة لكفالة"
+  },
+  {
+    "file": "kafeel_records.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_records.php",
+    "text": "إدارة تعيين الكفالات"
+  },
+  {
+    "file": "kafeel_records_expired.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_records_expired.php",
+    "text": "سجل الكفالات المنتهية"
+  },
+  {
+    "file": "kafeel_records_due_collection.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_records_due_collection.php",
+    "text": "كفالات بحاجة لتحصيل"
+  },
+  {
+    "file": "kafeel_records_remove.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_records_remove.php",
+    "text": "حذف تعيين كفالة"
+  },
+  {
+    "file": "kafeel_records_removed.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_records_removed.php",
+    "text": "سجل الكفالات المحذوفة"
+  },
+  {
+    "file": "kafeel_records_database.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_records_database.php",
+    "text": "قاعدة بيانات الكفالات"
+  },
+  {
+    "file": "kafeel_records_reassign.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_records_reassign.php",
+    "text": "تعيين كفالة لمكفول"
+  },
+  {
+    "file": "kafeel_assignments.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_assignments.php",
+    "text": "سجلات المكفولين"
+  },
+  {
+    "file": "kafeel_assignments_due.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_assignments_due.php",
+    "text": "سجل الكفالات المستحقة"
+  },
+  {
+    "file": "kafeel_assignments_canceled.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_assignments_canceled.php",
+    "text": "سجلات المكفولين المحذوفين"
+  },
+  {
+    "file": "kafeel_assignments_expired.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_assignments_expired.php",
+    "text": "مكفولين تخطوا شروط الكفالة"
+  },
+  {
+    "file": "kafeel_payment_requests.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_payment_requests.php",
+    "text": "طلب صرف كفالة"
+  },
+  {
+    "file": "kafeel_payment_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_payment_rejected.php",
+    "text": "طلبات الصرف المرفوضة"
+  },
+  {
+    "file": "kafeel_payment_database.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_payment_database.php",
+    "text": "سجلات طلبات الصرف"
+  },
+  {
+    "file": "kafeel_payment_close.php",
+    "href": "https://www.sarh.org.sa/rafed/kafeel_payment_close.php",
+    "text": "تسجيل إتمام الكفالات"
+  },
+  {
+    "file": "kafala_payment_report.php",
+    "href": "https://www.sarh.org.sa/rafed/kafala_payment_report.php",
+    "text": "تقرير صرف الكفالات"
+  },
+  {
+    "file": "gehat_supports.php",
+    "href": "https://www.sarh.org.sa/rafed/gehat_supports.php",
+    "text": "إدارة طلبات الجهات"
+  },
+  {
+    "file": "gehat_supports_external.php",
+    "href": "https://www.sarh.org.sa/rafed/gehat_supports_external.php",
+    "text": "طلبات الجهات من الموقع"
+  },
+  {
+    "file": "coupons_require.php",
+    "href": "https://www.sarh.org.sa/rafed/coupons_require.php",
+    "text": "مستفيدين بحاجة إلى قسائم"
+  },
+  {
+    "file": "coupons_issue.php",
+    "href": "https://www.sarh.org.sa/rafed/coupons_issue.php",
+    "text": "إصدار قسيمة شراء"
+  },
+  {
+    "file": "coupons_approved.php",
+    "href": "https://www.sarh.org.sa/rafed/coupons_approved.php",
+    "text": "القسائم المعتمدة"
+  },
+  {
+    "file": "coupons_deliver.php",
+    "href": "https://www.sarh.org.sa/rafed/coupons_deliver.php",
+    "text": "تسليم القسائم"
+  },
+  {
+    "file": "media_partners.php",
+    "href": "https://www.sarh.org.sa/rafed/media_partners.php",
+    "text": "إدارة الشراكات"
+  },
+  {
+    "file": "media_events.php",
+    "href": "https://www.sarh.org.sa/rafed/media_events.php",
+    "text": "إدارة الفعاليات"
+  },
+  {
+    "file": "media_visits.php",
+    "href": "https://www.sarh.org.sa/rafed/media_visits.php",
+    "text": "إدارة الزيارات"
+  },
+  {
+    "file": "users_website_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/users_website_manage.php",
+    "text": "إدارة حسابات الموقع"
+  },
+  {
+    "file": "users_website_database.php",
+    "href": "https://www.sarh.org.sa/rafed/users_website_database.php",
+    "text": "قاعدة بيانات حسابات الموقع"
+  },
+  {
+    "file": "users_website_login.php",
+    "href": "https://www.sarh.org.sa/rafed/users_website_login.php",
+    "text": "تسجيل الدخول بحساب موقع"
+  },
+  {
+    "file": "channel_sms_template.php",
+    "href": "https://www.sarh.org.sa/rafed/channel_sms_template.php",
+    "text": "نماذج التواصل الخارجية"
+  },
+  {
+    "file": "channel_sms_lists.php",
+    "href": "https://www.sarh.org.sa/rafed/channel_sms_lists.php",
+    "text": "قوائم المراسلات النصية"
+  },
+  {
+    "file": "channel_sms.php",
+    "href": "https://www.sarh.org.sa/rafed/channel_sms.php",
+    "text": "رسالة نصية جماعية"
+  },
+  {
+    "file": "channel_sms_list.php",
+    "href": "https://www.sarh.org.sa/rafed/channel_sms_list.php",
+    "text": "رسالة نصية لقائمة"
+  },
+  {
+    "file": "channel_records_sms.php",
+    "href": "https://www.sarh.org.sa/rafed/channel_records_sms.php",
+    "text": "سجل المراسلات النصية"
+  },
+  {
+    "file": "channel_whatsapp.php",
+    "href": "https://www.sarh.org.sa/rafed/channel_whatsapp.php",
+    "text": "رسالة واتساب جماعية"
+  },
+  {
+    "file": "channel_whatsapp_list.php",
+    "href": "https://www.sarh.org.sa/rafed/channel_whatsapp_list.php",
+    "text": "رسالة واتساب لقائمة"
+  },
+  {
+    "file": "channel_records_whatsapp.php",
+    "href": "https://www.sarh.org.sa/rafed/channel_records_whatsapp.php",
+    "text": "سجل مراسلات الواتساب"
+  },
+  {
+    "file": "channel_email.php",
+    "href": "https://www.sarh.org.sa/rafed/channel_email.php",
+    "text": "إرسال بريد إلكتروني"
+  },
+  {
+    "file": "channel_records_email.php",
+    "href": "https://www.sarh.org.sa/rafed/channel_records_email.php",
+    "text": "سجل المراسلات البريدية"
+  },
+  {
+    "file": "channel_push.php",
+    "href": "https://www.sarh.org.sa/rafed/channel_push.php",
+    "text": "إرسال تنبيه لحظي"
+  },
+  {
+    "file": "channel_push_subscribers.php",
+    "href": "https://www.sarh.org.sa/rafed/channel_push_subscribers.php",
+    "text": "مشتركين التنبيهات اللحظية"
+  },
+  {
+    "file": "channel_records_push.php",
+    "href": "https://www.sarh.org.sa/rafed/channel_records_push.php",
+    "text": "سجل مراسلات التنبيهات"
+  },
+  {
+    "file": "website_design.php",
+    "href": "https://www.sarh.org.sa/rafed/website_design.php",
+    "text": "إدارة تصميم الموقع الإلكتروني"
+  },
+  {
+    "file": "website_fonts.php",
+    "href": "https://www.sarh.org.sa/rafed/website_fonts.php",
+    "text": "إدارة الخطوط في الموقع"
+  },
+  {
+    "file": "website_design_templates.php",
+    "href": "https://www.sarh.org.sa/rafed/website_design_templates.php",
+    "text": "أنماط تصميم الموقع"
+  },
+  {
+    "file": "website_module_custom.php",
+    "href": "https://www.sarh.org.sa/rafed/website_module_custom.php",
+    "text": "إدارة القوالب العامة"
+  },
+  {
+    "file": "website_sections.php",
+    "href": "https://www.sarh.org.sa/rafed/website_sections.php",
+    "text": "إدارة الصفحات المدمجة"
+  },
+  {
+    "file": "website_short_links.php",
+    "href": "https://www.sarh.org.sa/rafed/website_short_links.php",
+    "text": "إدارة الروابط المختصرة"
+  },
+  {
+    "file": "website_menu.php",
+    "href": "https://www.sarh.org.sa/rafed/website_menu.php",
+    "text": "إدارة القائمة الرئيسية"
+  },
+  {
+    "file": "website_module_slider.php",
+    "href": "https://www.sarh.org.sa/rafed/website_module_slider.php",
+    "text": "إدارة قالب السلايدر"
+  },
+  {
+    "file": "website_module_counter.php",
+    "href": "https://www.sarh.org.sa/rafed/website_module_counter.php",
+    "text": "إدارة قالب العداد"
+  },
+  {
+    "file": "website_about.php",
+    "href": "https://www.sarh.org.sa/rafed/website_about.php",
+    "text": "إدارة صفحة نبذة عنا"
+  },
+  {
+    "file": "website_news.php",
+    "href": "https://www.sarh.org.sa/rafed/website_news.php",
+    "text": "إدارة الأخبار"
+  },
+  {
+    "file": "website_gallery.php",
+    "href": "https://www.sarh.org.sa/rafed/website_gallery.php",
+    "text": "إدارة مكتبة الصور"
+  },
+  {
+    "file": "website_videos.php",
+    "href": "https://www.sarh.org.sa/rafed/website_videos.php",
+    "text": "إدارة مكتبة الفيديو"
+  },
+  {
+    "file": "website_partners.php",
+    "href": "https://www.sarh.org.sa/rafed/website_partners.php",
+    "text": "إدارة الشركاء"
+  },
+  {
+    "file": "website_regulations.php",
+    "href": "https://www.sarh.org.sa/rafed/website_regulations.php",
+    "text": "إدارة اللوائح و السياسات"
+  },
+  {
+    "file": "website_annual_report.php",
+    "href": "https://www.sarh.org.sa/rafed/website_annual_report.php",
+    "text": "إدارة التقارير السنوية"
+  },
+  {
+    "file": "website_initiatives.php",
+    "href": "https://www.sarh.org.sa/rafed/website_initiatives.php",
+    "text": "إدارة المبادرات"
+  },
+  {
+    "file": "website_testimonials.php",
+    "href": "https://www.sarh.org.sa/rafed/website_testimonials.php",
+    "text": "إدارة التزكيات"
+  },
+  {
+    "file": "website_services.php",
+    "href": "https://www.sarh.org.sa/rafed/website_services.php",
+    "text": "إدارة الخدمات الإلكترونية"
+  },
+  {
+    "file": "website_links.php",
+    "href": "https://www.sarh.org.sa/rafed/website_links.php",
+    "text": "إدارة الروابط الهامة"
+  },
+  {
+    "file": "website_popup.php",
+    "href": "https://www.sarh.org.sa/rafed/website_popup.php",
+    "text": "إدارة النوافذ المنبثقة"
+  },
+  {
+    "file": "website_contests.php",
+    "href": "https://www.sarh.org.sa/rafed/website_contests.php",
+    "text": "إدارة المسابقات"
+  },
+  {
+    "file": "website_contests_withdraw.php",
+    "href": "https://www.sarh.org.sa/rafed/website_contests_withdraw.php",
+    "text": "سحب علي مسابقة"
+  },
+  {
+    "file": "website_forms.php",
+    "href": "https://www.sarh.org.sa/rafed/website_forms.php",
+    "text": "إدارة صفحات النماذج"
+  },
+  {
+    "file": "website_forms_records.php",
+    "href": "https://www.sarh.org.sa/rafed/website_forms_records.php",
+    "text": "سجلات النماذج المستلمة"
+  },
+  {
+    "file": "website_pages.php",
+    "href": "https://www.sarh.org.sa/rafed/website_pages.php",
+    "text": "إدارة الصفحات العامة"
+  },
+  {
+    "file": "website_contact_requests.php",
+    "href": "https://www.sarh.org.sa/rafed/website_contact_requests.php",
+    "text": "طلبات اتصال الزوار"
+  },
+  {
+    "file": "finance_settings.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_settings.php",
+    "text": "إعدادات النظام المحاسبي"
+  },
+  {
+    "file": "finance_bank_accounts.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_bank_accounts.php",
+    "text": "إدارة حسابات البنوك"
+  },
+  {
+    "file": "finance_accounts.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_accounts.php",
+    "text": "إدارة الدليل المحاسبي"
+  },
+  {
+    "file": "finance_accounts_operations.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_accounts_operations.php",
+    "text": "عمليات الدليل المحاسبي"
+  },
+  {
+    "file": "finance_cost_accounts.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_cost_accounts.php",
+    "text": "إدارة مراكز التكلفة"
+  },
+  {
+    "file": "finance_cost_accounts_operations.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_cost_accounts_operations.php",
+    "text": "عمليات مراكز التكلفة"
+  },
+  {
+    "file": "finance_ledgers.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_ledgers.php",
+    "text": "إضافة قيد يومية"
+  },
+  {
+    "file": "finance_ledgers_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_ledgers_manage.php",
+    "text": "إدارة قيود اليومية"
+  },
+  {
+    "file": "finance_renumber.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_renumber.php",
+    "text": "إعادة ترقيم القيود"
+  },
+  {
+    "file": "finance_closing.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_closing.php",
+    "text": "إقفال السنة المالية"
+  },
+  {
+    "file": "finance_opening.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_opening.php",
+    "text": "فتح سنة مالية جديدة"
+  },
+  {
+    "file": "sanad_donation.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_donation.php",
+    "text": "تحصيل تبرع عام"
+  },
+  {
+    "file": "sanad_project.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_project.php",
+    "text": "تحصيل تبرع لمشروع"
+  },
+  {
+    "file": "sanad_user.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_user.php",
+    "text": "تحصيل تبرع لمستفيد"
+  },
+  {
+    "file": "sanad_relative.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_relative.php",
+    "text": "تحصيل تبرع لتابع"
+  },
+  {
+    "file": "sanad_case.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_case.php",
+    "text": "تحصيل تبرع لطلب اعانة"
+  },
+  {
+    "file": "sanad_kafala.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_kafala.php",
+    "text": "تحصيل كفالة مالية"
+  },
+  {
+    "file": "sanad_program.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_program.php",
+    "text": "تحصيل تبرع لبرنامج"
+  },
+  {
+    "file": "sanad_deferred_generic.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_deferred_generic.php",
+    "text": "تسجيل قبض عام آجل"
+  },
+  {
+    "file": "sanad_deferred_project_income.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_deferred_project_income.php",
+    "text": "تسجيل ايراد مشروع آجل"
+  },
+  {
+    "file": "sanad_deferred_investment.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_deferred_investment.php",
+    "text": "تسجيل ايراد استثمار آجل"
+  },
+  {
+    "file": "sanad_deferred_income_general.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_deferred_income_general.php",
+    "text": "تسجيل ايراد متنوع آجل"
+  },
+  {
+    "file": "sanad_deferred_receive.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_deferred_receive.php",
+    "text": "استلام قبض آجل"
+  },
+  {
+    "file": "sanad_deferred_due.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_deferred_due.php",
+    "text": "المطالبات المالية المستحقة"
+  },
+  {
+    "file": "sanad_deferred_completed.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_deferred_completed.php",
+    "text": "المطالبات المالية المكتملة"
+  },
+  {
+    "file": "sanad_generic.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_generic.php",
+    "text": "إصدار سند قبض عام"
+  },
+  {
+    "file": "sanad_board.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_board.php",
+    "text": "تحصيل اشتراك جمعية"
+  },
+  {
+    "file": "sanad_project_income.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_project_income.php",
+    "text": "تسجيل ايراد مشروع"
+  },
+  {
+    "file": "sanad_investment.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_investment.php",
+    "text": "تسجيل ايراد استثمار"
+  },
+  {
+    "file": "sanad_income_general.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_income_general.php",
+    "text": "تسجيل ايراد متنوع"
+  },
+  {
+    "file": "sanad_qualification.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_qualification.php",
+    "text": "تحصيل قسط مشروع تأهيلي"
+  },
+  {
+    "file": "sanad_credit.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_credit.php",
+    "text": "تحصيل رصيد داعم"
+  },
+  {
+    "file": "sanad_return.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_return.php",
+    "text": "إشعار مدين"
+  },
+  {
+    "file": "sanad_return_expenses.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_return_expenses.php",
+    "text": "إشعار دائن"
+  },
+  {
+    "file": "sanad_zap_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/sanad_zap_rejected.php",
+    "text": "سندات القبض المرفوضة"
+  },
+  {
+    "file": "expenses_generic.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_generic.php",
+    "text": "إصدار سند صرف عام"
+  },
+  {
+    "file": "expenses_tameed.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_tameed.php",
+    "text": "صرف تعميد بالصرف"
+  },
+  {
+    "file": "expenses_order.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_order.php",
+    "text": "تسليم امر صرف"
+  },
+  {
+    "file": "expenses_kafala.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_kafala.php",
+    "text": "صرف كفالة مالية"
+  },
+  {
+    "file": "expenses_demand.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_demand.php",
+    "text": "صرف طلب إداري مالي"
+  },
+  {
+    "file": "expenses_due_tameed.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_due_tameed.php",
+    "text": "سجل تعميدات الصرف المستحقة"
+  },
+  {
+    "file": "expenses_due_order.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_due_order.php",
+    "text": "سجل اوامر الصرف المستحقة"
+  },
+  {
+    "file": "expenses_due_kafala.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_due_kafala.php",
+    "text": "سجل الكفالات المستحقة"
+  },
+  {
+    "file": "expenses_due_demand.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_due_demand.php",
+    "text": "سجل الطلبات المالية المستحقة"
+  },
+  {
+    "file": "expenses_custody_settle.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_custody_settle.php",
+    "text": "تسوية عهدة موظف"
+  },
+  {
+    "file": "expenses_custody_records.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_custody_records.php",
+    "text": "سجل عهد الموظفين"
+  },
+  {
+    "file": "expenses_tabadol_order.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_tabadol_order.php",
+    "text": "تسليم امر صرف بنظام تبادل"
+  },
+  {
+    "file": "expenses_tabadol_kafala.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_tabadol_kafala.php",
+    "text": "صرف كفالة بنظام تبادل"
+  },
+  {
+    "file": "expenses_tabadol_kafala_multiple.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_tabadol_kafala_multiple.php",
+    "text": "صرف الكفالات الجماعي"
+  },
+  {
+    "file": "expenses_zap_tabadol.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_zap_tabadol.php",
+    "text": "نماذج مصروفات نظام تبادل"
+  },
+  {
+    "file": "expenses_zap_tabadol_multiple.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_zap_tabadol_multiple.php",
+    "text": "دمج نماذج نظام تبادل"
+  },
+  {
+    "file": "expenses_zap_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/expenses_zap_rejected.php",
+    "text": "سندات الصرف المرفوضة"
+  },
+  {
+    "file": "salaries_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/salaries_manage.php",
+    "text": "إدارة سجلات الرواتب"
+  },
+  {
+    "file": "salaries_export.php",
+    "href": "https://www.sarh.org.sa/rafed/salaries_export.php",
+    "text": "تصدير مسير الرواتب"
+  },
+  {
+    "file": "salaries_rajhi.php",
+    "href": "https://www.sarh.org.sa/rafed/salaries_rajhi.php",
+    "text": "تصدير رواتب الراجحي"
+  },
+  {
+    "file": "revision_income_donations.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_income_donations.php",
+    "text": "مراجعة التبرعات النقدية"
+  },
+  {
+    "file": "revision_income_approved_donations.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_income_approved_donations.php",
+    "text": "سجل التبرعات المكتملة"
+  },
+  {
+    "file": "revision_income_rejected_donations.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_income_rejected_donations.php",
+    "text": "سجل التبرعات المرفوضة"
+  },
+  {
+    "file": "revision_income.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_income.php",
+    "text": "مراجعة المقبوضات النقدية"
+  },
+  {
+    "file": "revision_income_approved.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_income_approved.php",
+    "text": "سجل المقبوضات المكتملة"
+  },
+  {
+    "file": "revision_income_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_income_rejected.php",
+    "text": "سجل المقبوضات المرفوضة"
+  },
+  {
+    "file": "revision_income_canceled.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_income_canceled.php",
+    "text": "سندات القبض الملغاة"
+  },
+  {
+    "file": "revision_income_database.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_income_database.php",
+    "text": "دفتر سجلات المقبوضات"
+  },
+  {
+    "file": "revision_expenses.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_expenses.php",
+    "text": "مراجعة المصروفات النقدية"
+  },
+  {
+    "file": "revision_expenses_approved.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_expenses_approved.php",
+    "text": "سجل المصروفات المكتملة"
+  },
+  {
+    "file": "revision_expenses_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_expenses_rejected.php",
+    "text": "سجل المصروفات المرفوضة"
+  },
+  {
+    "file": "revision_expenses_canceled.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_expenses_canceled.php",
+    "text": "سندات الصرف الملغاة"
+  },
+  {
+    "file": "revision_expenses_database.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_expenses_database.php",
+    "text": "دفتر سجلات المصروفات"
+  },
+  {
+    "file": "revision_marketing_online.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_marketing_online.php",
+    "text": "مراجعة المدفوعات الإلكترونية"
+  },
+  {
+    "file": "revision_marketing_bank.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_marketing_bank.php",
+    "text": "مراجعة المدفوعات البنكية"
+  },
+  {
+    "file": "revision_marketing_bank_approved.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_marketing_bank_approved.php",
+    "text": "المدفوعات البنكية المعتمدة"
+  },
+  {
+    "file": "revision_marketing_balance.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_marketing_balance.php",
+    "text": "مراجعة المدفوعات من الرصيد"
+  },
+  {
+    "file": "revision_marketing_location.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_marketing_location.php",
+    "text": "مراجعة المدفوعات في المقر"
+  },
+  {
+    "file": "revision_marketing_failed.php",
+    "href": "https://www.sarh.org.sa/rafed/revision_marketing_failed.php",
+    "text": "مدفوعات المتجر المعلقة"
+  },
+  {
+    "file": "finance_report_tree.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_report_tree.php",
+    "text": "تقرير الدليل المحاسبي"
+  },
+  {
+    "file": "finance_report_account.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_report_account.php",
+    "text": "تقرير كشف حساب"
+  },
+  {
+    "file": "finance_report_daily.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_report_daily.php",
+    "text": "دفتر اليومية"
+  },
+  {
+    "file": "finance_report_ostaz.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_report_ostaz.php",
+    "text": "الاستاذ العام"
+  },
+  {
+    "file": "finance_report_ostaz_monthly.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_report_ostaz_monthly.php",
+    "text": "الاستاذ العام الشهري"
+  },
+  {
+    "file": "finance_report_revision.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_report_revision.php",
+    "text": "ميزان المراجعة"
+  },
+  {
+    "file": "finance_report_ledger.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_report_ledger.php",
+    "text": "تقرير قيد يومية"
+  },
+  {
+    "file": "finance_report_records.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_report_records.php",
+    "text": "الدفاتر المحاسبية"
+  },
+  {
+    "file": "finance_report_cost_account.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_report_cost_account.php",
+    "text": "تقرير كشف مركز تكلفة"
+  },
+  {
+    "file": "finance_report_cost_ostaz.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_report_cost_ostaz.php",
+    "text": "الاستاذ العام لمراكز التكلفة"
+  },
+  {
+    "file": "finance_report_cost_revision.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_report_cost_revision.php",
+    "text": "ميزان مراجعة مراكز التكلفة"
+  },
+  {
+    "file": "finance_report_dynamic_create.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_report_dynamic_create.php",
+    "text": "إنشاء تقرير مالي ذكي"
+  },
+  {
+    "file": "finance_report_dynamic_preview.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_report_dynamic_preview.php",
+    "text": "معاينة تقرير مالي ذكي"
+  },
+  {
+    "file": "finance_statements_preview.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_statements_preview.php",
+    "text": "معاينة نموذج قائمة ديناميكية"
+  },
+  {
+    "file": "statistics_income.php",
+    "href": "https://www.sarh.org.sa/rafed/statistics_income.php",
+    "text": "إحصائيات الإيرادات"
+  },
+  {
+    "file": "statistics_expenses.php",
+    "href": "https://www.sarh.org.sa/rafed/statistics_expenses.php",
+    "text": "إحصائيات المصروفات"
+  },
+  {
+    "file": "statistics_income_period.php",
+    "href": "https://www.sarh.org.sa/rafed/statistics_income_period.php",
+    "text": "إحصائيات نمو الإيرادات"
+  },
+  {
+    "file": "statistics_expenses_period.php",
+    "href": "https://www.sarh.org.sa/rafed/statistics_expenses_period.php",
+    "text": "إحصائيات تغير المصروفات"
+  },
+  {
+    "file": "finance_archive_income_approved_donations.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_archive_income_approved_donations.php",
+    "text": "سجل التبرعات المكتملة"
+  },
+  {
+    "file": "finance_archive_income_approved.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_archive_income_approved.php",
+    "text": "سجل المقبوضات المكتملة"
+  },
+  {
+    "file": "finance_archive_income_canceled.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_archive_income_canceled.php",
+    "text": "سندات القبض الملغاة"
+  },
+  {
+    "file": "finance_archive_income_database.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_archive_income_database.php",
+    "text": "دفتر سجلات المقبوضات"
+  },
+  {
+    "file": "finance_archive_expenses_approved.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_archive_expenses_approved.php",
+    "text": "سجل المصروفات المكتملة"
+  },
+  {
+    "file": "finance_archive_expenses_canceled.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_archive_expenses_canceled.php",
+    "text": "سندات الصرف الملغاة"
+  },
+  {
+    "file": "finance_archive_expenses_database.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_archive_expenses_database.php",
+    "text": "دفتر سجلات المصروفات"
+  },
+  {
+    "file": "finance_budgets.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_budgets.php",
+    "text": "إدارة الموازنات"
+  },
+  {
+    "file": "finance_budgets_deviation.php",
+    "href": "https://www.sarh.org.sa/rafed/finance_budgets_deviation.php",
+    "text": "تقرير إنحراف الموازنة"
+  },
+  {
+    "file": "followup_request.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_request.php",
+    "text": "طلب متابعة حالة"
+  },
+  {
+    "file": "followup_request_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_request_rejected.php",
+    "text": "الطلبات المرفوضة مع ملاحظة"
+  },
+  {
+    "file": "followup_running.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_running.php",
+    "text": "الحالات قيد المتابعة"
+  },
+  {
+    "file": "followup_requests.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_requests.php",
+    "text": "طلبات متابعة الحالات"
+  },
+  {
+    "file": "followup_complete.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_complete.php",
+    "text": "حالات منتهية بحاجة للاعتماد"
+  },
+  {
+    "file": "followup_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_manage.php",
+    "text": "إدارة متابعة الحالات"
+  },
+  {
+    "file": "followup_zap_database_running.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_zap_database_running.php",
+    "text": "سجل المتابعات الجارية"
+  },
+  {
+    "file": "followup_zap_database_completed.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_zap_database_completed.php",
+    "text": "سجل المتابعات المكتملة"
+  },
+  {
+    "file": "followup_zap_database_rejected.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_zap_database_rejected.php",
+    "text": "سجل المتابعات المرفوضة"
+  },
+  {
+    "file": "followup_zap_database.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_zap_database.php",
+    "text": "قاعدة بيانات المتابعات"
+  },
+  {
+    "file": "followup_records.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_records.php",
+    "text": "إضافة نشاط"
+  },
+  {
+    "file": "followup_records_database.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_records_database.php",
+    "text": "سجل النشاطات"
+  },
+  {
+    "file": "followup_records_user.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_records_user.php",
+    "text": "إضافة نشاط مستفيد"
+  },
+  {
+    "file": "followup_records_relative.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_records_relative.php",
+    "text": "إضافة نشاط تابع"
+  },
+  {
+    "file": "followup_records_request.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_records_request.php",
+    "text": "إضافة نشاط طلب إعانة"
+  },
+  {
+    "file": "followup_records_kafeel.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_records_kafeel.php",
+    "text": "إضافة نشاط كافل"
+  },
+  {
+    "file": "followup_records_kafala.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_records_kafala.php",
+    "text": "إضافة نشاط كفالة"
+  },
+  {
+    "file": "followup_records_supporter.php",
+    "href": "https://www.sarh.org.sa/rafed/followup_records_supporter.php",
+    "text": "إضافة نشاط داعم"
+  },
+  {
+    "file": "cars_management.php",
+    "href": "https://www.sarh.org.sa/rafed/cars_management.php",
+    "text": "إدارة السيارات"
+  },
+  {
+    "file": "cars_requests.php",
+    "href": "https://www.sarh.org.sa/rafed/cars_requests.php",
+    "text": "طلبات توفير السيارات"
+  },
+  {
+    "file": "cars_hand.php",
+    "href": "https://www.sarh.org.sa/rafed/cars_hand.php",
+    "text": "تسليم سيارة لموظف"
+  },
+  {
+    "file": "cars_receive.php",
+    "href": "https://www.sarh.org.sa/rafed/cars_receive.php",
+    "text": "استلام سيارة من موظف"
+  },
+  {
+    "file": "cars_movements.php",
+    "href": "https://www.sarh.org.sa/rafed/cars_movements.php",
+    "text": "قاعدة بيانات حركة السيارات"
+  },
+  {
+    "file": "cars_maintenance.php",
+    "href": "https://www.sarh.org.sa/rafed/cars_maintenance.php",
+    "text": "إدارات طلبات صيانة السيارات"
+  },
+  {
+    "file": "maintenance_request.php",
+    "href": "https://www.sarh.org.sa/rafed/maintenance_request.php",
+    "text": "إدارة طلبات الصيانة"
+  },
+  {
+    "file": "report_users.php",
+    "href": "https://www.sarh.org.sa/rafed/report_users.php",
+    "text": "تقارير المستفيدين"
+  },
+  {
+    "file": "report_users_income.php",
+    "href": "https://www.sarh.org.sa/rafed/report_users_income.php",
+    "text": "تقارير مصادر دخل المستفيدين"
+  },
+  {
+    "file": "report_relatives.php",
+    "href": "https://www.sarh.org.sa/rafed/report_relatives.php",
+    "text": "تقارير التابعين"
+  },
+  {
+    "file": "report_personnel.php",
+    "href": "https://www.sarh.org.sa/rafed/report_personnel.php",
+    "text": "تقارير الموظفين"
+  },
+  {
+    "file": "report_requests.php",
+    "href": "https://www.sarh.org.sa/rafed/report_requests.php",
+    "text": "تقارير طلبات الإعانة"
+  },
+  {
+    "file": "report_tasks.php",
+    "href": "https://www.sarh.org.sa/rafed/report_tasks.php",
+    "text": "تقارير المهام"
+  },
+  {
+    "file": "report_kafeel.php",
+    "href": "https://www.sarh.org.sa/rafed/report_kafeel.php",
+    "text": "تقارير الكافلين"
+  },
+  {
+    "file": "report_kafeel_matrix.php",
+    "href": "https://www.sarh.org.sa/rafed/report_kafeel_matrix.php",
+    "text": "تقارير الكفالات"
+  },
+  {
+    "file": "report_supporters.php",
+    "href": "https://www.sarh.org.sa/rafed/report_supporters.php",
+    "text": "تقارير الداعمين"
+  },
+  {
+    "file": "report_board.php",
+    "href": "https://www.sarh.org.sa/rafed/report_board.php",
+    "text": "تقارير الجمعية العمومية"
+  },
+  {
+    "file": "report_projects.php",
+    "href": "https://www.sarh.org.sa/rafed/report_projects.php",
+    "text": "تقارير المشاريع"
+  },
+  {
+    "file": "report_media_events.php",
+    "href": "https://www.sarh.org.sa/rafed/report_media_events.php",
+    "text": "تقارير الفعاليات"
+  },
+  {
+    "file": "report_media_partners.php",
+    "href": "https://www.sarh.org.sa/rafed/report_media_partners.php",
+    "text": "تقارير الشراكات"
+  },
+  {
+    "file": "report_media_visits.php",
+    "href": "https://www.sarh.org.sa/rafed/report_media_visits.php",
+    "text": "تقارير الزيارات"
+  },
+  {
+    "file": "report_marketing.php",
+    "href": "https://www.sarh.org.sa/rafed/report_marketing.php",
+    "text": "تقارير التسويق"
+  },
+  {
+    "file": "report_mail.php",
+    "href": "https://www.sarh.org.sa/rafed/report_mail.php",
+    "text": "تقارير الصادر و الوارد"
+  },
+  {
+    "file": "report_website_users.php",
+    "href": "https://www.sarh.org.sa/rafed/report_website_users.php",
+    "text": "تقارير حسابات الموقع"
+  },
+  {
+    "file": "report_orders.php",
+    "href": "https://www.sarh.org.sa/rafed/report_orders.php",
+    "text": "تقارير أوامر الصرف"
+  },
+  {
+    "file": "report_programs.php",
+    "href": "https://www.sarh.org.sa/rafed/report_programs.php",
+    "text": "تقارير البرامج"
+  },
+  {
+    "file": "report_followup.php",
+    "href": "https://www.sarh.org.sa/rafed/report_followup.php",
+    "text": "تقارير متابعة الحالات"
+  },
+  {
+    "file": "report_qual.php",
+    "href": "https://www.sarh.org.sa/rafed/report_qual.php",
+    "text": "تقارير المشاريع التأهيلية"
+  },
+  {
+    "file": "report_expenses.php",
+    "href": "https://www.sarh.org.sa/rafed/report_expenses.php",
+    "text": "تقارير المصروفات"
+  },
+  {
+    "file": "report_income.php",
+    "href": "https://www.sarh.org.sa/rafed/report_income.php",
+    "text": "تقارير المقبوضات"
+  },
+  {
+    "file": "report_analytics.php",
+    "href": "https://www.sarh.org.sa/rafed/report_analytics.php",
+    "text": "تقارير إحصائيات جووجل"
+  },
+  {
+    "file": "projects_finance_reports.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_finance_reports.php",
+    "text": "التقارير المالية للمشاريع"
+  },
+  {
+    "file": "statistics_users.php",
+    "href": "https://www.sarh.org.sa/rafed/statistics_users.php",
+    "text": "إحصائيات المستفيدين"
+  },
+  {
+    "file": "statistics_relatives.php",
+    "href": "https://www.sarh.org.sa/rafed/statistics_relatives.php",
+    "text": "إحصائيات التابعين"
+  },
+  {
+    "file": "statistics_orphans.php",
+    "href": "https://www.sarh.org.sa/rafed/statistics_orphans.php",
+    "text": "إحصائيات الأيتام و الكفالات"
+  },
+  {
+    "file": "statistics_requests.php",
+    "href": "https://www.sarh.org.sa/rafed/statistics_requests.php",
+    "text": "إحصائيات طلبات الإعانة"
+  },
+  {
+    "file": "statistics_projects.php",
+    "href": "https://www.sarh.org.sa/rafed/statistics_projects.php",
+    "text": "إحصائيات المشاريع"
+  },
+  {
+    "file": "statistics_tasks.php",
+    "href": "https://www.sarh.org.sa/rafed/statistics_tasks.php",
+    "text": "إحصائيات المهام"
+  },
+  {
+    "file": "statistics_finance.php",
+    "href": "https://www.sarh.org.sa/rafed/statistics_finance.php",
+    "text": "الإحصائيات المالية"
+  },
+  {
+    "file": "statistics_areas.php",
+    "href": "https://www.sarh.org.sa/rafed/statistics_areas.php",
+    "text": "إحصائيات القري - الأحياء"
+  },
+  {
+    "file": "meetings_management.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_management.php",
+    "text": "إدارة الاجتماعات"
+  },
+  {
+    "file": "meetings_approval.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_approval.php",
+    "text": "اعتماد الاجتماعات"
+  },
+  {
+    "file": "meetings_manage_schedule.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_manage_schedule.php",
+    "text": "الاجتماعات المجدولة"
+  },
+  {
+    "file": "meetings_repeated.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_repeated.php",
+    "text": "مسودة الاجتماعات المتكررة"
+  },
+  {
+    "file": "meetings_finish.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_finish.php",
+    "text": "إنهاء الاجتماعات"
+  },
+  {
+    "file": "meetings_mom_approve.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_mom_approve.php",
+    "text": "اعتماد محاضر الاجتماعات"
+  },
+  {
+    "file": "meetings_database.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_database.php",
+    "text": "قاعدة بيانات الاجتماعات"
+  },
+  {
+    "file": "meetings_reports.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_reports.php",
+    "text": "ملخصات الاجتماعات"
+  },
+  {
+    "file": "meetings_calendar.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_calendar.php",
+    "text": "تقويم الاجتماعات"
+  },
+  {
+    "file": "meetings_delegation_requests.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_delegation_requests.php",
+    "text": "إدارة طلبات الإنابة"
+  },
+  {
+    "file": "meetings_general.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_general.php",
+    "text": "إدارة الاجتماعات العامة"
+  },
+  {
+    "file": "meetings_admins.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_admins.php",
+    "text": "اجتماعات مجلس الإدارة"
+  },
+  {
+    "file": "meetings_board.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_board.php",
+    "text": "اجتماعات الجمعية العمومية"
+  },
+  {
+    "file": "meetings_database_general.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_database_general.php",
+    "text": "الاجتماعات العامة المعتمدة"
+  },
+  {
+    "file": "meetings_database_admins.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_database_admins.php",
+    "text": "اجتماعات مجلس الإدارة المعتمدة"
+  },
+  {
+    "file": "meetings_database_board.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_database_board.php",
+    "text": "اجتماعات الجمعية العمومية المعتمدة"
+  },
+  {
+    "file": "meetings_approve.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_approve.php",
+    "text": "اعتمادات محاضر الإجتماعات"
+  },
+  {
+    "file": "meetings_approved.php",
+    "href": "https://www.sarh.org.sa/rafed/meetings_approved.php",
+    "text": "إلغاء اعتمادات محاضر الإجتماعات"
+  },
+  {
+    "file": "corporate_docs_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/corporate_docs_manage.php",
+    "text": "إدارة سجلات الملفات"
+  },
+  {
+    "file": "archives_general.php",
+    "href": "https://www.sarh.org.sa/rafed/archives_general.php",
+    "text": "أرشيف الملفات العامة"
+  },
+  {
+    "file": "archives_finance.php",
+    "href": "https://www.sarh.org.sa/rafed/archives_finance.php",
+    "text": "أرشيف التقارير المالية"
+  },
+  {
+    "file": "archives_budget.php",
+    "href": "https://www.sarh.org.sa/rafed/archives_budget.php",
+    "text": "أرشيف تقارير الميزانية"
+  },
+  {
+    "file": "archives_admins.php",
+    "href": "https://www.sarh.org.sa/rafed/archives_admins.php",
+    "text": "أرشيف طلبات الإدارة"
+  },
+  {
+    "file": "archives_secret.php",
+    "href": "https://www.sarh.org.sa/rafed/archives_secret.php",
+    "text": "أرشيف الملفات السرية"
+  },
+  {
+    "file": "mail_outgoing_add.php",
+    "href": "https://www.sarh.org.sa/rafed/mail_outgoing_add.php",
+    "text": "إضافة بريد صادر"
+  },
+  {
+    "file": "mail_incoming_add.php",
+    "href": "https://www.sarh.org.sa/rafed/mail_incoming_add.php",
+    "text": "إضافة بريد وارد"
+  },
+  {
+    "file": "mail_outgoing_update.php",
+    "href": "https://www.sarh.org.sa/rafed/mail_outgoing_update.php",
+    "text": "تحديث بريد صادر"
+  },
+  {
+    "file": "mail_incoming_update.php",
+    "href": "https://www.sarh.org.sa/rafed/mail_incoming_update.php",
+    "text": "تحديث بريد وارد"
+  },
+  {
+    "file": "mail_database.php",
+    "href": "https://www.sarh.org.sa/rafed/mail_database.php",
+    "text": "قاعدة بيانات الصادر و الوارد"
+  },
+  {
+    "file": "mail_reply.php",
+    "href": "https://www.sarh.org.sa/rafed/mail_reply.php",
+    "text": "رسائل تحتاج إلى رد"
+  },
+  {
+    "file": "mail_operations_create.php",
+    "href": "https://www.sarh.org.sa/rafed/mail_operations_create.php",
+    "text": "إنشاء معاملة لرسالة"
+  },
+  {
+    "file": "mail_operations_completed.php",
+    "href": "https://www.sarh.org.sa/rafed/mail_operations_completed.php",
+    "text": "معاملات الرسائل المنتهية"
+  },
+  {
+    "file": "mail_operations.php",
+    "href": "https://www.sarh.org.sa/rafed/mail_operations.php",
+    "text": "المعاملات المتعلقة بالبريد"
+  },
+  {
+    "file": "mail_operations_database.php",
+    "href": "https://www.sarh.org.sa/rafed/mail_operations_database.php",
+    "text": "قاعدة بيانات المعاملات الداخلية"
+  },
+  {
+    "file": "mail_remove.php",
+    "href": "https://www.sarh.org.sa/rafed/mail_remove.php",
+    "text": "حذف صادر او وارد"
+  },
+  {
+    "file": "mail_remove_approval.php",
+    "href": "https://www.sarh.org.sa/rafed/mail_remove_approval.php",
+    "text": "تأكيد حذف صادر او وارد"
+  },
+  {
+    "file": "mail_barcode.php",
+    "href": "https://www.sarh.org.sa/rafed/mail_barcode.php",
+    "text": "قارئ باركود الصادر و الوارد"
+  },
+  {
+    "file": "projects_supporters_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_supporters_manage.php",
+    "text": "إدارة حسابات الداعمين"
+  },
+  {
+    "file": "projects_supporters_database.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_supporters_database.php",
+    "text": "قاعدة بيانات الداعمين"
+  },
+  {
+    "file": "projects_supporters_sms.php",
+    "href": "https://www.sarh.org.sa/rafed/projects_supporters_sms.php",
+    "text": "رسالة نصية للداعمين"
+  },
+  {
+    "file": "marketing_general.php",
+    "href": "https://www.sarh.org.sa/rafed/marketing_general.php",
+    "text": "تسويق عام"
+  },
+  {
+    "file": "marketing_project.php",
+    "href": "https://www.sarh.org.sa/rafed/marketing_project.php",
+    "text": "تسويق مشروع"
+  },
+  {
+    "file": "marketing_request.php",
+    "href": "https://www.sarh.org.sa/rafed/marketing_request.php",
+    "text": "تسويق طلب إعانة"
+  },
+  {
+    "file": "marketing_program.php",
+    "href": "https://www.sarh.org.sa/rafed/marketing_program.php",
+    "text": "تسويق برنامج"
+  },
+  {
+    "file": "marketing_complete.php",
+    "href": "https://www.sarh.org.sa/rafed/marketing_complete.php",
+    "text": "التسويقات المكتملة"
+  },
+  {
+    "file": "marketing_database_donations.php",
+    "href": "https://www.sarh.org.sa/rafed/marketing_database_donations.php",
+    "text": "سجل تبرعات الموقع"
+  },
+  {
+    "file": "marketing_external.php",
+    "href": "https://www.sarh.org.sa/rafed/marketing_external.php",
+    "text": "روابط التبرعات الخارجية"
+  },
+  {
+    "file": "marketing_gifts.php",
+    "href": "https://www.sarh.org.sa/rafed/marketing_gifts.php",
+    "text": "سجل الإهداءات"
+  },
+  {
+    "file": "marketing_certificates.php",
+    "href": "https://www.sarh.org.sa/rafed/marketing_certificates.php",
+    "text": "سجل الشهادات"
+  },
+  {
+    "file": "marketing_campaigns.php",
+    "href": "https://www.sarh.org.sa/rafed/marketing_campaigns.php",
+    "text": "إنشاء حملة تسويقية"
+  },
+  {
+    "file": "marketing_campaigns_database.php",
+    "href": "https://www.sarh.org.sa/rafed/marketing_campaigns_database.php",
+    "text": "قاعدة بيانات الحملات"
+  },
+  {
+    "file": "abandoned_carts.php",
+    "href": "https://www.sarh.org.sa/rafed/abandoned_carts.php",
+    "text": "السلال المتروكة"
+  },
+  {
+    "file": "donations_supporter_category_reports.php",
+    "href": "https://www.sarh.org.sa/rafed/donations_supporter_category_reports.php",
+    "text": "تقرير فئات المتبرعين"
+  },
+  {
+    "file": "donations_frequency_reports.php",
+    "href": "https://www.sarh.org.sa/rafed/donations_frequency_reports.php",
+    "text": "تقرير معدل تكرار التبرعات"
+  },
+  {
+    "file": "donations_private_campaigns_reports.php",
+    "href": "https://www.sarh.org.sa/rafed/donations_private_campaigns_reports.php",
+    "text": "تقرير الحملات المخصصة"
+  },
+  {
+    "file": "donations_comparison_reports.php",
+    "href": "https://www.sarh.org.sa/rafed/donations_comparison_reports.php",
+    "text": "تقرير مقارنة الحملات المخصصة"
+  },
+  {
+    "file": "donations_urgent_campaigns_report.php",
+    "href": "https://www.sarh.org.sa/rafed/donations_urgent_campaigns_report.php",
+    "text": "تقرير الحملات العاجلة"
+  },
+  {
+    "file": "donations_peak_hours_by_day.php",
+    "href": "https://www.sarh.org.sa/rafed/donations_peak_hours_by_day.php",
+    "text": "تقرير التبرعات حسب الأيام"
+  },
+  {
+    "file": "donations_categories_reports.php",
+    "href": "https://www.sarh.org.sa/rafed/donations_categories_reports.php",
+    "text": "تقرير تصنيفات الفرص"
+  },
+  {
+    "file": "donations_gifts_reports.php",
+    "href": "https://www.sarh.org.sa/rafed/donations_gifts_reports.php",
+    "text": "تقرير حسب الإهداءات"
+  },
+  {
+    "file": "donations_device_report.php",
+    "href": "https://www.sarh.org.sa/rafed/donations_device_report.php",
+    "text": "تقرير التبرعات حسب جهاز المتبرع"
+  },
+  {
+    "file": "report_donations.php",
+    "href": "https://www.sarh.org.sa/rafed/report_donations.php",
+    "text": "تقارير تبرعات المشاريع"
+  },
+  {
+    "file": "donations_smart_marketer.php",
+    "href": "https://www.sarh.org.sa/rafed/donations_smart_marketer.php",
+    "text": "تقرير المسوق الذكي"
+  },
+  {
+    "file": "awqaf.php",
+    "href": "https://www.sarh.org.sa/rafed/awqaf.php",
+    "text": "إضافة وقف"
+  },
+  {
+    "file": "awqaf_database.php",
+    "href": "https://www.sarh.org.sa/rafed/awqaf_database.php",
+    "text": "قاعدة بيانات الأوقاف"
+  },
+  {
+    "file": "awqaf_contracts.php",
+    "href": "https://www.sarh.org.sa/rafed/awqaf_contracts.php",
+    "text": "إدارة عقود الأوقاف"
+  },
+  {
+    "file": "awqaf_invoices.php",
+    "href": "https://www.sarh.org.sa/rafed/awqaf_invoices.php",
+    "text": "قاعدة بيانات الدفعات"
+  },
+  {
+    "file": "awqaf_invoices_due.php",
+    "href": "https://www.sarh.org.sa/rafed/awqaf_invoices_due.php",
+    "text": "الدفعات المستحقة قريباً"
+  },
+  {
+    "file": "hr_personnel_create.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_personnel_create.php",
+    "text": "تعيين موظف"
+  },
+  {
+    "file": "hr_personnel_update.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_personnel_update.php",
+    "text": "تحديث بيانات موظف"
+  },
+  {
+    "file": "hr_personnel_database.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_personnel_database.php",
+    "text": "قاعدة بيانات الموظفين"
+  },
+  {
+    "file": "hr_volunteer_create.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_volunteer_create.php",
+    "text": "إضافة موظف متطوع"
+  },
+  {
+    "file": "hr_volunteer_update.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_volunteer_update.php",
+    "text": "تحديث بيانات متطوع"
+  },
+  {
+    "file": "hr_volunteer_database.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_volunteer_database.php",
+    "text": "قاعدة بيانات المتطوعين"
+  },
+  {
+    "file": "hr_personnel_type.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_personnel_type.php",
+    "text": "تغيير نوع حساب الموظفين"
+  },
+  {
+    "file": "hr_personnel_warnings.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_personnel_warnings.php",
+    "text": "إدارة إنذارات الموظفين"
+  },
+  {
+    "file": "hr_personnel_questions.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_personnel_questions.php",
+    "text": "إدارة مسائلات الموظفين"
+  },
+  {
+    "file": "hr_personnel_vacations_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_personnel_vacations_manage.php",
+    "text": "إدارة ارصدة الإجازات"
+  },
+  {
+    "file": "hr_personnel_vacations.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_personnel_vacations.php",
+    "text": "إدارة إجازات الموظفين"
+  },
+  {
+    "file": "hr_personnel_evaluation.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_personnel_evaluation.php",
+    "text": "إدارة تقييمات الموظفين"
+  },
+  {
+    "file": "hr_personnel_resign.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_personnel_resign.php",
+    "text": "إنهاء خدمة موظف"
+  },
+  {
+    "file": "hr_personnel_cards.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_personnel_cards.php",
+    "text": "إصدار بطاقات الموظفين"
+  },
+  {
+    "file": "hr_personnel_testahel.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_personnel_testahel.php",
+    "text": "إصدار بطاقة تستاهل"
+  },
+  {
+    "file": "hr_personnel_letter.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_personnel_letter.php",
+    "text": "إصدار خطاب شخصي"
+  },
+  {
+    "file": "hr_letters_general.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_letters_general.php",
+    "text": "إصدار خطاب عام"
+  },
+  {
+    "file": "hr_salaries_export.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_salaries_export.php",
+    "text": "معاينة سجلات الرواتب"
+  },
+  {
+    "file": "demands_zap_approve.php",
+    "href": "https://www.sarh.org.sa/rafed/demands_zap_approve.php",
+    "text": "اعتماد الطلبات الإدارية"
+  },
+  {
+    "file": "demands_zap_managed.php",
+    "href": "https://www.sarh.org.sa/rafed/demands_zap_managed.php",
+    "text": "طلبات قمت بإدارتها"
+  },
+  {
+    "file": "demands_zap_database.php",
+    "href": "https://www.sarh.org.sa/rafed/demands_zap_database.php",
+    "text": "سجلات الطلبات الإدارية"
+  },
+  {
+    "file": "attendance_settings.php",
+    "href": "https://www.sarh.org.sa/rafed/attendance_settings.php",
+    "text": "إعدادات الحضور و الانصراف"
+  },
+  {
+    "file": "attendance_locations.php",
+    "href": "https://www.sarh.org.sa/rafed/attendance_locations.php",
+    "text": "إدارة اماكن التسجيل"
+  },
+  {
+    "file": "attendance_official_vacations.php",
+    "href": "https://www.sarh.org.sa/rafed/attendance_official_vacations.php",
+    "text": "إعدادات الإجازات الرسمية"
+  },
+  {
+    "file": "attendance_record.php",
+    "href": "https://www.sarh.org.sa/rafed/attendance_record.php",
+    "text": "تسجيل الحضور والانصراف"
+  },
+  {
+    "file": "attendance_execuses.php",
+    "href": "https://www.sarh.org.sa/rafed/attendance_execuses.php",
+    "text": "تسجيل الاذونات"
+  },
+  {
+    "file": "attendance_present.php",
+    "href": "https://www.sarh.org.sa/rafed/attendance_present.php",
+    "text": "سجل الحضور الحالي"
+  },
+  {
+    "file": "attendance_report.php",
+    "href": "https://www.sarh.org.sa/rafed/attendance_report.php",
+    "text": "سجلات الحضور والانصراف"
+  },
+  {
+    "file": "attendance_report_general.php",
+    "href": "https://www.sarh.org.sa/rafed/attendance_report_general.php",
+    "text": "تقارير الحضور والانصراف"
+  },
+  {
+    "file": "attendance_vacation_credit.php",
+    "href": "https://www.sarh.org.sa/rafed/attendance_vacation_credit.php",
+    "text": "سجل أجازات الموظفين"
+  },
+  {
+    "file": "hr_safety_categories.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_safety_categories.php",
+    "text": "إدارة تصنيفات المخاطر المهنية"
+  },
+  {
+    "file": "hr_safety_operations.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_safety_operations.php",
+    "text": "إدارة التدابير و الإجراءات"
+  },
+  {
+    "file": "hr_safety_answers.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_safety_answers.php",
+    "text": "تسجيل نموذج الإجراءات"
+  },
+  {
+    "file": "hr_safety_report.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_safety_report.php",
+    "text": "تقرير السلامة و الصحة المهنية"
+  },
+  {
+    "file": "hr_request_create.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_request_create.php",
+    "text": "طلب تعيين موظف"
+  },
+  {
+    "file": "hr_request_approved.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_request_approved.php",
+    "text": "الإعلان عن وظيفة"
+  },
+  {
+    "file": "hr_request_received.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_request_received.php",
+    "text": "طلبات التوظيف المستلمة"
+  },
+  {
+    "file": "hr_request_completed.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_request_completed.php",
+    "text": "طلبات التوظيف المكتملة"
+  },
+  {
+    "file": "hr_request_interview.php",
+    "href": "https://www.sarh.org.sa/rafed/hr_request_interview.php",
+    "text": "تسجيل مقابلة شخصية"
+  },
+  {
+    "file": "system_information.php",
+    "href": "https://www.sarh.org.sa/rafed/system_information.php",
+    "text": "إدارة معلومات الجمعية"
+  },
+  {
+    "file": "system_settings.php",
+    "href": "https://www.sarh.org.sa/rafed/system_settings.php",
+    "text": "إعدادات مقدمي الخدمات"
+  },
+  {
+    "file": "system_sections.php",
+    "href": "https://www.sarh.org.sa/rafed/system_sections.php",
+    "text": "إدارة اقسام لوحة التحكم"
+  },
+  {
+    "file": "system_google_auth.php",
+    "href": "https://www.sarh.org.sa/rafed/system_google_auth.php",
+    "text": "تسجيل حساب جووجل"
+  },
+  {
+    "file": "system_microsoft_auth.php",
+    "href": "https://www.sarh.org.sa/rafed/system_microsoft_auth.php",
+    "text": "تسجيل حساب مايكروسوفت"
+  },
+  {
+    "file": "system_zoom_auth.php",
+    "href": "https://www.sarh.org.sa/rafed/system_zoom_auth.php",
+    "text": "تسجيل حساب زووم"
+  },
+  {
+    "file": "channel_whatsapp_templates.php",
+    "href": "https://www.sarh.org.sa/rafed/channel_whatsapp_templates.php",
+    "text": "إدارة نماذج الواتساب"
+  },
+  {
+    "file": "system_warehouses.php",
+    "href": "https://www.sarh.org.sa/rafed/system_warehouses.php",
+    "text": "إدارة المستودعات"
+  },
+  {
+    "file": "system_template_evaluation.php",
+    "href": "https://www.sarh.org.sa/rafed/system_template_evaluation.php",
+    "text": "نماذج تقييم الموظفين"
+  },
+  {
+    "file": "system_template_letters.php",
+    "href": "https://www.sarh.org.sa/rafed/system_template_letters.php",
+    "text": "نماذج خطابات الموارد البشرية"
+  },
+  {
+    "file": "system_template_pdf_text.php",
+    "href": "https://www.sarh.org.sa/rafed/system_template_pdf_text.php",
+    "text": "إدارة نصوص المستندات الثابتة"
+  },
+  {
+    "file": "system_grade_equation.php",
+    "href": "https://www.sarh.org.sa/rafed/system_grade_equation.php",
+    "text": "إدارة معادلة الدخل"
+  },
+  {
+    "file": "system_grade_update.php",
+    "href": "https://www.sarh.org.sa/rafed/system_grade_update.php",
+    "text": "تحديث فئات الملفات"
+  },
+  {
+    "file": "system_news.php",
+    "href": "https://www.sarh.org.sa/rafed/system_news.php",
+    "text": "إدارة شريط الأخبار"
+  },
+  {
+    "file": "system_variables.php",
+    "href": "https://www.sarh.org.sa/rafed/system_variables.php",
+    "text": "إدارة متغيرات النظام"
+  },
+  {
+    "file": "system_demands.php",
+    "href": "https://www.sarh.org.sa/rafed/system_demands.php",
+    "text": "إدارة الطلبات الإدارية"
+  },
+  {
+    "file": "system_operations.php",
+    "href": "https://www.sarh.org.sa/rafed/system_operations.php",
+    "text": "إدارة المعاملات الداخلية"
+  },
+  {
+    "file": "system_cycles.php",
+    "href": "https://www.sarh.org.sa/rafed/system_cycles.php",
+    "text": "إدارة مسارات الاعتمادات"
+  },
+  {
+    "file": "system_forms_fields.php",
+    "href": "https://www.sarh.org.sa/rafed/system_forms_fields.php",
+    "text": "إدارة حقول الحسابات"
+  },
+  {
+    "file": "system_worker_log.php",
+    "href": "https://www.sarh.org.sa/rafed/system_worker_log.php",
+    "text": "سجلات العمليات المجدولة"
+  },
+  {
+    "file": "system_tutorials_update.php",
+    "href": "https://www.sarh.org.sa/rafed/system_tutorials_update.php",
+    "text": "تحديث ملفات الشروحات"
+  },
+  {
+    "file": "system_tutorials_permissions.php",
+    "href": "https://www.sarh.org.sa/rafed/system_tutorials_permissions.php",
+    "text": "تحديث صلاحيات الشروحات"
+  },
+  {
+    "file": "website_settings.php",
+    "href": "https://www.sarh.org.sa/rafed/website_settings.php",
+    "text": "إعدادات الموقع الإلكتروني"
+  },
+  {
+    "file": "ecommerce_settings.php",
+    "href": "https://www.sarh.org.sa/rafed/ecommerce_settings.php",
+    "text": "إعدادات المتجر الإلكتروني"
+  },
+  {
+    "file": "seo_settings.php",
+    "href": "https://www.sarh.org.sa/rafed/seo_settings.php",
+    "text": "أدوات تحسين محركات البحث"
+  },
+  {
+    "file": "social_media_settings.php",
+    "href": "https://www.sarh.org.sa/rafed/social_media_settings.php",
+    "text": "ربط ادوات التواصل الإجتماعي"
+  },
+  {
+    "file": "organizational_chart.php",
+    "href": "https://www.sarh.org.sa/rafed/organizational_chart.php",
+    "text": "إدارة الهيكل الإداري"
+  },
+  {
+    "file": "system_organization.php",
+    "href": "https://www.sarh.org.sa/rafed/system_organization.php",
+    "text": "تعيينات المناصب الإعتبارية"
+  },
+  {
+    "file": "system_organization_committees.php",
+    "href": "https://www.sarh.org.sa/rafed/system_organization_committees.php",
+    "text": "تعيينات اللجان"
+  },
+  {
+    "file": "system_template_pdf_signatures.php",
+    "href": "https://www.sarh.org.sa/rafed/system_template_pdf_signatures.php",
+    "text": "إدارة تواقيع المستندات"
+  },
+  {
+    "file": "system_organization_record.php",
+    "href": "https://www.sarh.org.sa/rafed/system_organization_record.php",
+    "text": "تسجيل دورة هيكل إداري"
+  },
+  {
+    "file": "system_design_panel.php",
+    "href": "https://www.sarh.org.sa/rafed/system_design_panel.php",
+    "text": "إدارة ثمة لوحة التحكم"
+  },
+  {
+    "file": "system_template_images.php",
+    "href": "https://www.sarh.org.sa/rafed/system_template_images.php",
+    "text": "إدارة قوالب المطبوعات"
+  },
+  {
+    "file": "system_template_gifts.php",
+    "href": "https://www.sarh.org.sa/rafed/system_template_gifts.php",
+    "text": "إدارة قوالب كروت الإهداء"
+  },
+  {
+    "file": "system_template_greetings.php",
+    "href": "https://www.sarh.org.sa/rafed/system_template_greetings.php",
+    "text": "إدارة قوالب المعايدات"
+  },
+  {
+    "file": "system_template_pdf_design.php",
+    "href": "https://www.sarh.org.sa/rafed/system_template_pdf_design.php",
+    "text": "تصميم قالب المستندات"
+  },
+  {
+    "file": "system_template_certificates.php",
+    "href": "https://www.sarh.org.sa/rafed/system_template_certificates.php",
+    "text": "إدارة قوالب شهادات التبرع"
+  },
+  {
+    "file": "system_template_channels_panel.php",
+    "href": "https://www.sarh.org.sa/rafed/system_template_channels_panel.php",
+    "text": "نماذج التواصل الداخلية"
+  },
+  {
+    "file": "system_channel_records_sms.php",
+    "href": "https://www.sarh.org.sa/rafed/system_channel_records_sms.php",
+    "text": "سجل المراسلات النصية"
+  },
+  {
+    "file": "system_channel_records_whatsapp.php",
+    "href": "https://www.sarh.org.sa/rafed/system_channel_records_whatsapp.php",
+    "text": "سجل مراسلات الواتساب"
+  },
+  {
+    "file": "system_channel_records_email.php",
+    "href": "https://www.sarh.org.sa/rafed/system_channel_records_email.php",
+    "text": "سجل المراسلات البريدية"
+  },
+  {
+    "file": "system_channel_push_subscribers.php",
+    "href": "https://www.sarh.org.sa/rafed/system_channel_push_subscribers.php",
+    "text": "مشتركين التنبيهات اللحظية"
+  },
+  {
+    "file": "system_channel_push.php",
+    "href": "https://www.sarh.org.sa/rafed/system_channel_push.php",
+    "text": "إرسال تنبيه لحظي"
+  },
+  {
+    "file": "system_channel_records_push.php",
+    "href": "https://www.sarh.org.sa/rafed/system_channel_records_push.php",
+    "text": "سجل مراسلات التنبيهات"
+  },
+  {
+    "file": "system_channel_local.php",
+    "href": "https://www.sarh.org.sa/rafed/system_channel_local.php",
+    "text": "سجل التنبيهات الداخلية"
+  },
+  {
+    "file": "system_administrators.php",
+    "href": "https://www.sarh.org.sa/rafed/system_administrators.php",
+    "text": "مستخدمو النظام"
+  },
+  {
+    "file": "system_register.php",
+    "href": "https://www.sarh.org.sa/rafed/system_register.php",
+    "text": "سجلات الدخول للنظام"
+  },
+  {
+    "file": "system_permissions.php",
+    "href": "https://www.sarh.org.sa/rafed/system_permissions.php",
+    "text": "صلاحيات المستخدمين"
+  },
+  {
+    "file": "system_security_report.php",
+    "href": "https://www.sarh.org.sa/rafed/system_security_report.php",
+    "text": "تقرير الامن السيبراني"
+  },
+  {
+    "file": "sensitive_pages_report.php",
+    "href": "https://www.sarh.org.sa/rafed/sensitive_pages_report.php",
+    "text": "حوكمة ومتابعة الصلاحيات"
+  },
+  {
+    "file": "ncnp_invalid_helps.php",
+    "href": "https://www.sarh.org.sa/rafed/ncnp_invalid_helps.php",
+    "text": "مساعدات بحاجة لتحديث"
+  },
+  {
+    "file": "ncnp_helps_dates.php",
+    "href": "https://www.sarh.org.sa/rafed/ncnp_helps_dates.php",
+    "text": "تحديث تواريخ المساعدات"
+  },
+  {
+    "file": "ncnp_helps_costs.php",
+    "href": "https://www.sarh.org.sa/rafed/ncnp_helps_costs.php",
+    "text": "تحديث تكاليف المساعدات"
+  },
+  {
+    "file": "ncnp_helps_register.php",
+    "href": "https://www.sarh.org.sa/rafed/ncnp_helps_register.php",
+    "text": "مساعدات جاهزة للإرسال"
+  },
+  {
+    "file": "ncnp_helps_removed.php",
+    "href": "https://www.sarh.org.sa/rafed/ncnp_helps_removed.php",
+    "text": "المساعدات المعلقة و المحذوفة"
+  },
+  {
+    "file": "support_external.php",
+    "href": "https://www.sarh.org.sa/rafed/support_external.php",
+    "text": "إدارة أرشيف الدعوم السابقة"
+  },
+  {
+    "file": "ncnp_helps_registered.php",
+    "href": "https://www.sarh.org.sa/rafed/ncnp_helps_registered.php",
+    "text": "المساعدات المسجلة بمنصة تبين"
+  },
+  {
+    "file": "ncnp_settings.php",
+    "href": "https://www.sarh.org.sa/rafed/ncnp_settings.php",
+    "text": "صلاحيات مشاركة البيانات"
+  },
+  {
+    "file": "volunteer_users_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/volunteer_users_manage.php",
+    "text": "إدارة حسابات المتطوعين"
+  },
+  {
+    "file": "volunteer_users_database.php",
+    "href": "https://www.sarh.org.sa/rafed/volunteer_users_database.php",
+    "text": "قاعدة بيانات المتطوعين"
+  },
+  {
+    "file": "volunteer_requests_internal.php",
+    "href": "https://www.sarh.org.sa/rafed/volunteer_requests_internal.php",
+    "text": "طلبات التطوع الداخلية"
+  },
+  {
+    "file": "volunteer_requests_external.php",
+    "href": "https://www.sarh.org.sa/rafed/volunteer_requests_external.php",
+    "text": "طلبات التطوع الخارجية"
+  },
+  {
+    "file": "volunteer_chances_manage.php",
+    "href": "https://www.sarh.org.sa/rafed/volunteer_chances_manage.php",
+    "text": "إدارة الفرص التطوعية"
+  },
+  {
+    "file": "volunteer_manage_procedures.php",
+    "href": "https://www.sarh.org.sa/rafed/volunteer_manage_procedures.php",
+    "text": "إدارة اجراءات الفرص"
+  },
+  {
+    "file": "volunteer_manage_reports.php",
+    "href": "https://www.sarh.org.sa/rafed/volunteer_manage_reports.php",
+    "text": "إرفاق تقارير فرصة"
+  },
+  {
+    "file": "volunteer_manage_applications.php",
+    "href": "https://www.sarh.org.sa/rafed/volunteer_manage_applications.php",
+    "text": "إدارة طلبات التطوع"
+  },
+  {
+    "file": "volunteer_manage_applicants.php",
+    "href": "https://www.sarh.org.sa/rafed/volunteer_manage_applicants.php",
+    "text": "إدارة المتطوعين"
+  },
+  {
+    "file": "volunteer_manage_tasks.php",
+    "href": "https://www.sarh.org.sa/rafed/volunteer_manage_tasks.php",
+    "text": "إدارة مهام الفرص"
+  },
+  {
+    "file": "volunteer_manage_attendance.php",
+    "href": "https://www.sarh.org.sa/rafed/volunteer_manage_attendance.php",
+    "text": "إدارة سجلات الحضور"
+  }
+]

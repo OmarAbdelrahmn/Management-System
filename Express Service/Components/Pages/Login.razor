@@ -1,0 +1,49 @@
+@page "/login"
+@attribute [AllowAnonymous]
+@layout EmptyLayout
+
+<div class="login-shell">
+    <section class="login-card">
+        <div class="login-brand">
+            <strong>نظام رافد الإلكتروني</strong>
+            <span>جمعية صرح العطاء النسائية</span>
+            <small>تسجيل الدخول إلى إدارة الاجتماعات والمجالس</small>
+        </div>
+
+        @if (HasError)
+        {
+            <div class="login-error">بيانات الدخول غير صحيحة أو الحساب غير فعال.</div>
+        }
+
+        <form method="post" action="/ui/login" class="login-form">
+            <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+
+            <label>إسم المستخدم:
+                <input name="email" type="email" autocomplete="username" required />
+            </label>
+
+            <label>كلمة المرور:
+                <input name="password" type="password" autocomplete="current-password" required />
+            </label>
+
+            <label class="check">
+                <input name="remember" type="checkbox" />
+                تذكر بيانات الدخول
+            </label>
+
+            <button class="primary" type="submit">تسجيل الدخول</button>
+        </form>
+
+        <footer>جميع الحقوق محفوظة © نظام الإدارة المحلي</footer>
+    </section>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "error")]
+    private string? Error { get; set; }
+
+    private bool HasError => Error == "1";
+}

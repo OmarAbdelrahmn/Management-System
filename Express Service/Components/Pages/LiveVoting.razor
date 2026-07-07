@@ -1,24 +1,110 @@
 @page "/meetings/live-voting"
+@attribute [Authorize(Roles = "Admin,BoardSecretary,BoardChairman,BoardMember")]
 @rendermode InteractiveServer
+@inject MeetingUiService UiService
 
-<section class="page-band">
-    <h1>شاشة الاجتماع والتصويت الحي</h1>
-    <p>الأحداث الحية تبث عبر SignalR: voteOpened, voteUpdated, voteClosed.</p>
-    <button class="primary">إغلاق التصويت</button>
+<h1 class="page-title">شاشة الاجتماع والتصويت الحي</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading">
+        <i class="fa-solid fa-square-poll-vertical"></i>
+        <div>
+            <h2>فتح تصويت على بند جدول أعمال</h2>
+            <p>أدخل رقم بند جدول الأعمال الحقيقي من قاعدة البيانات، ثم افتح التصويت.</p>
+        </div>
+        <i class="fa-solid fa-broadcast-tower"></i>
+    </div>
+    <div class="panel-body">
+        <div class="toolbar">
+            <label>رقم بند جدول الأعمال <input type="number" @bind="agendaItemIdToOpen" /></label>
+            <button class="primary" @onclick="OpenVoteAsync" disabled="@(busy || agendaItemIdToOpen <= 0)">فتح التصويت</button>
+            <button class="secondary" @onclick="LoadAsync">تحديث</button>
+        </div>
+    </div>
 </section>
 
-<section class="vote-board">
-    <div>
-        <h2>الموافقون</h2>
-        <p>سعيد <span>وزن 1</span></p>
-        <p>محمد <span>وزن 25%</span></p>
-    </div>
-    <div>
-        <h2>المعترضون</h2>
-        <label>أحمد <input placeholder="سبب التحفظ أو الرفض" /></label>
-    </div>
-    <div>
-        <h2>الممتنعون</h2>
-        <p>لا يوجد</p>
-    </div>
-</section>
+@if (sessions.Count == 0)
+{
+    <section class="panel" style="margin-top:12px">
+        <div class="panel-body">لا توجد جلسات تصويت مفتوحة حالياً.</div>
+    </section>
+}
+else
+{
+    @foreach (var session in sessions)
+    {
+        <section class="panel" style="margin-top:12px">
+            <div class="panel-heading">
+                <i class="fa-solid fa-vote-yea"></i>
+                <div>
+                    <h2>@session.MeetingTitle</h2>
+                    <p>@session.AgendaTitle - الحالة: @session.Status</p>
+                </div>
+                <button class="danger" @onclick="() => CloseVoteAsync(session.Id)" disabled="@busy">إغلاق التصويت</button>
+            </div>
+        </section>
+
+        <section class="vote-board" style="margin-top:12px">
+            <div class="vote-column approve">
+                <h2><i class="fa-solid fa-thumbs-up"></i> الموافقون</h2>
+                @foreach (var vote in session.Votes.Where(x => x.Choice == Domain.Entities.VoteChoice.Approve))
+                {
+                    <div class="vote-member"><strong>@vote.MemberUserId</strong><span>الوزن التصويتي @vote.Weight</span></div>
+                }
+            </div>
+
+            <div class="vote-column reject">
+                <h2><i class="fa-solid fa-thumbs-down"></i> المعترضون</h2>
+                @foreach (var vote in session.Votes.Where(x => x.Choice == Domain.Entities.VoteChoice.Reject))
+                {
+                    <div class="vote-member"><strong>@vote.MemberUserId</strong><span>@vote.RejectionReason</span></div>
+                }
+            </div>
+
+            <div class="vote-column abstain">
+                <h2><i class="fa-solid fa-circle-minus"></i> الممتنعون</h2>
+                @foreach (var vote in session.Votes.Where(x => x.Choice == Domain.Entities.VoteChoice.Abstain))
+                {
+                    <div class="vote-member"><strong>@vote.MemberUserId</strong><span>امتنع عن التصويت</span></div>
+                }
+            </div>
+        </section>
+    }
+}
+
+@code {
+    private bool busy;
+    private bool success;
+    private string? message;
+    private int agendaItemIdToOpen;
+    private List<VoteSessionUiModel> sessions = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync() => sessions = await UiService.GetVoteSessionsAsync();
+
+    private async Task OpenVoteAsync()
+    {
+        busy = true;
+        var result = await UiService.OpenVoteAsync(agendaItemIdToOpen);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+        busy = false;
+    }
+
+    private async Task CloseVoteAsync(int voteSessionId)
+    {
+        busy = true;
+        var result = await UiService.CloseVoteAsync(voteSessionId);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+        busy = false;
+    }
+}

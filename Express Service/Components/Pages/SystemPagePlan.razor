@@ -1,0 +1,65 @@
+@page "/system/page/{Id:int}"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+@inject MeetingUiService UiService
+
+<h1 class="page-title">خطة تنفيذ صفحة في النظام</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+@if (systemPage is null)
+{
+    <section class="panel"><div class="panel-body">الصفحة غير موجودة.</div></section>
+}
+else
+{
+    <section class="panel">
+        <div class="panel-heading">
+            <i class="fa-solid fa-file-lines"></i>
+            <div>
+                <h2>@systemPage.NameAr</h2>
+                <p>@systemPage.ModuleName - @systemPage.Route</p>
+            </div>
+            <span class="status">@systemPage.Status</span>
+        </div>
+        <div class="panel-body">
+            <table>
+                <tbody>
+                    <tr><td>الخدمة</td><td>@systemPage.ServiceName</td></tr>
+                    <tr><td>مفتاح الصلاحية</td><td>@systemPage.PermissionKey</td></tr>
+                    <tr><td>خطة الخدمة</td><td>@systemPage.ServicePlan</td></tr>
+                    <tr><td>خطة الواجهة</td><td>@systemPage.UiPlan</td></tr>
+                </tbody>
+            </table>
+            <div class="toolbar" style="margin-top:12px">
+                <button class="secondary" @onclick="() => SetStatusAsync(Domain.Entities.SystemPageStatus.Planned)">مخططة</button>
+                <button class="primary" @onclick="() => SetStatusAsync(Domain.Entities.SystemPageStatus.InProgress)">قيد التنفيذ</button>
+                <button class="primary" @onclick="() => SetStatusAsync(Domain.Entities.SystemPageStatus.Implemented)">منفذة</button>
+                <button class="danger" @onclick="() => SetStatusAsync(Domain.Entities.SystemPageStatus.Deferred)">تأجيل</button>
+                <a class="secondary" href="/system/modules">رجوع</a>
+            </div>
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private bool success;
+    private string? message;
+    private SystemPageResponse? systemPage;
+
+    protected override async Task OnParametersSetAsync() => systemPage = await UiService.GetSystemPageAsync(Id);
+
+    private async Task SetStatusAsync(Domain.Entities.SystemPageStatus status)
+    {
+        var result = await UiService.UpdateSystemPageStatusAsync(Id, status);
+        success = result.Success;
+        message = result.Message;
+        systemPage = await UiService.GetSystemPageAsync(Id);
+    }
+}

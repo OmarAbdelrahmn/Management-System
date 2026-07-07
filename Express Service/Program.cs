@@ -1,8 +1,10 @@
 using Express_Service;
 using Application.Service.Emails;
+using Domain.Identity;
 using Express_Service.Hangfire;
 using Express_Service.Hubs;
 using Hangfire;
+using Microsoft.AspNetCore.Identity;
 using QuestPDF.Infrastructure;
 using Serilog;
 
@@ -66,6 +68,29 @@ app.UseSerilogRequestLogging(options =>
 });
 app.UseAuthorization();
 app.UseAntiforgery();
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path;
+    var isProtectedUiPath =
+        path == "/" ||
+        path.StartsWithSegments("/meetings") ||
+        path.StartsWithSegments("/_blazor");
+
+    if (isProtectedUiPath && context.User.Identity?.IsAuthenticated != true)
+    {
+        if (path.StartsWithSegments("/_blazor"))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
+        var returnUrl = context.Request.PathBase + context.Request.Path + context.Request.QueryString;
+        context.Response.Redirect($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
+        return;
+    }
+
+    await next();
+});
 if (builder.Configuration.GetValue("Hangfire:Enabled", false))
 {
     app.UseHangfireDashboard("/jobs", new DashboardOptions
@@ -86,6 +111,35 @@ if (builder.Configuration.GetValue("Hangfire:Enabled", false))
 }
 
 app.MapControllers();
+app.MapPost("/ui/login", async (HttpContext httpContext, SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager) =>
+{
+    var form = await httpContext.Request.ReadFormAsync();
+    var email = form["email"].ToString();
+    var password = form["password"].ToString();
+    var remember = form["remember"].ToString() == "on";
+    var returnUrl = form["returnUrl"].ToString();
+    var safeReturnUrl = string.IsNullOrWhiteSpace(returnUrl) || !returnUrl.StartsWith('/') || returnUrl.StartsWith("//")
+        ? "/"
+        : returnUrl;
+
+    var user = await userManager.FindByEmailAsync(email);
+    if (user is null || !user.IsActive)
+        return Results.Redirect($"/login?error=1&returnUrl={Uri.EscapeDataString(safeReturnUrl)}");
+
+    var result = await signInManager.PasswordSignInAsync(user, password, remember, lockoutOnFailure: false);
+    return result.Succeeded
+        ? Results.Redirect(safeReturnUrl)
+        : Results.Redirect($"/login?error=1&returnUrl={Uri.EscapeDataString(safeReturnUrl)}");
+})
+.AllowAnonymous()
+.DisableAntiforgery();
+
+app.MapGet("/logout", async (SignInManager<ApplicationUser> signInManager) =>
+{
+    await signInManager.SignOutAsync();
+    return Results.Redirect("/login");
+}).RequireAuthorization();
+
 app.MapRazorComponents<Express_Service.Components.App>()
     .AddInteractiveServerRenderMode();
 app.MapHub<MeetingHub>("/hubs/meetings");

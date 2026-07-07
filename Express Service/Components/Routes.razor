@@ -1,14 +1,25 @@
-<Router AppAssembly="@typeof(Express_Service.Controllers.MeetingsController).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-    </Found>
-    <NotFound>
-        <LayoutView Layout="@typeof(MainLayout)">
-            <section class="page-band">
-                <h1>الصفحة غير موجودة</h1>
-                <p>الرابط المطلوب غير متاح ضمن نظام إدارة الاجتماعات والمجالس.</p>
-            </section>
-        </LayoutView>
-    </NotFound>
-</Router>
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(Express_Service.Controllers.MeetingsController).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                <NotAuthorized>
+                    <RedirectToLogin />
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <section class="panel">
+                    <div class="panel-heading">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <div>
+                            <h1>الصفحة غير موجودة</h1>
+                            <p>الرابط المطلوب غير متاح ضمن نظام إدارة الاجتماعات والمجالس.</p>
+                        </div>
+                    </div>
+                </section>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

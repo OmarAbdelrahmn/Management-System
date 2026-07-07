@@ -1,0 +1,89 @@
+@page "/members/create"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MemberUiService Members
+
+<h1 class="page-title">إضافة عضو</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading">
+        <i class="fa-solid fa-user-plus"></i>
+        <div>
+            <h2>ملف عضو جديد</h2>
+            <p>يتم حفظ البيانات في قاعدة الأعضاء وربطها لاحقاً بحساب مستخدم عند الحاجة.</p>
+        </div>
+    </div>
+    <div class="form-grid">
+        <label>الاسم الكامل<input @bind="fullName" /></label>
+        <label>رقم العضوية<input @bind="memberNumber" placeholder="يولد تلقائياً عند تركه فارغاً" /></label>
+        <label>فئة العضوية<select @bind="membershipTypeId">@foreach (var type in types){<option value="@type.Id">@type.NameAr</option>}</select></label>
+        <label>رقم الهوية<input @bind="nationalId" /></label>
+        <label>البريد الإلكتروني<input @bind="email" /></label>
+        <label>الجوال<input @bind="mobile" /></label>
+        <label>المدينة<input @bind="city" /></label>
+        <label>العنوان<input @bind="address" /></label>
+        <label>تاريخ الانضمام<input type="date" @bind="joinedAt" /></label>
+        <label>النسبة التراكمية %<input type="number" step="0.01" @bind="cumulativePercentage" /></label>
+        <label class="check-row"><input type="checkbox" @bind="feesPaid" /> سدد الرسوم</label>
+        <label class="check-row"><input type="checkbox" @bind="isSupporter" /> عضو داعم</label>
+        <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
+    </div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync" disabled="@busy">حفظ العضو</button>
+        <a class="secondary" href="/members/database">قاعدة بيانات الأعضاء</a>
+    </div>
+</section>
+
+@code {
+    private bool busy;
+    private bool success;
+    private string? message;
+    private List<MembershipTypeResponse> types = [];
+    private int membershipTypeId;
+    private string fullName = string.Empty;
+    private string? memberNumber;
+    private string? nationalId;
+    private string? email;
+    private string? mobile;
+    private string? city;
+    private string? address;
+    private DateTime joinedAt = DateTime.UtcNow.AddHours(3).Date;
+    private bool feesPaid;
+    private bool isSupporter;
+    private decimal cumulativePercentage = 1;
+    private string? notes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        types = await Members.GetTypesAsync();
+        membershipTypeId = types.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private async Task SaveAsync()
+    {
+        busy = true;
+        var result = await Members.CreateMemberAsync(new CreateMemberRequest(fullName, membershipTypeId, memberNumber, nationalId, email, mobile, city, address, null, joinedAt, feesPaid, isSupporter, cumulativePercentage, notes));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+        {
+            fullName = string.Empty;
+            memberNumber = null;
+            nationalId = null;
+            email = null;
+            mobile = null;
+            city = null;
+            address = null;
+            notes = null;
+            feesPaid = false;
+            isSupporter = false;
+            cumulativePercentage = 1;
+        }
+        busy = false;
+    }
+}

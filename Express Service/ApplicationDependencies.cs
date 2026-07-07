@@ -3,10 +3,12 @@ using Application.Service.Boards;
 using Application.Service.Auth;
 using Application.Service.Emails;
 using Application.Service.Invitations;
+using Application.Service.Members;
 using Application.Service.Meetings;
 using Application.Service.Minutes;
 using Application.Service.Permissions;
 using Application.Service.Realtime;
+using Application.Service.SystemCatalog;
 using Application.Service.Voting;
 using Domain;
 using Domain.Auditing;
@@ -15,6 +17,7 @@ using Express_Service.Realtime;
 using Express_Service.Services;
 using Hangfire;
 using Hangfire.SqlServer;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +34,13 @@ public static class ApplicationDependencies
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         services.AddDbContext<ApplicationDbcontext>(options =>
-            options.UseSqlServer(connectionString));
+            options.UseSqlServer(connectionString, sqlOptions =>
+            {
+                sqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorNumbersToAdd: null);
+            }));
 
         services.AddHangfire(config =>
         {
@@ -44,7 +53,8 @@ public static class ApplicationDependencies
                     SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
                     QueuePollInterval = TimeSpan.FromSeconds(15),
                     UseRecommendedIsolationLevel = true,
-                    DisableGlobalLocks = true
+                    DisableGlobalLocks = true,
+                    CommandTimeout = TimeSpan.FromMinutes(2)
                 });
         });
 
@@ -74,8 +84,18 @@ public static class ApplicationDependencies
         services.Configure<SmtpOptions>(configuration.GetSection("Smtp"));
         services.AddAuthentication(options =>
             {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultAuthenticateScheme = "SmartAuth";
+                options.DefaultChallengeScheme = "SmartAuth";
+            })
+            .AddPolicyScheme("SmartAuth", "JWT or Identity cookie", options =>
+            {
+                options.ForwardDefaultSelector = context =>
+                {
+                    var authorization = context.Request.Headers.Authorization.ToString();
+                    return authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+                        ? JwtBearerDefaults.AuthenticationScheme
+                        : IdentityConstants.ApplicationScheme;
+                };
             })
             .AddJwtBearer(options =>
             {
@@ -91,7 +111,16 @@ public static class ApplicationDependencies
                 };
             });
 
+        services.ConfigureApplicationCookie(options =>
+        {
+            options.LoginPath = "/login";
+            options.LogoutPath = "/logout";
+            options.AccessDeniedPath = "/access-denied";
+            options.SlidingExpiration = true;
+        });
+
         services.AddAuthorization();
+        services.AddCascadingAuthenticationState();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IEmailBackgroundJob, EmailBackgroundJob>();
@@ -99,11 +128,15 @@ public static class ApplicationDependencies
         services.AddScoped<IMeetingRealtimeNotifier, SignalRMeetingRealtimeNotifier>();
         services.AddScoped<IBoardService, BoardService>();
         services.AddScoped<IMeetingService, MeetingService>();
+        services.AddScoped<IMemberService, MemberService>();
         services.AddScoped<IInvitationService, InvitationService>();
         services.AddScoped<IVotingService, VotingService>();
         services.AddScoped<IMinuteService, MinuteService>();
+        services.AddScoped<ISystemCatalogService, SystemCatalogService>();
         services.Configure<SeedOptions>(configuration.GetSection("Seed"));
         services.AddScoped<DataSeeder>();
+        services.AddScoped<MeetingUiService>();
+        services.AddScoped<MemberUiService>();
 
         return services;
     }

@@ -1,0 +1,95 @@
+@page "/members/database"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MemberUiService Members
+
+<h1 class="page-title">قاعدة بيانات الأعضاء</h1>
+
+<section class="panel">
+    <div class="panel-heading">
+        <i class="fa-solid fa-users"></i>
+        <div>
+            <h2>بحث وإدارة الأعضاء</h2>
+            <p>عرض حقيقي من قاعدة البيانات مع فلاتر الحالة والفئة والسداد والعضو الداعم.</p>
+        </div>
+        <a class="primary" href="/members/create">إضافة عضو</a>
+    </div>
+    <div class="form-grid compact">
+        <label>بحث<input @bind="search" placeholder="الاسم، رقم العضوية، الهوية، البريد، الجوال" /></label>
+        <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="Active">نشط</option><option value="Suspended">معلق</option><option value="Cancelled">ملغى</option></select></label>
+        <label>الفئة<select @bind="typeIdText"><option value="">الكل</option>@foreach (var type in types){<option value="@type.Id">@type.NameAr</option>}</select></label>
+        <label>السداد<select @bind="feesPaidText"><option value="">الكل</option><option value="true">سدد</option><option value="false">لم يسدد</option></select></label>
+        <label>الدعم<select @bind="supporterText"><option value="">الكل</option><option value="true">داعم</option><option value="false">عادي</option></select></label>
+    </div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SearchAsync">بحث</button>
+        <button class="secondary" @onclick="ClearAsync">مسح الفلاتر</button>
+    </div>
+</section>
+
+<section class="circle-tiles" style="margin-top:14px">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-users"></i></span><span>الإجمالي</span><strong class="tile-number">@members.Count</strong><span class="tile-footer">نتائج البحث</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-check"></i></span><span>سددوا</span><strong class="tile-number">@members.Count(x => x.FeesPaid)</strong><span class="tile-footer">رسوم العضوية</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-clock"></i></span><span>لم يسددوا</span><strong class="tile-number">@members.Count(x => !x.FeesPaid)</strong><span class="tile-footer">بحاجة متابعة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-star"></i></span><span>داعمون</span><strong class="tile-number">@members.Count(x => x.IsSupporter)</strong><span class="tile-footer">وزن تصويتي خاص</span></article>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> الأعضاء</span></div>
+    <table>
+        <thead><tr><th>رقم العضوية</th><th>الاسم</th><th>الفئة</th><th>الجوال</th><th>الحالة</th><th>السداد</th><th>الوزن</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var member in members)
+            {
+                <tr>
+                    <td>@member.MemberNumber</td>
+                    <td>@member.FullName</td>
+                    <td>@member.MembershipTypeName</td>
+                    <td>@member.Mobile</td>
+                    <td><span class="status">@member.Status</span></td>
+                    <td><span class="status @(member.FeesPaid ? "ok" : "warn")">@(member.FeesPaid ? "سدد" : "لم يسدد")</span></td>
+                    <td>@(member.IsSupporter ? member.CumulativePercentage : 1)</td>
+                    <td>
+                        <a class="secondary" href="@($"/members/update/{member.Id}")">تعديل</a>
+                        <a class="secondary" href="@($"/members/payments?memberId={member.Id}")">سداد</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<MemberResponse> members = [];
+    private List<MembershipTypeResponse> types = [];
+    private string? search;
+    private string statusText = string.Empty;
+    private string typeIdText = string.Empty;
+    private string feesPaidText = string.Empty;
+    private string supporterText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        types = await Members.GetTypesAsync();
+        await SearchAsync();
+    }
+
+    private async Task SearchAsync()
+    {
+        var status = Enum.TryParse<MemberStatus>(statusText, out var parsedStatus) ? parsedStatus : (MemberStatus?)null;
+        var typeId = int.TryParse(typeIdText, out var parsedTypeId) ? parsedTypeId : (int?)null;
+        var feesPaid = bool.TryParse(feesPaidText, out var parsedFeesPaid) ? parsedFeesPaid : (bool?)null;
+        var isSupporter = bool.TryParse(supporterText, out var parsedSupporter) ? parsedSupporter : (bool?)null;
+        members = await Members.SearchMembersAsync(search, status, typeId, feesPaid, isSupporter);
+    }
+
+    private async Task ClearAsync()
+    {
+        search = null;
+        statusText = string.Empty;
+        typeIdText = string.Empty;
+        feesPaidText = string.Empty;
+        supporterText = string.Empty;
+        await SearchAsync();
+    }
+}

@@ -1,16 +1,45 @@
 @page "/meetings/archive"
+@attribute [Authorize]
+@inject MeetingUiService UiService
 
-<section class="page-band">
-    <h1>قائمة المحاضر</h1>
-    <p>الأرشيف للقراءة فقط بعد توقيع الرئيس، مع عرض وتحميل PDF.</p>
-</section>
+<h1 class="page-title">قائمة المحاضر - أرشيف الأعضاء للقراءة فقط</h1>
 
 <section class="table-section readonly">
-    <table>
-        <thead><tr><th>تاريخ الاجتماع</th><th>العنوان</th><th>النوع</th><th>الحالة</th><th>إجراءات</th></tr></thead>
-        <tbody>
-            <tr><td>2026-07-07</td><td>محضر اجتماع مجلس الإدارة</td><td>مجلس إدارة</td><td>معتمد ومقفل</td><td><button>اطلاع</button><button>تحميل PDF</button></td></tr>
-            <tr><td>2026-06-20</td><td>محضر الجمعية العمومية</td><td>جمعية عمومية</td><td>معتمد ومقفل</td><td><button>اطلاع</button><button>تحميل PDF</button></td></tr>
-        </tbody>
-    </table>
+    <div class="table-title">
+        <span><i class="fa-solid fa-box-archive"></i> المحاضر السابقة من قاعدة البيانات</span>
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
+    @if (minutes.Count == 0)
+    {
+        <div class="panel-body">لا توجد محاضر معتمدة حتى الآن.</div>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>رقم المحضر</th><th>رقم الاجتماع</th><th>تاريخ الإنشاء</th><th>تاريخ النشر</th><th>عدد القرارات</th><th>إجراءات</th></tr></thead>
+            <tbody>
+                @foreach (var minute in minutes)
+                {
+                    <tr>
+                        <td>@minute.Id</td>
+                        <td>@minute.BoardMeetingId</td>
+                        <td>@minute.CreatedAt</td>
+                        <td>@minute.PublishedAt</td>
+                        <td>@minute.Decisions.Count()</td>
+                        <td>
+                            <a class="secondary" href="@($"/api/minutes/meeting/{minute.BoardMeetingId}/pdf")">تحميل PDF</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 </section>
+
+@code {
+    private List<Application.Contracts.Minutes.MinuteResponse> minutes = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync() => minutes = await UiService.GetArchivedMinutesAsync();
+}

@@ -1,35 +1,82 @@
 @inherits LayoutComponentBase
 
-<div class="app-shell">
-    <aside class="sidebar">
-        <div class="brand">
-            <span class="brand-mark">MS</span>
-            <div>
-                <strong>نظام الإدارة</strong>
-                <small>إدارة التوثيق والمستندات</small>
-            </div>
+<header id="nav-sticky" class="rafed-header">
+    <div class="header-brand">
+        <strong>نظام الإدارة الإلكتروني</strong>
+        <span>إدارة المجالس والاجتماعات والخدمات</span>
+    </div>
+
+    <div class="header-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input id="search_input" placeholder="بحث.." />
+    </div>
+
+    <div class="header-actions">
+        <button><i class="fa-solid fa-list-check"></i> المهام</button>
+        <button class="has-badge"><i class="fa-solid fa-bell"></i> التنبيهات <span>3</span></button>
+        <a href="/swagger"><i class="fa-solid fa-globe"></i> API</a>
+        <div class="user-menu">
+            <span class="avatar"><i class="fa-solid fa-user"></i></span>
+            <AuthorizeView>
+                <Authorized>
+                    <div>
+                        <strong>@context.User.Identity?.Name</strong>
+                        <small><a href="/logout">خروج</a></small>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
         </div>
+    </div>
+</header>
 
-        <nav>
-            <a href="/">لوحة الاجتماعات</a>
-            <a href="/meetings/secretary">سكرتير المجلس</a>
-            <a href="/meetings/waiting-room">بوابة العضو</a>
-            <a href="/meetings/live-voting">التصويت الحي</a>
-            <a href="/meetings/chairman">اعتماد الرئيس</a>
-            <a href="/meetings/archive">قائمة المحاضر</a>
+<aside class="menu-container">
+    <div class="logo">
+        <div class="logo-card">
+            <strong>إدارة</strong>
+            <span>نظام الإدارة الموحد</span>
+            <small>الإصدار المحلي 1.0</small>
+        </div>
+    </div>
+
+    <nav id="side-menu" class="side-panel">
+        <details open>
+            <summary><i class="fa-solid fa-user-tie"></i><span>الإدارة الإشرافية و التنفيذية</span><i class="fa-solid fa-angle-down angle"></i></summary>
+            <a href="/">لوحة اجتماعات الإدارة</a>
+            <a href="/meetings/chairman">لوحة رئيس المجلس</a>
+        </details>
+
+        <details open>
+            <summary><i class="fa-solid fa-folder-open"></i><span>إدارة التوثيق و المستندات</span><i class="fa-solid fa-angle-down angle"></i></summary>
             <a href="/meetings/rafed">إدارة الاجتماعات</a>
-        </nav>
-    </aside>
+            <a href="/system/modules">خطة خدمات النظام</a>
+            <a href="/meetings/secretary">تجهيز اجتماع مجلس</a>
+            <a href="/meetings/archive">قائمة المحاضر</a>
+        </details>
 
-    <main class="content">
-        <header class="topbar">
-            <div>
-                <span>إدارة الاجتماعات والمجالس والمحاضر</span>
-                <strong>واجهة عربية مترابطة مع API</strong>
-            </div>
-            <a class="ghost-link" href="/swagger">Swagger API</a>
-        </header>
+        <details>
+            <summary><i class="fa-solid fa-people-group"></i><span>إدارة الأعضاء المشاركين</span><i class="fa-solid fa-angle-down angle"></i></summary>
+            <a href="/members/database">قاعدة بيانات الأعضاء</a>
+            <a href="/members/create">إضافة عضو</a>
+            <a href="/members/update">تحديث بيانات عضو</a>
+            <a href="/members/cancel">إلغاء عضوية</a>
+            <a href="/members/canceled">الأعضاء الملغاة عضوياتهم</a>
+            <a href="/members/payments">سداد الاشتراكات</a>
+            <a href="/members/due">المتأخرون عن السداد</a>
+            <a href="/members/cards">بطاقات الأعضاء</a>
+            <a href="/members/types">فئات العضويات</a>
+            <a href="/members/reports/share">مشاركة تقرير مع الأعضاء</a>
+            <a href="/meetings/waiting-room">بوابة انتظار العضو</a>
+            <a href="/meetings/live-voting">التصويت الحي</a>
+        </details>
 
-        @Body
-    </main>
-</div>
+        <details>
+            <summary><i class="fa-solid fa-chart-line"></i><span>إدارة التقييم و المتابعة</span><i class="fa-solid fa-angle-down angle"></i></summary>
+            <a href="/meetings/rafed#calendar">تقويم الاجتماعات</a>
+            <a href="/meetings/rafed#summaries">ملخصات الاجتماعات</a>
+        </details>
+    </nav>
+</aside>
+
+<main class="page-container-legacy">
+    @Body
+</main>

@@ -1,0 +1,74 @@
+@page "/members/payments"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MemberUiService Members
+
+<h1 class="page-title">سداد الاشتراكات</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-money-check-dollar"></i><div><h2>تسجيل عملية سداد</h2><p>تسجيل سند السداد وتحديث حالة سداد الرسوم في ملف العضو.</p></div></div>
+    <div class="form-grid">
+        <label>العضو<select @bind="selectedMemberId">@foreach (var member in members){<option value="@member.Id">@member.MemberNumber - @member.FullName</option>}</select></label>
+        <label>المبلغ<input type="number" step="0.01" @bind="amount" /></label>
+        <label>تاريخ الاستحقاق<input type="date" @bind="dueDate" /></label>
+        <label>رقم الإيصال<input @bind="receiptNumber" /></label>
+        <label class="check-row"><input type="checkbox" @bind="markAsPaid" /> تم السداد الآن</label>
+        <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="RecordAsync">تسجيل السداد</button><a class="secondary" href="/members/due">المتأخرون عن السداد</a></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-receipt"></i> سجل السداد</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>العضو</th><th>المبلغ</th><th>الاستحقاق</th><th>السداد</th><th>الحالة</th><th>الإيصال</th></tr></thead>
+        <tbody>
+            @foreach (var payment in payments)
+            {
+                <tr><td>@payment.MemberName</td><td>@payment.Amount</td><td>@payment.DueDate.ToString("yyyy-MM-dd")</td><td>@payment.PaidAt?.ToString("yyyy-MM-dd")</td><td><span class="status">@payment.Status</span></td><td>@payment.ReceiptNumber</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    [SupplyParameterFromQuery] public int? MemberId { get; set; }
+    private List<MemberResponse> members = [];
+    private List<MemberPaymentResponse> payments = [];
+    private int selectedMemberId;
+    private decimal amount;
+    private DateTime dueDate = DateTime.UtcNow.AddHours(3).Date;
+    private string? receiptNumber;
+    private string? notes;
+    private bool markAsPaid = true;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        members = await Members.GetMembersAsync(MemberStatus.Active);
+        selectedMemberId = MemberId ?? members.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => payments = await Members.GetPaymentsAsync(MemberId);
+
+    private async Task RecordAsync()
+    {
+        var result = await Members.RecordPaymentAsync(selectedMemberId, new RecordMemberPaymentRequest(amount, dueDate, markAsPaid ? DateTime.UtcNow.AddHours(3) : null, receiptNumber, notes, markAsPaid));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            amount = 0;
+            receiptNumber = null;
+            notes = null;
+        }
+        await LoadAsync();
+    }
+}

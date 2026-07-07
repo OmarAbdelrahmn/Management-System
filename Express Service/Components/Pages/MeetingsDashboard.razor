@@ -1,30 +1,102 @@
 @page "/"
+@attribute [Authorize]
+@inject MeetingUiService UiService
 
-<section class="page-band">
-    <h1>إدارة الاجتماعات والمجالس</h1>
-    <p>تجربة موحدة لوظائف رافد: إنشاء الاجتماع، الاعتماد، الدعوات، التصويت، التوقيع، والأرشفة.</p>
-
-    <div class="metric-grid">
-        <article>
-            <strong>5</strong>
-            <span>شاشات إدارة المجالس الأساسية</span>
-        </article>
-        <article>
-            <strong>15 يوم</strong>
-            <span>مهلة قبول الدعوة الافتراضية</span>
-        </article>
-        <article>
-            <strong>API</strong>
-            <span>جاهز لتطبيق ويب أو موبايل مستقبلاً</span>
-        </article>
+<section class="news">
+    <div class="marquee">
+        <span>مرحباً بك في نظام إدارة الاجتماعات والمجالس - تم توحيد وظائف رافد الخاصة بالاعتماد والجدولة والمحاضر والتصويت الحي ضمن واجهة عربية واحدة.</span>
     </div>
 </section>
 
-<section class="action-grid">
-    <a href="/meetings/secretary">تجهيز اجتماع وإرسال الدعوات</a>
-    <a href="/meetings/waiting-room">بوابة انتظار العضو</a>
-    <a href="/meetings/live-voting">التصويت الحي</a>
-    <a href="/meetings/chairman">اعتماد وتوقيع الرئيس</a>
-    <a href="/meetings/archive">أرشيف المحاضر Read-Only</a>
-    <a href="/meetings/rafed">شاشات رافد الناقصة</a>
+<section class="welcome_module">
+    <div class="welcome-panel">
+        <h1>لوحة إدارة الاجتماعات والمجالس</h1>
+        <p>واجهة تشغيلية بنمط رافد لقسم إدارة التوثيق والمستندات: متابعة المهام، إنشاء اجتماعات المجلس، إرسال الدعوات، فتح التصويت، اعتماد الرئيس، وأرشفة المحاضر المقفلة.</p>
+    </div>
+
+    <div class="date-panel">
+        <div>
+            <strong>تاريخ اليوم</strong>
+            <span>الثلاثاء 07 يوليو 2026</span>
+            <strong class="time">10:30</strong>
+            <span>الوقت الآن</span>
+        </div>
+    </div>
 </section>
+
+<section class="circle-tiles">
+    @foreach (var card in cards)
+    {
+        <article class="circle-tile-content">
+            <span class="circle-icon @card.Color"><i class="@card.Icon"></i></span>
+            <span>@card.Label</span>
+            <strong class="tile-number">@card.Count</strong>
+            <a class="tile-footer" href="@card.Url">عرض التفاصيل</a>
+        </article>
+    }
+</section>
+
+<section id="accordion" class="panel-group menu-panel">
+    <article class="panel panel-default">
+        <div class="panel-heading">
+            <i class="fa-solid fa-folder-open"></i>
+            <div>
+                <h2>إدارة التوثيق والمستندات &gt; إدارة الاجتماعات والمجالس</h2>
+                <p>المسار الرئيسي لشاشات السكرتير، العضو، التصويت، الرئيس، وأرشيف المحاضر.</p>
+            </div>
+            <i class="fa-solid fa-angle-down"></i>
+        </div>
+        <div class="panel-body">
+            <div class="quick-links">
+                <a href="/meetings/secretary"><i class="fa-solid fa-calendar-plus"></i> تجهيز اجتماع وإرسال الدعوات</a>
+                <a href="/meetings/waiting-room"><i class="fa-solid fa-door-open"></i> بوابة انتظار العضو</a>
+                <a href="/meetings/live-voting"><i class="fa-solid fa-square-poll-vertical"></i> التصويت الحي</a>
+                <a href="/meetings/chairman"><i class="fa-solid fa-signature"></i> اعتماد الرئيس</a>
+                <a href="/meetings/archive"><i class="fa-solid fa-file-pdf"></i> المحاضر Read-Only</a>
+                <a href="/meetings/rafed"><i class="fa-solid fa-table-list"></i> شاشات رافد الموسعة</a>
+            </div>
+        </div>
+    </article>
+
+    <article class="panel panel-default">
+        <div class="panel-heading">
+            <i class="fa-solid fa-shield-halved"></i>
+            <div>
+                <h2>قواعد العمل المفعلة</h2>
+                <p>دورة المجلس سنة واحدة، 4 دورات متتالية، دعوة داخل التطبيق والبريد، وقفل المحضر بعد التوقيع.</p>
+            </div>
+            <i class="fa-solid fa-angle-down"></i>
+        </div>
+        <div class="panel-body">
+            <table>
+                <thead><tr><th>القاعدة</th><th>التطبيق في النظام</th><th>الحالة</th></tr></thead>
+                <tbody>
+                    <tr><td>مهلة الدعوة الافتراضية</td><td>15 يوماً قابلة للتعديل لكل اجتماع</td><td><span class="status ok">جاهز</span></td></tr>
+                    <tr><td>التصويت الحي</td><td>SignalR للأحداث voteOpened / voteUpdated / voteClosed</td><td><span class="status ok">جاهز</span></td></tr>
+                    <tr><td>كود القرار المركب</td><td>رمز المجلس - العام - رقم الدورة - مسلسل القرار</td><td><span class="status ok">جاهز</span></td></tr>
+                    <tr><td>الأرشيف</td><td>قراءة فقط بعد توقيع الرئيس مع تحميل PDF</td><td><span class="status ok">جاهز</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
+
+@code {
+    private DashboardCard[] cards = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var dashboard = await UiService.GetDashboardAsync();
+        cards =
+        [
+            new("دعوات بانتظار الرد", dashboard.PendingInvitations.ToString(), "fa-solid fa-inbox", "bg-purple", "/meetings/waiting-room"),
+            new("الاجتماعات الجارية", dashboard.InProgress.ToString(), "fa-solid fa-clock", "bg-red", "/meetings/live-voting"),
+            new("بانتظار اعتماد الاجتماع", dashboard.PendingApprovals.ToString(), "fa-solid fa-hourglass-half", "bg-navy", "/meetings/rafed"),
+            new("الاجتماعات المجدولة", dashboard.Scheduled.ToString(), "fa-solid fa-calendar-days", "bg-blue", "/meetings/rafed"),
+            new("المحاضر المعتمدة", dashboard.PublishedMinutes.ToString(), "fa-solid fa-file-circle-check", "bg-teal", "/meetings/archive"),
+            new("مسودات متكررة", dashboard.RepeatDrafts.ToString(), "fa-solid fa-repeat", "bg-orange", "/meetings/rafed")
+        ];
+    }
+
+    private record DashboardCard(string Label, string Count, string Icon, string Color, string Url);
+}

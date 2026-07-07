@@ -1,0 +1,118 @@
+@page "/members/update"
+@page "/members/update/{Id:int}"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MemberUiService Members
+
+<h1 class="page-title">تحديث بيانات عضو</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+@if (Id is null)
+{
+    <section class="table-section">
+        <div class="table-title"><span><i class="fa-solid fa-pen-to-square"></i> اختر عضو للتعديل</span></div>
+        <table>
+            <thead><tr><th>رقم العضوية</th><th>الاسم</th><th>الفئة</th><th>الحالة</th><th>إجراء</th></tr></thead>
+            <tbody>
+                @foreach (var item in members)
+                {
+                    <tr><td>@item.MemberNumber</td><td>@item.FullName</td><td>@item.MembershipTypeName</td><td>@item.Status</td><td><a class="primary" href="@($"/members/update/{item.Id}")">فتح</a></td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+else if (loaded)
+{
+    <section class="panel">
+        <div class="panel-heading"><i class="fa-solid fa-user-pen"></i><div><h2>@fullName</h2><p>تعديل بيانات العضوية مع حفظ سجل التدقيق تلقائياً.</p></div></div>
+        <div class="form-grid">
+            <label>الاسم الكامل<input @bind="fullName" /></label>
+            <label>فئة العضوية<select @bind="membershipTypeId">@foreach (var type in types){<option value="@type.Id">@type.NameAr</option>}</select></label>
+            <label>رقم الهوية<input @bind="nationalId" /></label>
+            <label>البريد الإلكتروني<input @bind="email" /></label>
+            <label>الجوال<input @bind="mobile" /></label>
+            <label>المدينة<input @bind="city" /></label>
+            <label>العنوان<input @bind="address" /></label>
+            <label>تاريخ الانضمام<input type="date" @bind="joinedAt" /></label>
+            <label>النسبة التراكمية %<input type="number" step="0.01" @bind="cumulativePercentage" /></label>
+            <label class="check-row"><input type="checkbox" @bind="feesPaid" /> سدد الرسوم</label>
+            <label class="check-row"><input type="checkbox" @bind="isSupporter" /> عضو داعم</label>
+            <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
+        </div>
+        <div class="actions-row">
+            <button class="primary" @onclick="SaveAsync" disabled="@busy">حفظ التعديل</button>
+            <a class="secondary" href="/members/database">العودة للقاعدة</a>
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter] public int? Id { get; set; }
+    private bool loaded;
+    private bool busy;
+    private bool success;
+    private string? message;
+    private List<MemberResponse> members = [];
+    private List<MembershipTypeResponse> types = [];
+    private int membershipTypeId;
+    private string fullName = string.Empty;
+    private string? nationalId;
+    private string? email;
+    private string? mobile;
+    private string? city;
+    private string? address;
+    private DateTime joinedAt = DateTime.UtcNow.AddHours(3).Date;
+    private bool feesPaid;
+    private bool isSupporter;
+    private decimal cumulativePercentage = 1;
+    private string? notes;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        types = await Members.GetTypesAsync();
+        if (Id is null)
+        {
+            members = await Members.GetMembersAsync();
+            return;
+        }
+
+        var member = await Members.GetMemberAsync(Id.Value);
+        if (member is null)
+        {
+            message = "لم يتم العثور على العضو.";
+            success = false;
+            return;
+        }
+
+        membershipTypeId = member.MembershipTypeId;
+        fullName = member.FullName;
+        nationalId = member.NationalId;
+        email = member.Email;
+        mobile = member.Mobile;
+        city = member.City;
+        address = member.Address;
+        joinedAt = member.JoinedAt.Date;
+        feesPaid = member.FeesPaid;
+        isSupporter = member.IsSupporter;
+        cumulativePercentage = member.CumulativePercentage;
+        notes = member.Notes;
+        loaded = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (Id is null)
+            return;
+
+        busy = true;
+        var result = await Members.UpdateMemberAsync(Id.Value, new UpdateMemberRequest(fullName, membershipTypeId, nationalId, email, mobile, city, address, null, joinedAt, feesPaid, isSupporter, cumulativePercentage, notes));
+        success = result.Success;
+        message = result.Message;
+        busy = false;
+    }
+}

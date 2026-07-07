@@ -1,0 +1,45 @@
+@page "/members/cancel"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MemberUiService Members
+
+<h1 class="page-title">إلغاء عضوية</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-user-slash"></i><div><h2>إجراء إلغاء العضوية</h2><p>الإلغاء منطقي ويحفظ السبب والتاريخ ويمكن استعادة العضوية لاحقاً.</p></div></div>
+    <div class="form-grid">
+        <label>العضو<select @bind="memberId">@foreach (var member in members){<option value="@member.Id">@member.MemberNumber - @member.FullName</option>}</select></label>
+        <label class="span-2">سبب الإلغاء<textarea @bind="reason"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary danger" @onclick="CancelAsync">إلغاء العضوية</button><a class="secondary" href="/members/canceled">الأعضاء الملغاة</a></div>
+</section>
+
+@code {
+    private List<MemberResponse> members = [];
+    private int memberId;
+    private string reason = string.Empty;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        members = await Members.GetMembersAsync(MemberStatus.Active);
+        memberId = members.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private async Task CancelAsync()
+    {
+        var result = await Members.CancelMemberAsync(memberId, reason);
+        success = result.Success;
+        message = result.Message;
+        members = await Members.GetMembersAsync(MemberStatus.Active);
+        memberId = members.FirstOrDefault()?.Id ?? 0;
+        if (success)
+            reason = string.Empty;
+    }
+}

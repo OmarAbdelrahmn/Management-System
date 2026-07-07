@@ -1,0 +1,117 @@
+@page "/system/modules"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+@inject MeetingUiService UiService
+
+<h1 class="page-title">خطة خدمات النظام</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading">
+        <i class="fa-solid fa-layer-group"></i>
+        <div>
+            <h2>أول 50 صفحة للنظام</h2>
+            <p>هذه ليست نسخة صفحات رافد، بل خطة خدماتنا نحن، مقسمة إلى وحدات قابلة للتنفيذ واحدة تلو الأخرى.</p>
+        </div>
+        <button class="primary" @onclick="SeedAsync" disabled="@busy">تجهيز أول 50 صفحة</button>
+    </div>
+</section>
+
+<section class="circle-tiles" style="margin-top:14px">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-boxes-stacked"></i></span><span>الوحدات</span><strong class="tile-number">@modules.Count</strong><span class="tile-footer">خدمات رئيسية</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-file-lines"></i></span><span>الصفحات</span><strong class="tile-number">@modules.Sum(x => x.TotalPages)</strong><span class="tile-footer">أول دفعة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-list-check"></i></span><span>مخططة</span><strong class="tile-number">@modules.Sum(x => x.PlannedPages)</strong><span class="tile-footer">جاهزة للتحليل</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-navy"><i class="fa-solid fa-spinner"></i></span><span>قيد التنفيذ</span><strong class="tile-number">@modules.Sum(x => x.InProgressPages)</strong><span class="tile-footer">نشتغل عليها</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-circle-check"></i></span><span>منفذة</span><strong class="tile-number">@modules.Sum(x => x.ImplementedPages)</strong><span class="tile-footer">جاهزة</span></article>
+</section>
+
+<section class="table-section">
+    <div class="table-title">
+        <span><i class="fa-solid fa-boxes-stacked"></i> وحدات النظام</span>
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
+    @if (modules.Count == 0)
+    {
+        <div class="panel-body">لم يتم تجهيز خطة الصفحات بعد.</div>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>الوحدة</th><th>الوصف</th><th>الإجمالي</th><th>مخطط</th><th>قيد التنفيذ</th><th>منفذ</th><th>إجراء</th></tr></thead>
+            <tbody>
+                @foreach (var module in modules)
+                {
+                    <tr>
+                        <td>@module.NameAr</td>
+                        <td>@module.Description</td>
+                        <td>@module.TotalPages</td>
+                        <td><span class="status warn">@module.PlannedPages</span></td>
+                        <td><span class="status">@module.InProgressPages</span></td>
+                        <td><span class="status ok">@module.ImplementedPages</span></td>
+                        <td><button class="primary" @onclick="() => SelectModuleAsync(module.Key)">فتح الصفحات</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+@if (pages.Count > 0)
+{
+    <section class="table-section">
+        <div class="table-title"><span><i class="fa-solid fa-file-lines"></i> صفحات @selectedModuleKey</span></div>
+        <table>
+            <thead><tr><th>الصفحة</th><th>المسار</th><th>الخدمة</th><th>الحالة</th><th>إجراء</th></tr></thead>
+            <tbody>
+                @foreach (var systemPage in pages)
+                {
+                    <tr>
+                        <td>@systemPage.NameAr</td>
+                        <td>@systemPage.Route</td>
+                        <td>@systemPage.ServiceName</td>
+                        <td><span class="status">@systemPage.Status</span></td>
+                        <td><a class="secondary" href="@($"/system/page/{systemPage.Id}")">فتح الخطة</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+@code {
+    private bool busy;
+    private bool success;
+    private string? message;
+    private string? selectedModuleKey;
+    private List<SystemModuleResponse> modules = [];
+    private List<SystemPageResponse> pages = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        modules = await UiService.GetSystemModulesAsync();
+        if (!string.IsNullOrWhiteSpace(selectedModuleKey))
+            pages = await UiService.GetSystemPagesAsync(selectedModuleKey);
+    }
+
+    private async Task SeedAsync()
+    {
+        busy = true;
+        var result = await UiService.SeedSystemCatalogAsync();
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+        busy = false;
+    }
+
+    private async Task SelectModuleAsync(string key)
+    {
+        selectedModuleKey = key;
+        pages = await UiService.GetSystemPagesAsync(key);
+    }
+}

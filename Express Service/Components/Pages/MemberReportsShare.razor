@@ -1,0 +1,60 @@
+@page "/members/reports/share"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MemberUiService Members
+
+<h1 class="page-title">مشاركة تقرير مع الأعضاء</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-share-nodes"></i><div><h2>تقرير للأعضاء</h2><p>يحفظ النظام سجل مشاركة التقرير وعدد المستلمين حسب الجمهور المحدد.</p></div></div>
+    <div class="form-grid">
+        <label>عنوان التقرير<input @bind="title" /></label>
+        <label>الجمهور<select @bind="audience"><option value="AllActiveMembers">كل الأعضاء النشطين</option><option value="DueMembers">المتأخرون عن السداد</option></select></label>
+        <label class="span-2">نص التقرير<textarea @bind="body"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="ShareAsync">مشاركة التقرير</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-clock-rotate-left"></i> سجل المشاركات</span></div>
+    <table>
+        <thead><tr><th>العنوان</th><th>الجمهور</th><th>المستلمون</th><th>تاريخ المشاركة</th></tr></thead>
+        <tbody>
+            @foreach (var share in shares)
+            {
+                <tr><td>@share.Title</td><td>@AudienceLabel(share.Audience)</td><td>@share.RecipientCount</td><td>@share.SharedAt.ToString("yyyy-MM-dd HH:mm")</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private string title = string.Empty;
+    private string body = string.Empty;
+    private string audience = "AllActiveMembers";
+    private List<MemberReportShareResponse> shares = [];
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => shares = await Members.GetReportSharesAsync();
+
+    private async Task ShareAsync()
+    {
+        var result = await Members.ShareReportAsync(new ShareMemberReportRequest(title, body, audience));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            title = string.Empty;
+            body = string.Empty;
+        }
+        shares = await Members.GetReportSharesAsync();
+    }
+
+    private static string AudienceLabel(string value) => value == "DueMembers" ? "المتأخرون عن السداد" : "كل الأعضاء النشطين";
+}
