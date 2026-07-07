@@ -1,0 +1,24 @@
+@page "/meetings/live-voting"
+@rendermode InteractiveServer
+
+<section class="page-band">
+    <h1>شاشة الاجتماع والتصويت الحي</h1>
+    <p>الأحداث الحية تبث عبر SignalR: voteOpened, voteUpdated, voteClosed.</p>
+    <button class="primary">إغلاق التصويت</button>
+</section>
+
+<section class="vote-board">
+    <div>
+        <h2>الموافقون</h2>
+        <p>سعيد <span>وزن 1</span></p>
+        <p>محمد <span>وزن 25%</span></p>
+    </div>
+    <div>
+        <h2>المعترضون</h2>
+        <label>أحمد <input placeholder="سبب التحفظ أو الرفض" /></label>
+    </div>
+    <div>
+        <h2>الممتنعون</h2>
+        <p>لا يوجد</p>
+    </div>
+</section>

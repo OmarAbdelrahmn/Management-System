@@ -1,0 +1,32 @@
+@page "/meetings/waiting-room"
+@rendermode InteractiveServer
+
+<section class="page-band">
+    <h1>بوابة انتظار العضو</h1>
+    <p>زر دخول الاجتماع يفتح فقط بعد قبول الدعوة والإقرار بقراءة جدول الأعمال.</p>
+</section>
+
+<section class="split">
+    <div>
+        <h2>الدعوة</h2>
+        <p>اجتماع مجلس الإدارة - الأربعاء 10:00 صباحاً</p>
+        <button class="primary" @onclick="() => accepted = true">قبول الدعوة</button>
+        <label class="check"><input type="checkbox" @bind="agendaRead" /> أقر بقراءة جدول الأعمال كاملاً</label>
+        <textarea @bind="note" placeholder="ملاحظة اختيارية"></textarea>
+        <div class="inline-options">
+            <label><input type="radio" name="noteVisibility" checked /> تظهر قبل المجلس</label>
+            <label><input type="radio" name="noteVisibility" /> تظهر أثناء المجلس</label>
+        </div>
+    </div>
+    <div class="entry-panel">
+        <strong>@(CanEnter ? "جاهز للدخول" : "بانتظار استكمال المتطلبات")</strong>
+        <button class="primary" disabled="@(!CanEnter)">دخول الاجتماع</button>
+    </div>
+</section>
+
+@code {
+    private bool accepted;
+    private bool agendaRead;
+    private string? note;
+    private bool CanEnter => accepted && agendaRead;
+}

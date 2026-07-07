@@ -1,0 +1,14 @@
+<Router AppAssembly="@typeof(Express_Service.Controllers.MeetingsController).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <section class="page-band">
+                <h1>الصفحة غير موجودة</h1>
+                <p>الرابط المطلوب غير متاح ضمن نظام إدارة الاجتماعات والمجالس.</p>
+            </section>
+        </LayoutView>
+    </NotFound>
+</Router>
