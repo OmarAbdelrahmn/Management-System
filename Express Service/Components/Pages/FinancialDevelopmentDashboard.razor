@@ -1,0 +1,29 @@
+@page "/financial-development"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject FinancialDevelopmentUiService FinancialDevelopment
+
+<h1 class="page-title">إدارة الموارد المالية وتنميتها وتسويقها</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-hand-holding-heart"></i></span><span>الداعمون</span><strong class="tile-number">@(dashboard?.SupportersCount ?? 0)</strong><span class="tile-footer">حساب</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-bullseye"></i></span><span>فرص نشطة</span><strong class="tile-number">@(dashboard?.ActiveOpportunitiesCount ?? 0)</strong><span class="tile-footer">تسويق</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-coins"></i></span><span>تبرعات مؤكدة</span><strong class="tile-number">@(dashboard?.ConfirmedDonationsAmount ?? 0)</strong><span class="tile-footer">ريال</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-building-columns"></i></span><span>أوقاف نشطة</span><strong class="tile-number">@(dashboard?.ActiveEndowmentsCount ?? 0)</strong><span class="tile-footer">وقف</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-money-bill-trend-up"></i><div><h2>عمليات تنمية الموارد</h2><p>حسابات الداعمين، التسويق المالي، الحملات الإلكترونية، تقارير التبرعات، وإدارة الأوقاف.</p></div></div>
+    <div class="actions-row">
+        <a class="primary" href="/financial-development/supporters">حسابات الداعمين</a>
+        <a class="secondary" href="/financial-development/fundraising">تنمية الموارد</a>
+        <a class="secondary" href="/financial-development/digital-marketing">التسويق الإلكتروني</a>
+        <a class="secondary" href="/financial-development/reports">تقارير التبرعات</a>
+        <a class="secondary" href="/financial-development/endowments">الأوقاف</a>
+    </div>
+</section>
+
+@code {
+    private FinancialDevelopmentDashboardResponse? dashboard;
+    protected override async Task OnInitializedAsync() => dashboard = await FinancialDevelopment.GetDashboardAsync();
+}

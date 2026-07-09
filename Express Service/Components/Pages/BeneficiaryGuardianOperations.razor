@@ -1,0 +1,116 @@
+@page "/beneficiaries/guardian-operations"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject BeneficiaryUiService Beneficiaries
+
+<h1 class="page-title">عمليات تحويل وحذف الأوصياء</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-user-shield"></i><div><h2>عملية وصي</h2><p>تحويل مستفيد إلى وصي، تحويل وصي إلى مستفيد، أو حذف وصي مع سجل قرار.</p></div></div>
+    <div class="form-grid">
+        <label>نوع العملية<select @bind="operationType"><option value="@BeneficiaryGuardianOperationType.ConvertBeneficiaryToGuardian">تحويل مستفيد إلى وصي</option><option value="@BeneficiaryGuardianOperationType.ConvertGuardianToBeneficiary">تحويل وصي إلى مستفيد</option><option value="@BeneficiaryGuardianOperationType.RemoveGuardian">حذف ملف وصي</option></select></label>
+        <label>المستفيد<select @bind="beneficiaryProfileId"><option value="0">اختر عند تحويل مستفيد</option>@foreach (var profile in profiles){<option value="@profile.Id">@profile.BeneficiaryNumber - @profile.FullName</option>}</select></label>
+        <label>الوصي<select @bind="beneficiaryGuardianId"><option value="0">اختر عند تحويل/حذف وصي</option>@foreach (var guardian in guardians){<option value="@guardian.Id">@guardian.FullName - @guardian.BeneficiaryName</option>}</select></label>
+        <label>اسم مختصر<input @bind="subjectName" placeholder="اختياري" /></label>
+        <label class="span-2">ملاحظات العملية<textarea @bind="notes"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="CreateAsync">إنشاء عملية</button><button class="secondary" @onclick="LoadAsync">تحديث القائمة</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-check-double"></i><div><h2>قرار العملية</h2><p>اعتماد العملية يطبق التحويل أو الحذف مباشرة ويحفظ القرار في السجل.</p></div></div>
+    <div class="form-grid compact">
+        <label>الحالة<select @bind="filterStatusText"><option value="">الكل</option><option value="Pending">بانتظار القرار</option><option value="Completed">مكتملة</option><option value="Rejected">مرفوضة</option><option value="Cancelled">ملغية</option></select></label>
+        <label>ملاحظات القرار<input @bind="decisionNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="secondary" @onclick="LoadAsync">تطبيق الفلتر</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-repeat"></i> العمليات</span></div>
+    <table>
+        <thead><tr><th>المرجع</th><th>النوع</th><th>الاسم</th><th>الحالة</th><th>ملاحظات</th><th>قرار</th></tr></thead>
+        <tbody>
+            @foreach (var operation in operations)
+            {
+                <tr>
+                    <td>@operation.ReferenceNumber</td>
+                    <td>@operation.Type</td>
+                    <td>@operation.SubjectName</td>
+                    <td><span class="status">@operation.Status</span></td>
+                    <td>@operation.Notes</td>
+                    <td>
+                        @if (operation.Status == "Pending")
+                        {
+                            <button class="secondary" @onclick="@(() => DecideAsync(operation.Id, true))">اعتماد</button>
+                            <button class="secondary" @onclick="@(() => DecideAsync(operation.Id, false))">رفض</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<BeneficiaryResponse> profiles = [];
+    private List<BeneficiaryGuardianResponse> guardians = [];
+    private List<BeneficiaryGuardianOperationResponse> operations = [];
+    private BeneficiaryGuardianOperationType operationType = BeneficiaryGuardianOperationType.ConvertBeneficiaryToGuardian;
+    private int beneficiaryProfileId;
+    private int beneficiaryGuardianId;
+    private string? subjectName;
+    private string? notes;
+    private string? decisionNotes;
+    private string filterStatusText = "Pending";
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        profiles = await Beneficiaries.SearchAsync(status: BeneficiaryStatus.Active);
+        guardians = await Beneficiaries.GetGuardiansAsync();
+        beneficiaryProfileId = profiles.FirstOrDefault()?.Id ?? 0;
+        beneficiaryGuardianId = guardians.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var status = Enum.TryParse<BeneficiaryOperationStatus>(filterStatusText, out var parsedStatus) ? parsedStatus : (BeneficiaryOperationStatus?)null;
+        operations = await Beneficiaries.GetGuardianOperationsAsync(status: status);
+        guardians = await Beneficiaries.GetGuardiansAsync();
+    }
+
+    private async Task CreateAsync()
+    {
+        var result = await Beneficiaries.CreateGuardianOperationAsync(new CreateBeneficiaryGuardianOperationRequest(
+            operationType,
+            beneficiaryProfileId == 0 ? null : beneficiaryProfileId,
+            beneficiaryGuardianId == 0 ? null : beneficiaryGuardianId,
+            subjectName,
+            notes));
+
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            subjectName = null;
+            notes = null;
+            await LoadAsync();
+        }
+    }
+
+    private async Task DecideAsync(int id, bool approved)
+    {
+        var result = await Beneficiaries.DecideGuardianOperationAsync(id, approved, decisionNotes);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

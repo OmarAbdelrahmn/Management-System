@@ -1,0 +1,60 @@
+@page "/pr-media/content"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject PublicRelationsMediaUiService PrMedia
+
+<h1 class="page-title">محتوى الموقع والنماذج</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="form-grid">
+        <label>نوع المحتوى<select @bind="contentType"><option value="@WebsiteContentType.About">عن الجمعية</option><option value="@WebsiteContentType.News">خبر</option><option value="@WebsiteContentType.Gallery">معرض</option><option value="@WebsiteContentType.Video">فيديو</option><option value="@WebsiteContentType.Partner">شريك</option><option value="@WebsiteContentType.Regulation">لائحة</option><option value="@WebsiteContentType.AnnualReport">تقرير سنوي</option><option value="@WebsiteContentType.Initiative">مبادرة</option><option value="@WebsiteContentType.Testimonial">قالوا عنا</option><option value="@WebsiteContentType.Service">خدمة</option><option value="@WebsiteContentType.Link">رابط</option><option value="@WebsiteContentType.Popup">نافذة</option><option value="@WebsiteContentType.Contest">مسابقة</option><option value="@WebsiteContentType.Page">صفحة</option></select></label>
+        <label>العنوان<input @bind="title" /></label>
+        <label>الرابط المختصر<input @bind="slug" /></label>
+        <label>رابط وسائط<input @bind="mediaUrl" /></label>
+        <label class="span-2">النص<textarea @bind="body"></textarea></label>
+        <label>النموذج<input @bind="formTitle" /></label>
+        <label>الحقول JSON<input @bind="fieldsJson" /></label>
+        <label>صاحب الطلب<input @bind="contactName" /></label>
+        <label>موضوع التواصل<input @bind="subject" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveContentAsync">حفظ محتوى</button><button class="secondary" @onclick="SaveFormAsync">حفظ نموذج</button><button class="secondary" @onclick="SaveContactAsync">حفظ تواصل</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-globe"></i> محتوى الموقع</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>العنوان</th><th>التفاصيل</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var item in content){<tr><td>@item.ContentType</td><td>@item.Title</td><td>@item.Slug<br />@item.MediaUrl</td><td>@item.Status</td></tr>}
+            @foreach (var item in forms){<tr><td>نموذج</td><td>@item.Title</td><td>@item.SubmissionsCount إدخالات</td><td>@item.IsActive</td></tr>}
+            @foreach (var item in contacts){<tr><td>تواصل</td><td>@item.FullName</td><td>@item.Subject</td><td>@item.Status</td></tr>}
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<WebsiteContentItemResponse> content = [];
+    private List<WebsiteFormResponse> forms = [];
+    private List<WebsiteContactRequestResponse> contacts = [];
+    private WebsiteContentType contentType = WebsiteContentType.News;
+    private string title = string.Empty;
+    private string? slug;
+    private string? mediaUrl;
+    private string body = string.Empty;
+    private string formTitle = string.Empty;
+    private string fieldsJson = "[{\"name\":\"name\",\"label\":\"الاسم\"}]";
+    private string contactName = string.Empty;
+    private string subject = string.Empty;
+    private bool success;
+    private string? message;
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync(){ content = await PrMedia.GetContentItemsAsync(); forms = await PrMedia.GetFormsAsync(); contacts = await PrMedia.GetContactRequestsAsync(); }
+    private async Task SaveContentAsync(){ var r = await PrMedia.SaveContentItemAsync(null, new SaveWebsiteContentItemRequest(contentType, title, slug, null, body, mediaUrl, WebsiteContentStatus.Published)); success = r.Success; message = r.Message; await LoadAsync(); }
+    private async Task SaveFormAsync(){ var r = await PrMedia.SaveFormAsync(null, new SaveWebsiteFormRequest(formTitle, fieldsJson, true)); success = r.Success; message = r.Message; await LoadAsync(); }
+    private async Task SaveContactAsync(){ var r = await PrMedia.SaveContactRequestAsync(null, new SaveWebsiteContactRequestRequest(contactName, null, null, subject, body, WebsiteContentStatus.Draft)); success = r.Success; message = r.Message; await LoadAsync(); }
+}

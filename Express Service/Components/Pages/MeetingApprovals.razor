@@ -1,0 +1,42 @@
+@page "/meetings/approvals"
+@attribute [Authorize(Roles = "Admin,BoardChairman,BoardSecretary")]
+@rendermode InteractiveServer
+@inject MeetingUiService UiService
+
+<h1 class="page-title">اعتماد الاجتماعات</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-circle-check"></i> الاجتماعات بانتظار الإجراء</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>العنوان</th><th>التاريخ</th><th>النوع</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var meeting in meetings)
+            {
+                <tr>
+                    <td>@meeting.Title</td>
+                    <td>@meeting.ScheduledAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@meeting.Type</td>
+                    <td><span class="status">@meeting.Status</span></td>
+                    <td><button class="secondary" @onclick="() => SubmitAsync(meeting.Id)">إرسال للاعتماد</button> <button class="primary" @onclick="() => ApproveAsync(meeting.Id)">اعتماد</button> <button class="danger" @onclick="() => RejectAsync(meeting.Id)">رفض</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<MeetingListItemResponse> meetings = [];
+    private bool success;
+    private string? message;
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => meetings = await UiService.GetScheduledMeetingsAsync();
+    private async Task RunAsync(Func<Task<(bool Success, string Message)>> action){ var result = await action(); success = result.Success; message = result.Message; await LoadAsync(); }
+    private Task SubmitAsync(int id) => RunAsync(() => UiService.SubmitMeetingForApprovalAsync(id));
+    private Task ApproveAsync(int id) => RunAsync(() => UiService.ApproveMeetingAsync(id));
+    private Task RejectAsync(int id) => RunAsync(() => UiService.RejectMeetingAsync(id));
+}

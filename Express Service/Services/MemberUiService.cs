@@ -104,4 +104,26 @@ public class MemberUiService(IMemberService memberService)
         var result = await memberService.ShareReportAsync(request, cancellationToken);
         return result.IsSuccess ? (true, $"تمت مشاركة التقرير مع {result.Value.RecipientCount} عضو.") : (false, result.Error.Description);
     }
+
+    public async Task<List<MemberParticipationResponse>> GetParticipationAsync(
+        MemberParticipationRole? role = null,
+        MemberParticipationStatus? status = null,
+        int? memberProfileId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await memberService.GetParticipationAssignmentsAsync(new MemberParticipationSearchRequest(role, status, memberProfileId), cancellationToken);
+        return result.IsSuccess ? result.Value.ToList() : [];
+    }
+
+    public async Task<(bool Success, string Message)> SaveParticipationAsync(int? id, SaveMemberParticipationRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await memberService.SaveParticipationAssignmentAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم حفظ تصنيف العضو المشارك.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> EndParticipationAsync(int id, DateTime? endsAt, string? notes, CancellationToken cancellationToken = default)
+    {
+        var result = await memberService.EndParticipationAssignmentAsync(id, new EndMemberParticipationRequest(endsAt, notes), cancellationToken);
+        return result.IsSuccess ? (true, "تم إنهاء تصنيف العضو المشارك.") : (false, result.Error.Description);
+    }
 }

@@ -1,0 +1,73 @@
+@page "/hr/evaluations"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">إدارة تقييمات الموظفين</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-star-half-stroke"></i><div><h2>تقييم موظف</h2><p>تسجيل تقييم دوري للموظف مع نقاط القوة والتحسين.</p></div></div>
+    <div class="form-grid">
+        <label>الموظف<select @bind="employeeId">@foreach (var employee in employees){<option value="@employee.Id">@employee.FullName</option>}</select></label>
+        <label>من<input type="date" @bind="periodStart" /></label>
+        <label>إلى<input type="date" @bind="periodEnd" /></label>
+        <label>الدرجة<input type="number" step="0.5" @bind="score" /></label>
+        <label>الدرجة العظمى<input type="number" step="0.5" @bind="maxScore" /></label>
+        <label>التقدير<input @bind="rating" /></label>
+        <label>المقيّم<input @bind="evaluatorName" /></label>
+        <label class="span-2">نقاط القوة<textarea @bind="strengths"></textarea></label>
+        <label class="span-2">مجالات التحسين<textarea @bind="improvementAreas"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ التقييم</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-chart-simple"></i> التقييمات</span></div>
+    <table>
+        <thead><tr><th>الموظف</th><th>الفترة</th><th>الدرجة</th><th>النسبة</th><th>التقدير</th><th>المقيّم</th></tr></thead>
+        <tbody>
+            @foreach (var item in evaluations)
+            {
+                <tr><td>@item.EmployeeName</td><td>@item.PeriodStart.ToString("yyyy-MM-dd") - @item.PeriodEnd.ToString("yyyy-MM-dd")</td><td>@item.Score / @item.MaxScore</td><td>@item.Percentage%</td><td>@item.Rating</td><td>@item.EvaluatorName</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EmployeeResponse> employees = [];
+    private List<EmployeeEvaluationResponse> evaluations = [];
+    private int employeeId;
+    private DateTime periodStart = new(DateTime.UtcNow.AddHours(3).Year, 1, 1);
+    private DateTime periodEnd = DateTime.UtcNow.AddHours(3).Date;
+    private decimal score;
+    private decimal maxScore = 100;
+    private string rating = "جيد";
+    private string? evaluatorName;
+    private string? strengths;
+    private string? improvementAreas;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        employees = await HR.SearchEmployeesAsync(null, null, null, null);
+        employeeId = employees.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => evaluations = await HR.GetEvaluationsAsync();
+
+    private async Task SaveAsync()
+    {
+        var result = await HR.SaveEvaluationAsync(null, new SaveEmployeeEvaluationRequest(employeeId, periodStart, periodEnd, score, maxScore, rating, evaluatorName, strengths, improvementAreas, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

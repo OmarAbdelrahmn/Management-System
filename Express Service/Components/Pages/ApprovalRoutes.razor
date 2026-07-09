@@ -1,0 +1,95 @@
+@page "/approvals/routes"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject TaskUiService Tasks
+
+<h1 class="page-title">مسارات الاعتماد</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-route"></i><div><h2>تعريف مسار اعتماد</h2><p>المسار يحدد نوع العملية وخطوات الموافقين بالترتيب.</p></div></div>
+    <div class="form-grid">
+        <label>اسم المسار<input @bind="routeName" /></label>
+        <label>نوع العملية<input @bind="entityType" placeholder="Task / Meeting / Member" /></label>
+        <label class="check-row"><input type="checkbox" @bind="routeActive" /> فعال</label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="CreateRouteAsync">حفظ المسار</button></div>
+</section>
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-list-ol"></i><div><h2>إضافة خطوة</h2><p>أضف موافقين للمسار الحالي حسب الترتيب.</p></div></div>
+    <div class="form-grid">
+        <label>المسار<select @bind="selectedRouteId">@foreach (var route in routes){<option value="@route.Id">@route.NameAr</option>}</select></label>
+        <label>الترتيب<input type="number" @bind="stepOrder" /></label>
+        <label>اسم الخطوة<input @bind="stepName" /></label>
+        <label>الموافق<select @bind="approverUserId">@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="AddStepAsync">إضافة خطوة</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-diagram-project"></i> المسارات</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>المسار</th><th>النوع</th><th>الحالة</th><th>الخطوات</th></tr></thead>
+        <tbody>
+            @foreach (var route in routes)
+            {
+                <tr><td>@route.NameAr</td><td>@route.EntityType</td><td>@(route.IsActive ? "فعال" : "موقوف")</td><td>@string.Join(" ← ", route.Steps.Select(x => $"{x.StepOrder}. {x.NameAr} ({x.ApproverName})"))</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ApprovalRouteResponse> routes = [];
+    private List<UserPickerResponse> users = [];
+    private string routeName = string.Empty;
+    private string entityType = "Task";
+    private bool routeActive = true;
+    private int selectedRouteId;
+    private int stepOrder = 1;
+    private string stepName = string.Empty;
+    private string approverUserId = string.Empty;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await Tasks.GetUsersAsync();
+        approverUserId = users.FirstOrDefault()?.Id ?? string.Empty;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        routes = await Tasks.GetApprovalRoutesAsync();
+        selectedRouteId = routes.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private async Task CreateRouteAsync()
+    {
+        var result = await Tasks.CreateApprovalRouteAsync(new CreateApprovalRouteRequest(routeName, entityType, routeActive));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            routeName = string.Empty;
+        await LoadAsync();
+    }
+
+    private async Task AddStepAsync()
+    {
+        var result = await Tasks.AddApprovalStepAsync(selectedRouteId, new AddApprovalStepRequest(stepOrder, stepName, approverUserId));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            stepName = string.Empty;
+            stepOrder++;
+        }
+        await LoadAsync();
+    }
+}

@@ -342,6 +342,113 @@ public class MemberService(ApplicationDbcontext dbcontext) : IMemberService
         return Result.Success<IEnumerable<MemberReportShareResponse>>(shares);
     }
 
+    public async Task<Result<IEnumerable<MemberParticipationResponse>>> GetParticipationAssignmentsAsync(
+        MemberParticipationSearchRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var query = dbcontext.MemberParticipationAssignments
+            .AsNoTracking()
+            .Include(x => x.MemberProfile)
+            .AsQueryable();
+
+        if (request.Role.HasValue)
+            query = query.Where(x => x.Role == request.Role.Value);
+
+        if (request.Status.HasValue)
+            query = query.Where(x => x.Status == request.Status.Value);
+
+        if (request.MemberProfileId.HasValue)
+            query = query.Where(x => x.MemberProfileId == request.MemberProfileId.Value);
+
+        var assignments = await query
+            .OrderBy(x => x.Role)
+            .ThenByDescending(x => x.Status == MemberParticipationStatus.Active)
+            .ThenBy(x => x.MemberProfile!.FullName)
+            .Select(x => MapParticipation(x))
+            .ToListAsync(cancellationToken);
+
+        return Result.Success<IEnumerable<MemberParticipationResponse>>(assignments);
+    }
+
+    public async Task<Result<MemberParticipationResponse>> SaveParticipationAssignmentAsync(
+        int? id,
+        SaveMemberParticipationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.MemberProfileId <= 0 || request.VotingWeight <= 0 || request.EndsAt.HasValue && request.EndsAt.Value.Date < request.StartsAt.Date)
+            return Result.Failure<MemberParticipationResponse>(MemberErrors.InvalidRequest);
+
+        var member = await dbcontext.MemberProfiles.FirstOrDefaultAsync(x => x.Id == request.MemberProfileId, cancellationToken);
+        if (member is null)
+            return Result.Failure<MemberParticipationResponse>(MemberErrors.NotFound);
+
+        if (request.Status == MemberParticipationStatus.Active)
+        {
+            var duplicateActive = await dbcontext.MemberParticipationAssignments.AnyAsync(x =>
+                x.MemberProfileId == request.MemberProfileId &&
+                x.Role == request.Role &&
+                x.Status == MemberParticipationStatus.Active &&
+                (!id.HasValue || x.Id != id.Value),
+                cancellationToken);
+
+            if (duplicateActive)
+                return Result.Failure<MemberParticipationResponse>(MemberErrors.DuplicateActiveParticipation);
+        }
+
+        MemberParticipationAssignment assignment;
+        if (id.HasValue)
+        {
+            assignment = await dbcontext.MemberParticipationAssignments
+                .Include(x => x.MemberProfile)
+                .FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken)
+                ?? null!;
+            if (assignment is null)
+                return Result.Failure<MemberParticipationResponse>(MemberErrors.ParticipationNotFound);
+        }
+        else
+        {
+            assignment = new MemberParticipationAssignment();
+            dbcontext.MemberParticipationAssignments.Add(assignment);
+        }
+
+        assignment.MemberProfileId = request.MemberProfileId;
+        assignment.Role = request.Role;
+        assignment.PositionTitle = request.PositionTitle?.Trim();
+        assignment.CycleName = request.CycleName?.Trim();
+        assignment.StartsAt = request.StartsAt.Date;
+        assignment.EndsAt = request.EndsAt?.Date;
+        assignment.Status = request.Status;
+        assignment.VotingWeight = request.VotingWeight;
+        assignment.Notes = request.Notes?.Trim();
+        assignment.MemberProfile = member;
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapParticipation(assignment));
+    }
+
+    public async Task<Result<MemberParticipationResponse>> EndParticipationAssignmentAsync(
+        int id,
+        EndMemberParticipationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var assignment = await dbcontext.MemberParticipationAssignments
+            .Include(x => x.MemberProfile)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (assignment is null)
+            return Result.Failure<MemberParticipationResponse>(MemberErrors.ParticipationNotFound);
+
+        var endDate = request.EndsAt?.Date ?? DateTime.UtcNow.AddHours(3).Date;
+        if (endDate < assignment.StartsAt.Date)
+            return Result.Failure<MemberParticipationResponse>(MemberErrors.InvalidRequest);
+
+        assignment.EndsAt = endDate;
+        assignment.Status = MemberParticipationStatus.Ended;
+        assignment.Notes = request.Notes?.Trim() ?? assignment.Notes;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapParticipation(assignment));
+    }
+
     private async Task<string> GenerateMemberNumberAsync(CancellationToken cancellationToken)
     {
         var year = DateTime.UtcNow.AddHours(3).Year;
@@ -400,4 +507,19 @@ public class MemberService(ApplicationDbcontext dbcontext) : IMemberService
 
     private static MemberReportShareResponse MapReportShare(MemberReportShare share) =>
         new(share.Id, share.Title, share.Body, share.Audience, share.SharedAt, share.RecipientCount);
+
+    private static MemberParticipationResponse MapParticipation(MemberParticipationAssignment assignment) =>
+        new(
+            assignment.Id,
+            assignment.MemberProfileId,
+            assignment.MemberProfile?.MemberNumber ?? string.Empty,
+            assignment.MemberProfile?.FullName ?? string.Empty,
+            assignment.Role.ToString(),
+            assignment.PositionTitle,
+            assignment.CycleName,
+            assignment.StartsAt,
+            assignment.EndsAt,
+            assignment.Status.ToString(),
+            assignment.VotingWeight,
+            assignment.Notes);
 }

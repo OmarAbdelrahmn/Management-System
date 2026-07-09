@@ -1,0 +1,108 @@
+@page "/programs-projects/projects"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ProgramsProjectsUiService ProgramsProjects
+
+<h1 class="page-title">قواعد بيانات المشاريع</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-magnifying-glass"></i><div><h2>بحث المشاريع والبرامج</h2><p>تحديث الحالة ومتابعة سجل النشاط من نفس قاعدة البيانات.</p></div></div>
+    <div class="form-grid compact">
+        <label>بحث<input @bind="search" /></label>
+        <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="Draft">مسودة</option><option value="Planning">تخطيط</option><option value="Active">نشط</option><option value="Completed">مكتمل</option><option value="Deleted">محذوف</option></select></label>
+        <label>النوع<input @bind="projectType" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="LoadAsync">بحث</button><a class="secondary" href="/programs-projects/create">إضافة مشروع</a></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-table"></i> المشاريع</span></div>
+    <table>
+        <thead><tr><th>الكود</th><th>الاسم</th><th>النوع</th><th>الحالة</th><th>المهام</th><th>الرصيد</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var project in projects)
+            {
+                <tr>
+                    <td>@project.ProjectCode</td>
+                    <td>@project.Name</td>
+                    <td>@project.ProjectType</td>
+                    <td><span class="status">@project.Status</span></td>
+                    <td>@project.CompletedTasksCount / @project.TasksCount</td>
+                    <td>@project.Balance</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => LoadActivitiesAsync(project.Id))">السجل</button>
+                        <button class="secondary" @onclick="@(() => StatusAsync(project.Id, ProgramProjectStatus.Completed))">إكمال</button>
+                        <button class="secondary" @onclick="@(() => StatusAsync(project.Id, ProgramProjectStatus.Active))">فتح</button>
+                        <button class="secondary" @onclick="@(() => StatusAsync(project.Id, ProgramProjectStatus.Deleted))">حذف</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@if (selectedProject is not null)
+{
+    <section class="table-section">
+        <div class="table-title"><span><i class="fa-solid fa-clock-rotate-left"></i> سجل النشاط: @selectedProject.Name</span><button class="secondary" @onclick="@(() => LoadActivitiesAsync(selectedProject.Id))">تحديث السجل</button></div>
+        <table>
+            <thead><tr><th>الوقت</th><th>النوع</th><th>العنوان</th><th>الحالة</th><th>المبلغ</th><th>المرجع</th><th>ملاحظة</th></tr></thead>
+            <tbody>
+                @foreach (var activity in activities)
+                {
+                    <tr>
+                        <td>@activity.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td><span class="status">@activity.Type</span></td>
+                        <td>@activity.Title</td>
+                        <td>@($"{activity.FromStatus ?? "-"} -> {activity.ToStatus ?? "-"}")</td>
+                        <td>@(activity.Amount?.ToString("N2") ?? "-")</td>
+                        <td>@(activity.Reference ?? "-")</td>
+                        <td>@(activity.Note ?? "-")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+@code {
+    private List<ProgramProjectResponse> projects = [];
+    private List<ProgramProjectActivityResponse> activities = [];
+    private ProgramProjectResponse? selectedProject;
+    private string? search;
+    private string statusText = string.Empty;
+    private string? projectType;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var status = Enum.TryParse<ProgramProjectStatus>(statusText, out var parsedStatus) ? parsedStatus : (ProgramProjectStatus?)null;
+        projects = await ProgramsProjects.SearchProjectsAsync(search, status, projectType);
+        if (selectedProject is not null)
+            selectedProject = projects.FirstOrDefault(x => x.Id == selectedProject.Id);
+    }
+
+    private async Task StatusAsync(int id, ProgramProjectStatus status)
+    {
+        var result = await ProgramsProjects.UpdateProjectStatusAsync(id, status);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+        if (selectedProject?.Id == id)
+            await LoadActivitiesAsync(id);
+    }
+
+    private async Task LoadActivitiesAsync(int projectId)
+    {
+        selectedProject = projects.FirstOrDefault(x => x.Id == projectId);
+        activities = await ProgramsProjects.GetProjectActivitiesAsync(projectId);
+    }
+}

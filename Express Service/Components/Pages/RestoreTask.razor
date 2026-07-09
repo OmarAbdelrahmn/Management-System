@@ -1,0 +1,41 @@
+@page "/tasks/restore"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject TaskUiService Tasks
+
+<h1 class="page-title">استعادة مهمة</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-trash-can-arrow-up"></i> المهام المحذوفة</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>المهمة</th><th>المكلف</th><th>سبب الحذف</th><th>تاريخ الحذف</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var task in tasks)
+            {
+                <tr><td>@task.Title</td><td>@task.AssigneeName</td><td>@task.DeletedReason</td><td>@task.DeletedAt?.ToString("yyyy-MM-dd")</td><td><button class="primary" @onclick="() => RestoreAsync(task.Id)">استعادة</button></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ManagementTaskResponse> tasks = [];
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => tasks = await Tasks.SearchTasksAsync(status: ManagementTaskStatus.Deleted, includeDeleted: true);
+
+    private async Task RestoreAsync(int id)
+    {
+        var result = await Tasks.RestoreTaskAsync(id);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

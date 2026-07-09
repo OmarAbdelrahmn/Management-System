@@ -1,0 +1,107 @@
+@page "/beneficiaries/update-requests"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject BeneficiaryUiService Beneficiaries
+
+<h1 class="page-title">إدارة تحديث بيانات المستفيدين</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-list-check"></i><div><h2>طلب تحديث بيانات</h2><p>إنشاء واعتماد طلبات تغيير بيانات ملف المستفيد.</p></div></div>
+    <div class="form-grid">
+        <label>المستفيد<select @bind="beneficiaryProfileId">@foreach (var profile in profiles){<option value="@profile.Id">@profile.BeneficiaryNumber - @profile.FullName</option>}</select></label>
+        <label>الحقل<select @bind="requestedField"><option value="Mobile">الجوال</option><option value="Email">البريد</option><option value="Address">العنوان</option><option value="City">المدينة</option><option value="Category">الفئة</option><option value="Grade">الدرجة</option><option value="MonthlyIncome">الدخل الشهري</option><option value="FamilyMembersCount">عدد أفراد الأسرة</option><option value="Status">الحالة</option></select></label>
+        <label>القيمة الحالية<input @bind="currentValue" placeholder="اختياري، يستنتج تلقائياً عند تركه فارغاً" /></label>
+        <label>القيمة المطلوبة<input @bind="requestedValue" /></label>
+        <label class="span-2">سبب الطلب<textarea @bind="reason"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="CreateAsync">إنشاء طلب</button><button class="secondary" @onclick="LoadRequestsAsync">تحديث القائمة</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-filter"></i><div><h2>فلترة الطلبات</h2><p>عرض الطلبات حسب الملف أو الحالة.</p></div></div>
+    <div class="form-grid compact">
+        <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="Pending">بانتظار القرار</option><option value="Approved">معتمد</option><option value="Rejected">مرفوض</option><option value="Cancelled">ملغي</option></select></label>
+        <label>ملاحظات القرار<input @bind="decisionNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="secondary" @onclick="LoadRequestsAsync">تطبيق الفلتر</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-clock-rotate-left"></i> طلبات تحديث البيانات</span></div>
+    <table>
+        <thead><tr><th>المستفيد</th><th>الحقل</th><th>الحالية</th><th>المطلوبة</th><th>الحالة</th><th>قرار</th></tr></thead>
+        <tbody>
+            @foreach (var request in requests)
+            {
+                <tr>
+                    <td>@request.BeneficiaryName</td>
+                    <td>@request.RequestedField</td>
+                    <td>@request.CurrentValue</td>
+                    <td>@request.RequestedValue</td>
+                    <td><span class="status">@request.Status</span></td>
+                    <td>
+                        @if (request.Status == "Pending")
+                        {
+                            <button class="secondary" @onclick="@(() => DecideAsync(request.Id, true))">اعتماد</button>
+                            <button class="secondary" @onclick="@(() => DecideAsync(request.Id, false))">رفض</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<BeneficiaryResponse> profiles = [];
+    private List<BeneficiaryUpdateRequestResponse> requests = [];
+    private int beneficiaryProfileId;
+    private string requestedField = "Mobile";
+    private string? currentValue;
+    private string? requestedValue;
+    private string? reason;
+    private string statusText = "Pending";
+    private string? decisionNotes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        profiles = await Beneficiaries.SearchAsync(status: BeneficiaryStatus.Active);
+        beneficiaryProfileId = profiles.FirstOrDefault()?.Id ?? 0;
+        await LoadRequestsAsync();
+    }
+
+    private async Task LoadRequestsAsync()
+    {
+        var status = Enum.TryParse<BeneficiaryUpdateRequestStatus>(statusText, out var parsedStatus) ? parsedStatus : (BeneficiaryUpdateRequestStatus?)null;
+        requests = await Beneficiaries.GetUpdateRequestsAsync(null, status);
+    }
+
+    private async Task CreateAsync()
+    {
+        var result = await Beneficiaries.CreateUpdateRequestAsync(new CreateBeneficiaryUpdateRequest(beneficiaryProfileId, requestedField, currentValue, requestedValue, reason));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            currentValue = null;
+            requestedValue = null;
+            reason = null;
+            await LoadRequestsAsync();
+        }
+    }
+
+    private async Task DecideAsync(int id, bool approved)
+    {
+        var result = await Beneficiaries.DecideUpdateRequestAsync(id, approved, decisionNotes);
+        success = result.Success;
+        message = result.Message;
+        await LoadRequestsAsync();
+    }
+}

@@ -1,0 +1,162 @@
+@page "/institutional-excellence/governance"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject InstitutionalExcellenceUiService Excellence
+
+<h1 class="page-title">إدارة الحوكمة</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-scale-balanced"></i></span><span>درجة التقييم</span><strong class="tile-number">@(report?.Score ?? 0)</strong><span class="tile-footer">%</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-check"></i></span><span>معايير محققة</span><strong class="tile-number">@(report?.MetCriteriaCount ?? 0)</strong><span class="tile-footer">من @(report?.CriteriaCount ?? 0)</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-paperclip"></i></span><span>مرفقات</span><strong class="tile-number">@(report?.AttachmentsCount ?? 0)</strong><span class="tile-footer">تحقق</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-list-check"></i></span><span>مهام مفتوحة</span><strong class="tile-number">@(report?.OpenTasksCount ?? 0)</strong><span class="tile-footer">مهمة</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-toggle-on"></i><div><h2>تفعيل الحوكمة وخارطة الطريق</h2><p>تفعيل سنة الحوكمة وتسجيل ملاحظات خارطة الطريق والمساعد الذكي.</p></div></div>
+    <div class="form-grid compact">
+        <label>العنوان<input @bind="cycleTitle" /></label>
+        <label>السنة<input type="number" @bind="year" /></label>
+        <label>الحالة<select @bind="cycleStatus"><option value="@ExcellenceRecordStatus.Draft">مسودة</option><option value="@ExcellenceRecordStatus.Active">نشطة</option><option value="@ExcellenceRecordStatus.Completed">مكتملة</option><option value="@ExcellenceRecordStatus.Archived">مؤرشفة</option></select></label>
+        <label><input type="checkbox" @bind="isActive" /> تفعيل الدورة</label>
+        <label class="span-2">خارطة الطريق<input @bind="roadmapNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveCycleAsync">حفظ الدورة</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-clipboard-check"></i><div><h2>إجابات المعايير ومرفقات التحقق</h2><p>تسجيل نموذج تقييم الحوكمة وحساب المؤشرات المالية.</p></div></div>
+    <div class="form-grid compact">
+        <label>الدورة<select @bind="cycleId"><option value="0">اختر الدورة</option>@foreach (var cycle in cycles){<option value="@cycle.Id">@cycle.Title</option>}</select></label>
+        <label>كود المعيار<input @bind="criterionCode" /></label>
+        <label>عنوان المعيار<input @bind="criterionTitle" /></label>
+        <label>الوزن<input type="number" step="0.01" @bind="weight" /></label>
+        <label>المستهدف<input type="number" step="0.01" @bind="targetScore" /></label>
+        <label>المتحقق<input type="number" step="0.01" @bind="actualScore" /></label>
+        <label>الحالة<select @bind="criterionStatus"><option value="@GovernanceCriterionStatus.NotStarted">لم يبدأ</option><option value="@GovernanceCriterionStatus.InProgress">قيد العمل</option><option value="@GovernanceCriterionStatus.Met">محقق</option><option value="@GovernanceCriterionStatus.NotMet">غير محقق</option></select></label>
+        <label>مؤشر مالي<input type="number" step="0.01" @bind="financialIndicatorValue" /></label>
+        <label class="span-2">الإجابة<input @bind="answer" /></label>
+        <label>اسم المرفق<input @bind="attachmentName" /></label>
+        <label>رابط المرفق<input @bind="attachmentUrl" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveCriterionAsync">حفظ المعيار</button><button class="secondary" @onclick="SaveAttachmentAsync">حفظ مرفق لأول معيار</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-list-check"></i><div><h2>مهام الحوكمة</h2><p>إدارة مهام الحوكمة وإحصائياتها.</p></div></div>
+    <div class="form-grid compact">
+        <label>الدورة<select @bind="taskCycleId"><option value="">بدون</option>@foreach (var cycle in cycles){<option value="@cycle.Id">@cycle.Title</option>}</select></label>
+        <label>المهمة<input @bind="taskTitle" /></label>
+        <label>المسؤول<input @bind="ownerName" /></label>
+        <label>تاريخ الاستحقاق<input type="date" @bind="dueDate" /></label>
+        <label>الحالة<select @bind="taskStatus"><option value="@GovernanceTaskStatus.Pending">معلقة</option><option value="@GovernanceTaskStatus.InProgress">قيد العمل</option><option value="@GovernanceTaskStatus.Completed">مكتملة</option><option value="@GovernanceTaskStatus.Overdue">متأخرة</option></select></label>
+        <label>نسبة الإنجاز<input type="number" @bind="progressPercent" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveTaskAsync">حفظ المهمة</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-table"></i> نموذج تقييم الحوكمة</span></div>
+    <table>
+        <thead><tr><th>المعيار</th><th>الدورة</th><th>الدرجة</th><th>الحالة</th><th>مرفقات</th></tr></thead>
+        <tbody>
+            @foreach (var criterion in criteria)
+            {
+                <tr><td>@criterion.Code - @criterion.Title<br />@criterion.Answer</td><td>@criterion.CycleTitle</td><td>@criterion.ActualScore / @criterion.TargetScore</td><td>@criterion.Status</td><td>@criterion.AttachmentsCount</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-bars-progress"></i> مهام الحوكمة</span></div>
+    <table>
+        <thead><tr><th>المهمة</th><th>الدورة</th><th>المسؤول</th><th>الاستحقاق</th><th>التقدم</th></tr></thead>
+        <tbody>
+            @foreach (var task in tasks)
+            {
+                <tr><td>@task.Title</td><td>@task.CycleTitle</td><td>@task.OwnerName</td><td>@task.DueDate?.ToString("yyyy-MM-dd")</td><td>@task.ProgressPercent% - @task.Status</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<GovernanceCycleResponse> cycles = [];
+    private List<GovernanceCriterionResponse> criteria = [];
+    private List<GovernanceTaskResponse> tasks = [];
+    private GovernanceReportResponse? report;
+    private string cycleTitle = "حوكمة 2025";
+    private int year = 2025;
+    private bool isActive = true;
+    private ExcellenceRecordStatus cycleStatus = ExcellenceRecordStatus.Active;
+    private string? roadmapNotes;
+    private int cycleId;
+    private string criterionCode = string.Empty;
+    private string criterionTitle = string.Empty;
+    private decimal weight = 1;
+    private decimal targetScore = 100;
+    private decimal actualScore;
+    private GovernanceCriterionStatus criterionStatus = GovernanceCriterionStatus.InProgress;
+    private string? answer;
+    private decimal? financialIndicatorValue;
+    private string attachmentName = string.Empty;
+    private string attachmentUrl = string.Empty;
+    private int? taskCycleId;
+    private string taskTitle = string.Empty;
+    private string? ownerName;
+    private DateTime? dueDate = DateTime.UtcNow.AddHours(3).Date.AddDays(7);
+    private GovernanceTaskStatus taskStatus = GovernanceTaskStatus.Pending;
+    private int progressPercent;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        cycles = await Excellence.GetGovernanceCyclesAsync();
+        criteria = await Excellence.GetGovernanceCriteriaAsync();
+        tasks = await Excellence.GetGovernanceTasksAsync();
+        report = await Excellence.GetGovernanceReportAsync();
+    }
+
+    private async Task SaveCycleAsync()
+    {
+        var result = await Excellence.SaveGovernanceCycleAsync(null, new SaveGovernanceCycleRequest(cycleTitle, year, isActive, cycleStatus, roadmapNotes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveCriterionAsync()
+    {
+        var result = await Excellence.SaveGovernanceCriterionAsync(null, new SaveGovernanceCriterionRequest(cycleId, criterionCode, criterionTitle, weight, targetScore, actualScore, criterionStatus, answer, null, financialIndicatorValue));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveAttachmentAsync()
+    {
+        var criterion = criteria.FirstOrDefault();
+        if (criterion is null) { success = false; message = "لا يوجد معيار لإرفاق الملف."; return; }
+        var result = await Excellence.SaveGovernanceAttachmentAsync(null, new SaveGovernanceAttachmentRequest(criterion.Id, attachmentName, attachmentUrl, null, DateTime.UtcNow.AddHours(3)));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveTaskAsync()
+    {
+        var result = await Excellence.SaveGovernanceTaskAsync(null, new SaveGovernanceTaskRequest(taskCycleId, taskTitle, ownerName, dueDate, taskStatus, progressPercent, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

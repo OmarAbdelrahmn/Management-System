@@ -1,0 +1,59 @@
+@page "/pr-media/relations"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject PublicRelationsMediaUiService PrMedia
+
+<h1 class="page-title">العلاقات العامة والفعاليات</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="form-grid compact">
+        <label>شريك إعلامي<input @bind="partnerName" /></label>
+        <label>مسؤول التواصل<input @bind="contactPerson" /></label>
+        <label>الجوال<input @bind="mobile" /></label>
+        <label>عنوان الفعالية<input @bind="eventTitle" /></label>
+        <label>تاريخ الفعالية<input type="date" @bind="eventDate" /></label>
+        <label>الموقع<input @bind="location" /></label>
+        <label>الزائر<input @bind="visitorName" /></label>
+        <label>الجهة<input @bind="organization" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SavePartnerAsync">حفظ شريك</button><button class="secondary" @onclick="SaveEventAsync">حفظ فعالية</button><button class="secondary" @onclick="SaveVisitAsync">حفظ زيارة</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-table"></i> سجلات العلاقات العامة</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>الاسم/العنوان</th><th>التفاصيل</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var item in partners){<tr><td>شريك</td><td>@item.Name</td><td>@item.ContactPerson<br />@item.Mobile</td><td>@item.Status</td></tr>}
+            @foreach (var item in events){<tr><td>فعالية</td><td>@item.Title</td><td>@item.EventDate.ToString("yyyy-MM-dd")<br />@item.Location</td><td>@item.Status</td></tr>}
+            @foreach (var item in visits){<tr><td>زيارة</td><td>@item.VisitorName</td><td>@item.Organization<br />@item.VisitDate.ToString("yyyy-MM-dd")</td><td>@item.Status</td></tr>}
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<MediaPartnerResponse> partners = [];
+    private List<MediaEventResponse> events = [];
+    private List<MediaVisitResponse> visits = [];
+    private string partnerName = string.Empty;
+    private string? contactPerson;
+    private string? mobile;
+    private string eventTitle = string.Empty;
+    private DateTime eventDate = DateTime.UtcNow.AddHours(3).Date;
+    private string? location;
+    private string visitorName = string.Empty;
+    private string? organization;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync(){ partners = await PrMedia.GetPartnersAsync(); events = await PrMedia.GetEventsAsync(); visits = await PrMedia.GetVisitsAsync(); }
+    private async Task SavePartnerAsync(){ var r = await PrMedia.SavePartnerAsync(null, new SaveMediaPartnerRequest(partnerName, contactPerson, mobile, null, PublicRelationRecordStatus.Active, null)); success = r.Success; message = r.Message; await LoadAsync(); }
+    private async Task SaveEventAsync(){ var r = await PrMedia.SaveEventAsync(null, new SaveMediaEventRequest(eventTitle, eventDate, location, null, PublicRelationRecordStatus.Planned)); success = r.Success; message = r.Message; await LoadAsync(); }
+    private async Task SaveVisitAsync(){ var r = await PrMedia.SaveVisitAsync(null, new SaveMediaVisitRequest(visitorName, organization, DateTime.UtcNow.AddHours(3), "زيارة إعلامية", PublicRelationRecordStatus.Planned)); success = r.Success; message = r.Message; await LoadAsync(); }
+}

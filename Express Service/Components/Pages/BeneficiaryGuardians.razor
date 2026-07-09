@@ -1,0 +1,84 @@
+@page "/beneficiaries/guardians"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject BeneficiaryUiService Beneficiaries
+
+<h1 class="page-title">إدارة حسابات الأوصياء</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-user-shield"></i><div><h2>إضافة وصي</h2><p>ربط وصي بملف مستفيد وتحديد الوصي الأساسي عند الحاجة.</p></div></div>
+    <div class="form-grid">
+        <label>المستفيد<select @bind="beneficiaryProfileId">@foreach (var profile in profiles){<option value="@profile.Id">@profile.BeneficiaryNumber - @profile.FullName</option>}</select></label>
+        <label>اسم الوصي<input @bind="fullName" /></label>
+        <label>رقم الهوية<input @bind="nationalId" /></label>
+        <label>الجوال<input @bind="mobile" /></label>
+        <label>العلاقة<input @bind="relationship" /></label>
+        <label>وصي أساسي<select @bind="isPrimaryText"><option value="true">نعم</option><option value="false">لا</option></select></label>
+        <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">إضافة وصي</button><button class="secondary" @onclick="LoadGuardiansAsync">تحديث القائمة</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-users-gear"></i> الأوصياء</span></div>
+    <table>
+        <thead><tr><th>المستفيد</th><th>الوصي</th><th>الهوية</th><th>الجوال</th><th>العلاقة</th><th>أساسي</th></tr></thead>
+        <tbody>
+            @foreach (var guardian in guardians)
+            {
+                <tr>
+                    <td>@guardian.BeneficiaryName</td>
+                    <td>@guardian.FullName</td>
+                    <td>@guardian.NationalId</td>
+                    <td>@guardian.Mobile</td>
+                    <td>@guardian.Relationship</td>
+                    <td>@(guardian.IsPrimary ? "نعم" : "لا")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<BeneficiaryResponse> profiles = [];
+    private List<BeneficiaryGuardianResponse> guardians = [];
+    private int beneficiaryProfileId;
+    private string fullName = string.Empty;
+    private string? nationalId;
+    private string? mobile;
+    private string relationship = string.Empty;
+    private string isPrimaryText = "true";
+    private string? notes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        profiles = await Beneficiaries.SearchAsync(status: BeneficiaryStatus.Active);
+        beneficiaryProfileId = profiles.FirstOrDefault()?.Id ?? 0;
+        await LoadGuardiansAsync();
+    }
+
+    private async Task LoadGuardiansAsync() => guardians = await Beneficiaries.GetGuardiansAsync(beneficiaryProfileId == 0 ? null : beneficiaryProfileId);
+
+    private async Task SaveAsync()
+    {
+        var result = await Beneficiaries.AddGuardianAsync(new AddBeneficiaryGuardianRequest(beneficiaryProfileId, fullName, nationalId, mobile, relationship, isPrimaryText == "true", notes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            fullName = string.Empty;
+            nationalId = null;
+            mobile = null;
+            relationship = string.Empty;
+            notes = null;
+            await LoadGuardiansAsync();
+        }
+    }
+}

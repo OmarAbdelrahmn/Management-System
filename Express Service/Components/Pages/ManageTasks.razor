@@ -1,0 +1,32 @@
+@page "/tasks/manage"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject TaskUiService Tasks
+
+<h1 class="page-title">إدارة مهام الموظفين</h1>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-people-arrows"></i> مهام الموظفين النشطة</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>المهمة</th><th>المكلف</th><th>الحالة</th><th>الأولوية</th><th>الاستحقاق</th><th>إجراءات</th></tr></thead>
+        <tbody>
+            @foreach (var item in items)
+            {
+                <tr>
+                    <td>@item.Title</td>
+                    <td>@item.AssigneeName</td>
+                    <td><span class="status">@item.Status</span></td>
+                    <td>@item.Priority</td>
+                    <td>@item.DueAt?.ToString("yyyy-MM-dd")</td>
+                    <td><a class="secondary" href="/tasks/redirect">تحويل</a> <a class="secondary" href="/tasks/complete">إنجاز</a> <a class="danger" href="/tasks/delete">حذف</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ManagementTaskResponse> items = [];
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => items = await Tasks.SearchTasksAsync(status: null, includeDeleted: false);
+}

@@ -1,0 +1,25 @@
+@page "/admin/login-audit"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+@inject AdminUiService Admin
+
+<h1 class="page-title">سجلات الدخول</h1>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-right-to-bracket"></i> آخر محاولات الدخول</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>المستخدم</th><th>النتيجة</th><th>السبب</th><th>IP</th><th>الوقت</th></tr></thead>
+        <tbody>
+            @foreach (var item in logs)
+            {
+                <tr><td>@item.UserName</td><td><span class="status @(item.Result == "Success" ? "ok" : "bad")">@item.Result</span></td><td>@item.FailureReason</td><td>@item.IpAddress</td><td>@item.AttemptedAt.ToString("yyyy-MM-dd HH:mm")</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<LoginAuditResponse> logs = [];
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => logs = await Admin.GetLoginAuditAsync();
+}

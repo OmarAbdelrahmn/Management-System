@@ -1,0 +1,107 @@
+@page "/beneficiaries"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject BeneficiaryUiService Beneficiaries
+
+<h1 class="page-title">إدارة حسابات المستفيدين</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-folder-open"></i></span><span>الملفات</span><strong class="tile-number">@(dashboard?.ProfilesCount ?? 0)</strong><span class="tile-footer">إجمالي المستفيدين</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-user-check"></i></span><span>النشطون</span><strong class="tile-number">@(dashboard?.ActiveProfilesCount ?? 0)</strong><span class="tile-footer">ملفات فعالة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-users"></i></span><span>التابعون</span><strong class="tile-number">@(dashboard?.DependentsCount ?? 0)</strong><span class="tile-footer">سجلات مرتبطة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-clipboard-check"></i></span><span>طلبات التحديث</span><strong class="tile-number">@(dashboard?.PendingUpdateRequestsCount ?? 0)</strong><span class="tile-footer">بانتظار القرار</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-navy"><i class="fa-solid fa-id-card"></i></span><span>البطاقات والباركود</span><strong class="tile-number">@(dashboard?.AccountArtifactsCount ?? 0)</strong><span class="tile-footer">سجلات إصدار وانضمام</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-red"><i class="fa-solid fa-user-shield"></i></span><span>عمليات الأوصياء</span><strong class="tile-number">@(dashboard?.PendingGuardianOperationsCount ?? 0)</strong><span class="tile-footer">بانتظار القرار</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-green"><i class="fa-solid fa-list-check"></i></span><span>مهام التحديث</span><strong class="tile-number">@(dashboard?.OpenUpdateBatchesCount ?? 0)</strong><span class="tile-footer">مفتوحة</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading">
+        <i class="fa-solid fa-id-card-clip"></i>
+        <div><h2>عمليات ملفات المستفيدين</h2><p>إدارة الملفات، التابعين، الأوصياء، طلبات تحديث البيانات، والجهات المستفيدة.</p></div>
+    </div>
+    <div class="actions-row">
+        <a class="primary" href="/beneficiaries/create">إضافة ملف مستفيد</a>
+        <a class="secondary" href="/beneficiaries/update">تحديث أو أرشفة ملف</a>
+        <a class="secondary" href="/beneficiaries/dependents">التابعون</a>
+        <a class="secondary" href="/beneficiaries/guardians">الأوصياء</a>
+        <a class="secondary" href="/beneficiaries/guardian-operations">عمليات الأوصياء</a>
+        <a class="secondary" href="/beneficiaries/update-requests">طلبات التحديث</a>
+        <a class="secondary" href="/beneficiaries/update-batches">مهام التحديث</a>
+        <a class="secondary" href="/beneficiaries/cards">البطاقات والباركود</a>
+        <a class="secondary" href="/beneficiaries/external">طلبات الانضمام والبحث</a>
+        <a class="secondary" href="/beneficiaries/entities">الجهات</a>
+    </div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-magnifying-glass"></i><div><h2>بحث في قاعدة بيانات المستفيدين</h2><p>مطابقة Rafed: الاسم، رقم الملف، الهوية، الجوال، التصنيف، والمدينة.</p></div></div>
+    <div class="form-grid compact">
+        <label>بحث<input @bind="search" placeholder="اسم، رقم ملف، هوية، جوال، بريد" /></label>
+        <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="Active">نشط</option><option value="Suspended">موقوف</option><option value="Archived">مؤرشف</option><option value="Deleted">محذوف</option></select></label>
+        <label>الفئة<input @bind="category" /></label>
+        <label>المدينة<input @bind="city" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SearchAsync">بحث</button><button class="secondary" @onclick="ClearAsync">مسح الفلاتر</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> المستفيدون</span></div>
+    <table>
+        <thead><tr><th>رقم الملف</th><th>الاسم</th><th>الهوية</th><th>الجوال</th><th>المدينة</th><th>الفئة</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var profile in profiles)
+            {
+                <tr>
+                    <td>@profile.BeneficiaryNumber</td>
+                    <td>@profile.FullName</td>
+                    <td>@profile.NationalId</td>
+                    <td>@profile.Mobile</td>
+                    <td>@profile.City</td>
+                    <td>@profile.Category @profile.Grade</td>
+                    <td><span class="status">@DisplayStatus(profile.Status)</span></td>
+                    <td><a class="secondary" href="@($"/beneficiaries/update/{profile.Id}")">تحديث</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private BeneficiaryDashboardResponse? dashboard;
+    private List<BeneficiaryResponse> profiles = [];
+    private string? search;
+    private string statusText = string.Empty;
+    private string? category;
+    private string? city;
+
+    protected override async Task OnInitializedAsync()
+    {
+        dashboard = await Beneficiaries.GetDashboardAsync();
+        await SearchAsync();
+    }
+
+    private async Task SearchAsync()
+    {
+        var status = Enum.TryParse<BeneficiaryStatus>(statusText, out var parsedStatus) ? parsedStatus : (BeneficiaryStatus?)null;
+        profiles = await Beneficiaries.SearchAsync(search, status, category, city);
+    }
+
+    private async Task ClearAsync()
+    {
+        search = null;
+        statusText = string.Empty;
+        category = null;
+        city = null;
+        await SearchAsync();
+    }
+
+    private static string DisplayStatus(string status) => status switch
+    {
+        "Active" => "نشط",
+        "Suspended" => "موقوف",
+        "Archived" => "مؤرشف",
+        "Deleted" => "محذوف",
+        _ => status
+    };
+}

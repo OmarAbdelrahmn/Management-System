@@ -1,0 +1,64 @@
+@page "/documentation-archive/archives"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject DocumentationArchiveUiService Documentation
+
+<h1 class="page-title">إدارة الأرشيف</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-box-archive"></i><div><h2>سجل ملف</h2><p>إدارة سجلات الملفات والأرشيف العام والمالي والميزانية والإدارة والملفات السرية.</p></div></div>
+    <div class="form-grid compact">
+        <label>رقم الملف<input @bind="documentNumber" /></label>
+        <label>العنوان<input @bind="title" /></label>
+        <label>التصنيف<select @bind="category"><option value="@ArchiveDocumentCategory.Corporate">سجلات الملفات</option><option value="@ArchiveDocumentCategory.General">عام</option><option value="@ArchiveDocumentCategory.Finance">مالي</option><option value="@ArchiveDocumentCategory.Budget">ميزانية</option><option value="@ArchiveDocumentCategory.Admin">إدارة</option><option value="@ArchiveDocumentCategory.Secret">سري</option></select></label>
+        <label>الحالة<select @bind="status"><option value="@ArchiveDocumentStatus.Active">نشط</option><option value="@ArchiveDocumentStatus.Archived">مؤرشف</option><option value="@ArchiveDocumentStatus.Restricted">مقيد</option><option value="@ArchiveDocumentStatus.Removed">محذوف</option></select></label>
+        <label>الإدارة المالكة<input @bind="ownerDepartment" /></label>
+        <label>رابط الملف<input @bind="fileUrl" /></label>
+        <label class="span-2">ملاحظات<input @bind="notes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الملف</button><button class="secondary" @onclick="LoadActiveAsync">النشطة</button><button class="secondary" @onclick="LoadSecretAsync">السرية</button><button class="secondary" @onclick="LoadAsync">كل الأرشيف</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> قاعدة بيانات الأرشيف</span></div>
+    <table>
+        <thead><tr><th>الرقم</th><th>الملف</th><th>التصنيف</th><th>الإدارة</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var item in documents)
+            {
+                <tr><td>@item.DocumentNumber</td><td>@item.Title<br />@item.FileUrl</td><td>@item.Category</td><td>@item.OwnerDepartment</td><td>@item.Status<br />@item.Notes</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ArchiveDocumentResponse> documents = [];
+    private string documentNumber = $"DOC-{DateTime.UtcNow:yyyyMMddHHmm}";
+    private string title = string.Empty;
+    private ArchiveDocumentCategory category = ArchiveDocumentCategory.General;
+    private ArchiveDocumentStatus status = ArchiveDocumentStatus.Active;
+    private string? fileUrl;
+    private string? ownerDepartment;
+    private string? notes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => documents = await Documentation.GetArchiveDocumentsAsync();
+    private async Task LoadActiveAsync() => documents = await Documentation.GetArchiveDocumentsAsync(status: ArchiveDocumentStatus.Active);
+    private async Task LoadSecretAsync() => documents = await Documentation.GetArchiveDocumentsAsync(ArchiveDocumentCategory.Secret);
+    private async Task SaveAsync()
+    {
+        var result = await Documentation.SaveArchiveDocumentAsync(null, new SaveArchiveDocumentRequest(documentNumber, title, category, fileUrl, ownerDepartment, status, notes));
+        success = result.Success;
+        message = result.Message;
+        if (success) documentNumber = $"DOC-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        await LoadAsync();
+    }
+}

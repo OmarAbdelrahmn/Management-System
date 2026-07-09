@@ -1,0 +1,127 @@
+@page "/beneficiary-services/sponsorships"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject BeneficiaryServicesUiService Services
+@inject BeneficiaryUiService Beneficiaries
+
+<h1 class="page-title">إدارة الكفالات</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-people-carry-box"></i><div><h2>الكفلاء والاحتياجات</h2><p>إدارة حسابات الكفلاء واحتياجات الكفالة.</p></div></div>
+    <div class="form-grid compact">
+        <label>اسم الكافل<input @bind="sponsorName" /></label>
+        <label>الجوال<input @bind="sponsorMobile" /></label>
+        <label>البريد<input @bind="sponsorEmail" /></label>
+        <label>احتياج الكفالة<input @bind="requirementTitle" /></label>
+        <label>مبلغ الاحتياج<input type="number" step="0.01" @bind="requirementAmount" /></label>
+        <label>التكرار<input @bind="frequency" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveSponsorAsync">حفظ كافل</button><button class="secondary" @onclick="SaveRequirementAsync">حفظ احتياج</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-link"></i><div><h2>سجل كفالة ودفعة</h2><p>إسناد كفالة ومتابعة التحصيل والاستحقاق.</p></div></div>
+    <div class="form-grid compact">
+        <label>الكافل<select @bind="sponsorId">@foreach (var sponsor in sponsors){<option value="@sponsor.Id">@sponsor.FullName</option>}</select></label>
+        <label>المستفيد<select @bind="beneficiaryIdText"><option value="">بدون مستفيد</option>@foreach (var beneficiary in beneficiaries){<option value="@beneficiary.Id">@beneficiary.FullName</option>}</select></label>
+        <label>الاحتياج<select @bind="requirementIdText"><option value="">بدون احتياج</option>@foreach (var item in requirements){<option value="@item.Id">@item.Title</option>}</select></label>
+        <label>المبلغ<input type="number" step="0.01" @bind="recordAmount" /></label>
+        <label>بداية الكفالة<input type="date" @bind="startsAt" /></label>
+        <label>استحقاق الدفعة<input type="date" @bind="paymentDueDate" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveRecordAsync">حفظ كفالة</button><button class="secondary" @onclick="SavePaymentAsync">حفظ دفعة</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> سجلات الكفالة</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>الكافل</th><th>المستفيد/الاحتياج</th><th>المبلغ</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var record in records)
+            {
+                <tr><td>كفالة</td><td>@record.SponsorName</td><td>@record.BeneficiaryName<br />@record.RequirementTitle</td><td>@record.Amount</td><td>@record.Status</td></tr>
+            }
+            @foreach (var payment in payments)
+            {
+                <tr><td>دفعة</td><td>@payment.SponsorName</td><td>@payment.BeneficiaryName<br />@payment.DueDate.ToString("yyyy-MM-dd")</td><td>@payment.Amount</td><td>@payment.Status</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<BeneficiaryResponse> beneficiaries = [];
+    private List<SponsorResponse> sponsors = [];
+    private List<SponsorshipRequirementResponse> requirements = [];
+    private List<SponsorshipRecordResponse> records = [];
+    private List<SponsorshipPaymentResponse> payments = [];
+    private string sponsorName = string.Empty;
+    private string? sponsorMobile;
+    private string? sponsorEmail;
+    private string requirementTitle = string.Empty;
+    private decimal requirementAmount;
+    private string frequency = "Monthly";
+    private int sponsorId;
+    private string beneficiaryIdText = string.Empty;
+    private string requirementIdText = string.Empty;
+    private decimal recordAmount;
+    private DateTime startsAt = DateTime.UtcNow.AddHours(3).Date;
+    private DateTime paymentDueDate = DateTime.UtcNow.AddHours(3).Date.AddMonths(1);
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        beneficiaries = await Beneficiaries.SearchAsync(status: BeneficiaryStatus.Active);
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        sponsors = await Services.GetSponsorsAsync();
+        requirements = await Services.GetRequirementsAsync();
+        records = await Services.GetSponsorshipRecordsAsync();
+        payments = await Services.GetSponsorshipPaymentsAsync();
+        sponsorId = sponsors.FirstOrDefault()?.Id ?? sponsorId;
+    }
+
+    private async Task SaveSponsorAsync()
+    {
+        var result = await Services.SaveSponsorAsync(null, new SaveSponsorRequest(sponsorName, sponsorMobile, sponsorEmail, SponsorStatus.Active, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveRequirementAsync()
+    {
+        var result = await Services.SaveRequirementAsync(null, new SaveSponsorshipRequirementRequest(requirementTitle, requirementAmount, frequency, SponsorshipStatus.Active, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveRecordAsync()
+    {
+        var beneficiaryId = int.TryParse(beneficiaryIdText, out var beneficiaryValue) ? beneficiaryValue : (int?)null;
+        var requirementId = int.TryParse(requirementIdText, out var requirementValue) ? requirementValue : (int?)null;
+        var result = await Services.SaveSponsorshipRecordAsync(null, new SaveSponsorshipRecordRequest(sponsorId, beneficiaryId, requirementId, startsAt, null, recordAmount, SponsorshipStatus.Active, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SavePaymentAsync()
+    {
+        var recordId = records.FirstOrDefault(x => x.SponsorId == sponsorId)?.Id ?? 0;
+        var result = await Services.SaveSponsorshipPaymentAsync(null, new SaveSponsorshipPaymentRequest(recordId, paymentDueDate, recordAmount, SponsorshipPaymentStatus.Pending, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

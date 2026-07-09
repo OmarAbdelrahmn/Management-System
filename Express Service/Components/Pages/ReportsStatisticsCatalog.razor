@@ -1,0 +1,64 @@
+@page "/reports-statistics/catalog"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ReportsStatisticsUiService Reports
+
+<h1 class="page-title">تقارير النظام</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-file-export"></i><div><h2>توليد تقرير</h2><p>اختيار تقرير من الكتالوج وتسجيل تشغيل التقرير مع عدد السجلات.</p></div></div>
+    <div class="form-grid compact">
+        <label>التقرير<select @bind="selectedKey">@foreach (var definition in definitions){<option value="@definition.Key">@definition.NameAr</option>}</select></label>
+        <label>الصيغة<select @bind="format"><option>Table</option><option>Excel</option><option>PDF</option></select></label>
+        <label>طالب التقرير<input @bind="requestedBy" /></label>
+        <label class="span-2">الفلاتر JSON<input @bind="filtersJson" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="GenerateAsync">توليد التقرير</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-list"></i> تقارير النظام</span></div>
+    <table>
+        <thead><tr><th>التقرير</th><th>النطاق</th><th>آخر توليد</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var definition in definitions)
+            {
+                <tr><td>@definition.NameAr<br />@definition.Key</td><td>@definition.SourceDomain</td><td>@definition.LastGeneratedAt?.ToString("yyyy-MM-dd HH:mm")</td><td><button class="secondary" @onclick="@(() => SelectAndGenerateAsync(definition.Key))">توليد</button></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-clock-rotate-left"></i> سجل التشغيل</span></div>
+    <table>
+        <thead><tr><th>التقرير</th><th>الصيغة</th><th>السجلات</th><th>الحالة</th><th>التاريخ</th></tr></thead>
+        <tbody>
+            @foreach (var run in runs)
+            {
+                <tr><td>@run.ReportName<br />@run.ReportKey</td><td>@run.Format</td><td>@run.RowCount</td><td>@run.Status</td><td>@run.GeneratedAt.ToString("yyyy-MM-dd HH:mm")</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<SystemReportDefinitionResponse> definitions = [];
+    private List<SystemReportRunResponse> runs = [];
+    private string selectedKey = string.Empty;
+    private string format = "Table";
+    private string? requestedBy;
+    private string? filtersJson = "{}";
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync(){ definitions = await Reports.GetDefinitionsAsync(SystemReportKind.Report); runs = await Reports.GetRunsAsync(); selectedKey = string.IsNullOrWhiteSpace(selectedKey) ? definitions.FirstOrDefault()?.Key ?? string.Empty : selectedKey; }
+    private async Task GenerateAsync(){ var result = await Reports.GenerateReportAsync(new GenerateSystemReportRequest(selectedKey, format, filtersJson, requestedBy)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task SelectAndGenerateAsync(string key){ selectedKey = key; await GenerateAsync(); }
+}

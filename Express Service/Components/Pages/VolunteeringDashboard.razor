@@ -1,0 +1,29 @@
+@page "/volunteering"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject VolunteeringUiService Volunteering
+
+<h1 class="page-title">إدارة التطوع</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-users"></i></span><span>المتطوعون</span><strong class="tile-number">@(dashboard?.UsersCount ?? 0)</strong><span class="tile-footer">حساب</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-user-check"></i></span><span>نشطون</span><strong class="tile-number">@(dashboard?.ActiveUsersCount ?? 0)</strong><span class="tile-footer">متاح</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-file-signature"></i></span><span>طلبات قائمة</span><strong class="tile-number">@(dashboard?.SubmittedRequestsCount ?? 0)</strong><span class="tile-footer">طلب</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-hand-holding-heart"></i></span><span>فرص مفتوحة</span><strong class="tile-number">@(dashboard?.OpenOpportunitiesCount ?? 0)</strong><span class="tile-footer">فرصة</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-hand-heart"></i><div><h2>بوابة التطوع والفرص</h2><p>إدارة حسابات المتطوعين، الطلبات الداخلية والخارجية، الفرص، الإجراءات، التقارير، المهام، وسجلات الحضور.</p></div></div>
+    <div class="actions-row"><a class="primary" href="/volunteering/portal">بوابة التطوع</a><a class="secondary" href="/volunteering/opportunities">الفرص التطوعية</a></div>
+</section>
+
+<section class="circle-tiles" style="margin-top:14px">
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-check-double"></i></span><span>طلبات معتمدة</span><strong class="tile-number">@(dashboard?.ApprovedRequestsCount ?? 0)</strong><span class="tile-footer">اعتماد</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-list-check"></i></span><span>مهام مكتملة</span><strong class="tile-number">@(dashboard?.CompletedTasksCount ?? 0)</strong><span class="tile-footer">مهمة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-clock"></i></span><span>ساعات الحضور</span><strong class="tile-number">@(dashboard?.AttendanceHours.ToString("0.##") ?? "0")</strong><span class="tile-footer">ساعة</span></article>
+</section>
+
+@code {
+    private VolunteeringDashboardResponse? dashboard;
+    protected override async Task OnInitializedAsync() => dashboard = await Volunteering.GetDashboardAsync();
+}

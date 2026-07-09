@@ -1,0 +1,25 @@
+@page "/channels/sms-log"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MessagingUiService Messaging
+
+<h1 class="page-title">سجل الرسائل النصية</h1>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-comment-sms"></i> سجل SMS</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>المستلم</th><th>الموضوع</th><th>الحالة</th><th>المرجع</th><th>الخطأ</th><th>التاريخ</th></tr></thead>
+        <tbody>
+            @foreach (var item in logs)
+            {
+                <tr><td>@item.Recipient</td><td>@item.Subject</td><td><span class="status">@item.Status</span></td><td>@item.ProviderReference</td><td>@item.Error</td><td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ChannelDeliveryLogResponse> logs = [];
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => logs = await Messaging.GetChannelLogsAsync(MessageChannel.Sms);
+}

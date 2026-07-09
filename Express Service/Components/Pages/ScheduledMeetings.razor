@@ -1,0 +1,25 @@
+@page "/meetings/scheduled"
+@attribute [Authorize(Roles = "Admin,BoardChairman,BoardSecretary")]
+@rendermode InteractiveServer
+@inject MeetingUiService UiService
+
+<h1 class="page-title">الاجتماعات المجدولة</h1>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-calendar-days"></i> الاجتماعات القادمة</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>العنوان</th><th>التاريخ</th><th>النوع</th><th>الحالة</th><th>المكان/المنصة</th></tr></thead>
+        <tbody>
+            @foreach (var meeting in meetings)
+            {
+                <tr><td>@meeting.Title</td><td>@meeting.ScheduledAt.ToString("yyyy-MM-dd HH:mm")</td><td>@meeting.Type</td><td><span class="status">@meeting.Status</span></td><td>@(meeting.IsOnline ? meeting.Platform : meeting.Location)</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<MeetingListItemResponse> meetings = [];
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => meetings = await UiService.GetScheduledMeetingsAsync();
+}

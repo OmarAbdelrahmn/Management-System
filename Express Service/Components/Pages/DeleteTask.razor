@@ -1,0 +1,43 @@
+@page "/tasks/delete"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject TaskUiService Tasks
+
+<h1 class="page-title">حذف مهمة</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-trash"></i><div><h2>حذف منطقي</h2><p>لا يتم حذف المهمة من قاعدة البيانات، بل تنتقل إلى حالة محذوفة ويمكن استعادتها.</p></div></div>
+    <div class="form-grid">
+        <label>المهمة<select @bind="taskId">@foreach (var task in tasks){<option value="@task.Id">@task.Title - @task.AssigneeName</option>}</select></label>
+        <label class="span-2">سبب الحذف<textarea @bind="reason"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="danger" @onclick="DeleteAsync">حذف المهمة</button><a class="secondary" href="/tasks/restore">استعادة مهمة</a></div>
+</section>
+
+@code {
+    private List<ManagementTaskResponse> tasks = [];
+    private int taskId;
+    private string reason = string.Empty;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        tasks = await Tasks.SearchTasksAsync(includeDeleted: false);
+        taskId = tasks.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private async Task DeleteAsync()
+    {
+        var result = await Tasks.DeleteTaskAsync(taskId, new DeleteTaskRequest(reason));
+        success = result.Success;
+        message = result.Message;
+        tasks = await Tasks.SearchTasksAsync(includeDeleted: false);
+        taskId = tasks.FirstOrDefault()?.Id ?? 0;
+    }
+}

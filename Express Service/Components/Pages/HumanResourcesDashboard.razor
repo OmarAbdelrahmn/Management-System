@@ -1,0 +1,45 @@
+@page "/hr"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">إدارة الموارد البشرية</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-id-card"></i></span><span>الموظفون</span><strong class="tile-number">@(dashboard?.EmployeesCount ?? 0)</strong><span class="tile-footer">إجمالي السجلات</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-user-check"></i></span><span>النشطون</span><strong class="tile-number">@(dashboard?.ActiveEmployeesCount ?? 0)</strong><span class="tile-footer">على رأس العمل</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-plane-departure"></i></span><span>الإجازات</span><strong class="tile-number">@(dashboard?.PendingLeaveRequestsCount ?? 0)</strong><span class="tile-footer">بانتظار القرار</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-money-bill"></i></span><span>الرواتب</span><strong class="tile-number">@(dashboard?.MonthlyPayrollTotal ?? 0)</strong><span class="tile-footer">شهرياً</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading">
+        <i class="fa-solid fa-sitemap"></i>
+        <div>
+            <h2>عمليات الموارد البشرية</h2>
+            <p>إدارة الموظفين والحضور والإجازات والمستندات والإعدادات من قاعدة البيانات.</p>
+        </div>
+    </div>
+    <div class="actions-row">
+        <a class="primary" href="/hr/employees">قاعدة الموظفين</a>
+        <a class="secondary" href="/hr/employees/create">إضافة موظف</a>
+        <a class="secondary" href="/hr/attendance">الحضور والانصراف</a>
+        <a class="secondary" href="/hr/leaves">الإجازات</a>
+        <a class="secondary" href="/hr/leave-balances">أرصدة الإجازات</a>
+        <a class="secondary" href="/hr/evaluations">التقييمات</a>
+        <a class="secondary" href="/hr/cards">البطاقات</a>
+        <a class="secondary" href="/hr/letters">الخطابات</a>
+        <a class="secondary" href="/hr/payroll">الرواتب</a>
+        <a class="secondary" href="/hr/attendance-settings">إعدادات الحضور</a>
+        <a class="secondary" href="/hr/safety">السلامة</a>
+        <a class="secondary" href="/hr/recruitment">التوظيف</a>
+        <a class="secondary" href="/hr/documents">المستندات</a>
+        <a class="secondary" href="/hr/settings">الإعدادات</a>
+    </div>
+</section>
+
+@code {
+    private HumanResourceDashboardResponse? dashboard;
+
+    protected override async Task OnInitializedAsync() => dashboard = await HR.GetDashboardAsync();
+}

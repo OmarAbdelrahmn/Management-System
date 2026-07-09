@@ -1,0 +1,51 @@
+@page "/admin/roles"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+@inject AdminUiService Admin
+
+<h1 class="page-title">الأدوار</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-user-shield"></i><div><h2>دور جديد</h2><p>الأدوار تستخدم في حماية الصفحات والـ API.</p></div></div>
+    <div class="form-grid">
+        <label>اسم الدور<input @bind="roleName" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="CreateAsync">إنشاء الدور</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-id-badge"></i> الأدوار الحالية</span></div>
+    <table>
+        <thead><tr><th>المعرف</th><th>الدور</th></tr></thead>
+        <tbody>
+            @foreach (var role in roles)
+            {
+                <tr><td>@role.Id</td><td>@role.Name</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<RoleResponse> roles = [];
+    private string roleName = string.Empty;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => roles = await Admin.GetRolesAsync();
+
+    private async Task CreateAsync()
+    {
+        var result = await Admin.CreateRoleAsync(roleName);
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            roleName = string.Empty;
+        roles = await Admin.GetRolesAsync();
+    }
+}

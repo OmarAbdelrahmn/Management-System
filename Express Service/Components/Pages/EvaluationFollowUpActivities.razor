@@ -1,0 +1,78 @@
+@page "/evaluation-followup/activities"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject EvaluationFollowUpUiService FollowUp
+
+<h1 class="page-title">إدارة متابعة النشاطات</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-calendar-plus"></i><div><h2>إضافة نشاط متابعة</h2><p>إضافة نشاط عام أو نشاط مستفيد/تابع/طلب إعانة/كافل/كفالة/داعم.</p></div></div>
+    <div class="form-grid compact">
+        <label>حالة متابعة<select @bind="caseId"><option value="">بدون</option>@foreach (var item in cases){<option value="@item.Id">@item.CaseNumber - @item.SubjectName</option>}</select></label>
+        <label>نوع النشاط<select @bind="subjectType"><option value="@FollowUpSubjectType.General">عام</option><option value="@FollowUpSubjectType.Beneficiary">مستفيد</option><option value="@FollowUpSubjectType.Relative">تابع</option><option value="@FollowUpSubjectType.AidRequest">طلب إعانة</option><option value="@FollowUpSubjectType.Sponsor">كافل</option><option value="@FollowUpSubjectType.Sponsorship">كفالة</option><option value="@FollowUpSubjectType.Supporter">داعم</option></select></label>
+        <label>الاسم<input @bind="subjectName" /></label>
+        <label>المرجع<input @bind="referenceNumber" /></label>
+        <label>تاريخ النشاط<input type="date" @bind="activityDate" /></label>
+        <label>نوع الإجراء<input @bind="activityType" /></label>
+        <label>المسؤول<input @bind="ownerName" /></label>
+        <label><input type="checkbox" @bind="requiresNextAction" /> يحتاج إجراء لاحق</label>
+        <label>تاريخ الإجراء اللاحق<input type="date" @bind="nextActionDate" /></label>
+        <label class="span-2">ملخص النشاط<input @bind="summary" /></label>
+        <label class="span-2">النتيجة<input @bind="resultText" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ النشاط</button><button class="secondary" @onclick="LoadNextActionsAsync">الإجراءات التالية</button><button class="secondary" @onclick="LoadAsync">كل النشاطات</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-table"></i> سجل النشاطات</span></div>
+    <table>
+        <thead><tr><th>النشاط</th><th>النوع</th><th>الحالة</th><th>النتيجة</th><th>إجراء لاحق</th></tr></thead>
+        <tbody>
+            @foreach (var item in activities)
+            {
+                <tr><td>@item.ActivityType<br />@item.ActivityDate.ToString("yyyy-MM-dd")</td><td>@item.SubjectName<br />@item.SubjectType<br />@item.ReferenceNumber</td><td>@item.CaseNumber</td><td>@item.Summary<br />@item.Result</td><td>@(item.RequiresNextAction ? item.NextActionDate?.ToString("yyyy-MM-dd") : "لا")</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<FollowUpCaseResponse> cases = [];
+    private List<FollowUpActivityResponse> activities = [];
+    private int? caseId;
+    private FollowUpSubjectType subjectType = FollowUpSubjectType.General;
+    private string subjectName = string.Empty;
+    private string? referenceNumber;
+    private DateTime activityDate = DateTime.UtcNow.AddHours(3).Date;
+    private string activityType = "زيارة";
+    private string summary = string.Empty;
+    private string? resultText;
+    private string? ownerName;
+    private bool requiresNextAction;
+    private DateTime? nextActionDate = DateTime.UtcNow.AddHours(3).Date.AddDays(7);
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        cases = await FollowUp.GetCasesAsync();
+        activities = await FollowUp.GetActivitiesAsync();
+    }
+
+    private async Task LoadNextActionsAsync() => activities = await FollowUp.GetActivitiesAsync(nextActionsOnly: true);
+
+    private async Task SaveAsync()
+    {
+        var result = await FollowUp.SaveActivityAsync(null, new SaveFollowUpActivityRequest(caseId, subjectType, subjectName, referenceNumber, activityDate, activityType, summary, resultText, ownerName, requiresNextAction, nextActionDate));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

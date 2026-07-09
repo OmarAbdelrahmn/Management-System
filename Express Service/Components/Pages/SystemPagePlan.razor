@@ -1,7 +1,7 @@
 @page "/system/page/{Id:int}"
 @attribute [Authorize(Roles = "Admin")]
 @rendermode InteractiveServer
-@inject MeetingUiService UiService
+@inject SystemCatalogUiService Catalog
 
 <h1 class="page-title">خطة تنفيذ صفحة في النظام</h1>
 
@@ -21,7 +21,7 @@ else
             <i class="fa-solid fa-file-lines"></i>
             <div>
                 <h2>@systemPage.NameAr</h2>
-                <p>@systemPage.ModuleName - @systemPage.Route</p>
+                <p>@systemPage.ModuleName - @systemPage.GroupName - @systemPage.Route</p>
             </div>
             <span class="status">@systemPage.Status</span>
         </div>
@@ -30,6 +30,8 @@ else
                 <tbody>
                     <tr><td>الخدمة</td><td>@systemPage.ServiceName</td></tr>
                     <tr><td>مفتاح الصلاحية</td><td>@systemPage.PermissionKey</td></tr>
+                    <tr><td>رابط رافد الأصلي</td><td>@systemPage.OriginalHref</td></tr>
+                    <tr><td>أيقونة رافد</td><td>@systemPage.OriginalIcon</td></tr>
                     <tr><td>خطة الخدمة</td><td>@systemPage.ServicePlan</td></tr>
                     <tr><td>خطة الواجهة</td><td>@systemPage.UiPlan</td></tr>
                 </tbody>
@@ -53,13 +55,13 @@ else
     private string? message;
     private SystemPageResponse? systemPage;
 
-    protected override async Task OnParametersSetAsync() => systemPage = await UiService.GetSystemPageAsync(Id);
+    protected override async Task OnParametersSetAsync() => systemPage = await Catalog.GetPageAsync(Id);
 
     private async Task SetStatusAsync(Domain.Entities.SystemPageStatus status)
     {
-        var result = await UiService.UpdateSystemPageStatusAsync(Id, status);
+        var result = await Catalog.UpdatePageStatusAsync(Id, status);
         success = result.Success;
         message = result.Message;
-        systemPage = await UiService.GetSystemPageAsync(Id);
+        systemPage = await Catalog.GetPageAsync(Id);
     }
 }

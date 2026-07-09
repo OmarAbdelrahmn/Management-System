@@ -1,0 +1,69 @@
+@page "/hr/leave-balances"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">إدارة أرصدة الإجازات</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-calendar-days"></i><div><h2>رصيد إجازة</h2><p>حفظ رصيد سنوي حسب نوع الإجازة.</p></div></div>
+    <div class="form-grid compact">
+        <label>الموظف<select @bind="employeeId">@foreach (var employee in employees){<option value="@employee.Id">@employee.FullName</option>}</select></label>
+        <label>السنة<input type="number" @bind="year" /></label>
+        <label>نوع الإجازة<input @bind="leaveType" /></label>
+        <label>المستحق<input type="number" step="0.5" @bind="entitledDays" /></label>
+        <label>المستخدم<input type="number" step="0.5" @bind="usedDays" /></label>
+        <label>المرحل<input type="number" step="0.5" @bind="carriedDays" /></label>
+        <label class="span-2">ملاحظات<input @bind="notes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الرصيد</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-table"></i> أرصدة الإجازات</span></div>
+    <table>
+        <thead><tr><th>الموظف</th><th>السنة</th><th>النوع</th><th>المستحق</th><th>المستخدم</th><th>المرحل</th><th>المتبقي</th></tr></thead>
+        <tbody>
+            @foreach (var item in balances)
+            {
+                <tr><td>@item.EmployeeName</td><td>@item.Year</td><td>@item.LeaveType</td><td>@item.EntitledDays</td><td>@item.UsedDays</td><td>@item.CarriedDays</td><td>@item.RemainingDays</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EmployeeResponse> employees = [];
+    private List<EmployeeLeaveBalanceResponse> balances = [];
+    private int employeeId;
+    private int year = DateTime.UtcNow.AddHours(3).Year;
+    private string leaveType = "سنوية";
+    private decimal entitledDays = 30;
+    private decimal usedDays;
+    private decimal carriedDays;
+    private string? notes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        employees = await HR.SearchEmployeesAsync(null, null, null, null);
+        employeeId = employees.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => balances = await HR.GetLeaveBalancesAsync(null, year);
+
+    private async Task SaveAsync()
+    {
+        var result = await HR.SaveLeaveBalanceAsync(null, new SaveEmployeeLeaveBalanceRequest(employeeId, year, leaveType, entitledDays, usedDays, carriedDays, notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

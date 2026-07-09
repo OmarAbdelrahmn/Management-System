@@ -1,0 +1,107 @@
+@page "/volunteering/portal"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject VolunteeringUiService Volunteering
+
+<h1 class="page-title">إدارة بوابة التطوع</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-user-plus"></i><div><h2>حساب متطوع</h2><p>إدارة حسابات المتطوعين وقاعدة بياناتهم في بوابة التطوع.</p></div></div>
+    <div class="form-grid compact">
+        <label>رقم المتطوع<input @bind="volunteerNumber" /></label>
+        <label>الاسم<input @bind="fullName" /></label>
+        <label>رقم الهوية<input @bind="nationalId" /></label>
+        <label>الجوال<input @bind="mobile" /></label>
+        <label>البريد<input @bind="email" /></label>
+        <label>الحالة<select @bind="userStatus"><option value="@VolunteerUserStatus.Active">نشط</option><option value="@VolunteerUserStatus.Inactive">غير نشط</option><option value="@VolunteerUserStatus.Suspended">موقوف</option></select></label>
+        <label>تاريخ الانضمام<input type="date" @bind="joinedAt" /></label>
+        <label class="span-2">المهارات<input @bind="skills" /></label>
+        <label class="span-2">ملاحظات<input @bind="notes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveUserAsync">حفظ المتطوع</button><button class="secondary" @onclick="LoadActiveUsersAsync">النشطون</button><button class="secondary" @onclick="LoadAsync">تحديث القائمة</button></div>
+</section>
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-file-signature"></i><div><h2>طلب تطوع</h2><p>طلبات التطوع الداخلية والخارجية وربطها بالمتطوع أو الفرصة عند الحاجة.</p></div></div>
+    <div class="form-grid compact">
+        <label>رقم الطلب<input @bind="requestNumber" /></label>
+        <label>المصدر<select @bind="requestSource"><option value="@VolunteerRequestSource.Internal">داخلي</option><option value="@VolunteerRequestSource.External">خارجي</option></select></label>
+        <label>اسم المتقدم<input @bind="applicantName" /></label>
+        <label>جوال المتقدم<input @bind="requestMobile" /></label>
+        <label>عنوان الفرصة<input @bind="opportunityTitle" /></label>
+        <label>الحالة<select @bind="requestStatus"><option value="@VolunteerRequestStatus.Submitted">مقدم</option><option value="@VolunteerRequestStatus.UnderReview">تحت الدراسة</option><option value="@VolunteerRequestStatus.Approved">معتمد</option><option value="@VolunteerRequestStatus.Rejected">مرفوض</option><option value="@VolunteerRequestStatus.Completed">مكتمل</option></select></label>
+        <label>تاريخ الطلب<input type="date" @bind="requestDate" /></label>
+        <label>ربط متطوع<select @bind="linkedVolunteerId"><option value="">بدون</option>@foreach (var item in users){<option value="@item.Id">@item.FullName</option>}</select></label>
+        <label class="span-2">ملاحظة القرار<input @bind="decisionNote" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveRequestAsync">حفظ الطلب</button><button class="secondary" @onclick="LoadInternalRequestsAsync">الداخلية</button><button class="secondary" @onclick="LoadExternalRequestsAsync">الخارجية</button><button class="secondary" @onclick="LoadPendingRequestsAsync">المعلقة</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-users"></i> قاعدة بيانات المتطوعين</span></div>
+    <table>
+        <thead><tr><th>الرقم</th><th>الاسم</th><th>التواصل</th><th>المهارات</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr><td>@user.VolunteerNumber</td><td>@user.FullName<br />@user.NationalId</td><td>@user.Mobile<br />@user.Email</td><td>@user.Skills</td><td>@user.Status<br />@user.JoinedAt.ToString("yyyy-MM-dd")</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-inbox"></i> طلبات التطوع</span></div>
+    <table>
+        <thead><tr><th>الطلب</th><th>المتقدم</th><th>المصدر</th><th>الفرصة</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var request in requests)
+            {
+                <tr>
+                    <td>@request.RequestNumber<br />@request.RequestDate.ToString("yyyy-MM-dd")</td><td>@request.ApplicantName<br />@request.Mobile</td><td>@request.Source</td><td>@request.OpportunityTitle<br />@request.LinkedOpportunityTitle</td><td>@request.Status<br />@request.DecisionNote</td>
+                    <td><button class="secondary" @onclick="@(() => ChangeRequestStatusAsync(request.Id, VolunteerRequestStatus.UnderReview))">دراسة</button><button class="secondary" @onclick="@(() => ChangeRequestStatusAsync(request.Id, VolunteerRequestStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => ChangeRequestStatusAsync(request.Id, VolunteerRequestStatus.Rejected))">رفض</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<VolunteerUserResponse> users = [];
+    private List<VolunteerRequestResponse> requests = [];
+    private string volunteerNumber = $"VOL-{DateTime.UtcNow:yyyyMMddHHmm}";
+    private string fullName = string.Empty;
+    private string? nationalId;
+    private string mobile = string.Empty;
+    private string? email;
+    private string? skills;
+    private VolunteerUserStatus userStatus = VolunteerUserStatus.Active;
+    private DateTime joinedAt = DateTime.UtcNow.AddHours(3).Date;
+    private string? notes;
+    private string requestNumber = $"VR-{DateTime.UtcNow:yyyyMMddHHmm}";
+    private VolunteerRequestSource requestSource = VolunteerRequestSource.Internal;
+    private string applicantName = string.Empty;
+    private string requestMobile = string.Empty;
+    private string? opportunityTitle;
+    private VolunteerRequestStatus requestStatus = VolunteerRequestStatus.Submitted;
+    private DateTime requestDate = DateTime.UtcNow.AddHours(3).Date;
+    private int? linkedVolunteerId;
+    private string? decisionNote;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync(){ users = await Volunteering.GetUsersAsync(); requests = await Volunteering.GetRequestsAsync(); }
+    private async Task LoadActiveUsersAsync() => users = await Volunteering.GetUsersAsync(VolunteerUserStatus.Active);
+    private async Task LoadInternalRequestsAsync() => requests = await Volunteering.GetRequestsAsync(VolunteerRequestSource.Internal);
+    private async Task LoadExternalRequestsAsync() => requests = await Volunteering.GetRequestsAsync(VolunteerRequestSource.External);
+    private async Task LoadPendingRequestsAsync() => requests = await Volunteering.GetRequestsAsync(status: VolunteerRequestStatus.Submitted);
+    private async Task SaveUserAsync(){ var result = await Volunteering.SaveUserAsync(null, new SaveVolunteerUserRequest(volunteerNumber, fullName, nationalId, mobile, email, skills, userStatus, joinedAt, notes)); success = result.Success; message = result.Message; if (success) volunteerNumber = $"VOL-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+    private async Task SaveRequestAsync(){ var result = await Volunteering.SaveRequestAsync(null, new SaveVolunteerRequestRequest(requestNumber, requestSource, applicantName, requestMobile, opportunityTitle, requestStatus, requestDate, decisionNote, notes, linkedVolunteerId, null)); success = result.Success; message = result.Message; if (success) requestNumber = $"VR-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+    private async Task ChangeRequestStatusAsync(int id, VolunteerRequestStatus status){ var result = await Volunteering.UpdateRequestStatusAsync(id, status, decisionNote); success = result.Success; message = result.Message; await LoadAsync(); }
+}

@@ -1,0 +1,88 @@
+@page "/hr/discipline"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">إنذارات ومسائلات الموظفين</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-triangle-exclamation"></i><div><h2>تسجيل إجراء</h2><p>إدارة إنذارات الموظفين ومسائلاتهم.</p></div></div>
+    <div class="form-grid">
+        <label>الموظف<select @bind="employeeId">@foreach (var employee in employees){<option value="@employee.Id">@employee.FullName</option>}</select></label>
+        <label>النوع<select @bind="recordType"><option value="@EmployeeDisciplinaryRecordType.Warning">إنذار</option><option value="@EmployeeDisciplinaryRecordType.Question">مسائلة</option></select></label>
+        <label>التاريخ<input type="date" @bind="recordDate" /></label>
+        <label>العنوان<input @bind="title" /></label>
+        <label class="span-2">السبب<textarea @bind="reason"></textarea></label>
+        <label class="span-2">الإجراء المتخذ<textarea @bind="actionTaken"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الإجراء</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-list-check"></i> السجلات</span></div>
+    <table>
+        <thead><tr><th>الموظف</th><th>النوع</th><th>التاريخ</th><th>العنوان</th><th>الحالة</th><th>قرار</th></tr></thead>
+        <tbody>
+            @foreach (var item in records)
+            {
+                <tr>
+                    <td>@item.EmployeeName</td>
+                    <td>@item.Type</td>
+                    <td>@item.RecordDate.ToString("yyyy-MM-dd")</td>
+                    <td>@item.Title</td>
+                    <td><span class="status">@item.Status</span></td>
+                    <td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Cancelled))">إلغاء</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EmployeeResponse> employees = [];
+    private List<EmployeeDisciplinaryRecordResponse> records = [];
+    private int employeeId;
+    private EmployeeDisciplinaryRecordType recordType = EmployeeDisciplinaryRecordType.Warning;
+    private DateTime recordDate = DateTime.UtcNow.AddHours(3).Date;
+    private string title = string.Empty;
+    private string reason = string.Empty;
+    private string? actionTaken;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        employees = await HR.SearchEmployeesAsync(null, null, null, null);
+        employeeId = employees.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => records = await HR.GetDisciplinaryRecordsAsync(null, null);
+
+    private async Task SaveAsync()
+    {
+        var result = await HR.CreateDisciplinaryRecordAsync(new CreateEmployeeDisciplinaryRecordRequest(employeeId, recordType, recordDate, title, reason, actionTaken));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            title = string.Empty;
+            reason = string.Empty;
+            actionTaken = null;
+            await LoadAsync();
+        }
+    }
+
+    private async Task DecideAsync(int id, HumanResourceRequestStatus status)
+    {
+        var result = await HR.DecideDisciplinaryRecordAsync(id, status, null);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

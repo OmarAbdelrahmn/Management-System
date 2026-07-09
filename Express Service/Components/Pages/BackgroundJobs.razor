@@ -1,0 +1,20 @@
+@page "/admin/jobs"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+@inject AdminUiService Admin
+
+<h1 class="page-title">العمليات المجدولة</h1>
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-clock-rotate-left"></i><div><h2>Hangfire</h2><p>حالة خدمة الخلفية ولوحة الوظائف.</p></div><a class="primary" href="/jobs">فتح لوحة Hangfire</a></div>
+    <div class="form-grid">
+        <label>الحالة<input readonly value="@(status.HangfireEnabled ? "Enabled" : "Disabled")" /></label>
+        <label>المسار<input readonly value="@status.DashboardPath" /></label>
+        <label>جدولة البريد<input readonly value="@status.EmailRecurringCron" /></label>
+    </div>
+</section>
+
+@code {
+    private JobDashboardStatusResponse status = new(false, "/jobs", string.Empty);
+    protected override void OnInitialized() => status = Admin.GetJobsStatus();
+}

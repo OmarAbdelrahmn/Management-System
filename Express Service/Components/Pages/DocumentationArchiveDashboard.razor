@@ -1,0 +1,28 @@
+@page "/documentation-archive"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject DocumentationArchiveUiService Documentation
+
+<h1 class="page-title">إدارة التوثيق و المستندات</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-box-archive"></i></span><span>ملفات الأرشيف</span><strong class="tile-number">@(dashboard?.ArchiveDocumentsCount ?? 0)</strong><span class="tile-footer">سجل</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-folder-open"></i></span><span>ملفات نشطة</span><strong class="tile-number">@(dashboard?.ActiveDocumentsCount ?? 0)</strong><span class="tile-footer">متاحة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-envelope-open-text"></i></span><span>الوارد</span><strong class="tile-number">@(dashboard?.IncomingCount ?? 0)</strong><span class="tile-footer">رسالة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-paper-plane"></i></span><span>الصادر</span><strong class="tile-number">@(dashboard?.OutgoingCount ?? 0)</strong><span class="tile-footer">رسالة</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-folder-tree"></i><div><h2>الأرشيف والبريد</h2><p>إدارة سجلات الملفات، الأرشيف العام والمالي والميزانية والإدارة والسرية، والبريد الصادر والوارد مع معاملات البريد.</p></div></div>
+    <div class="actions-row"><a class="primary" href="/documentation-archive/archives">إدارة الأرشيف</a><a class="secondary" href="/documentation-archive/mail">الصادر والوارد</a><a class="secondary" href="/meetings/rafed">إدارة الاجتماعات</a></div>
+</section>
+
+<section class="circle-tiles" style="margin-top:14px">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-list-check"></i></span><span>معاملات مفتوحة</span><strong class="tile-number">@(dashboard?.OpenOperationsCount ?? 0)</strong><span class="tile-footer">قيد العمل</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-check-double"></i></span><span>معاملات منتهية</span><strong class="tile-number">@(dashboard?.CompletedOperationsCount ?? 0)</strong><span class="tile-footer">مكتملة</span></article>
+</section>
+
+@code {
+    private DocumentationArchiveDashboardResponse? dashboard;
+    protected override async Task OnInitializedAsync() => dashboard = await Documentation.GetDashboardAsync();
+}

@@ -1,13 +1,32 @@
+using Application.Service.Admin;
+using Application.Service.Accounting;
 using Application.Service.Auth;
+using Application.Service.Beneficiaries;
+using Application.Service.BeneficiaryServices;
 using Application.Service.Boards;
+using Application.Service.DocumentationArchive;
+using Application.Service.ElectronicOffice;
 using Application.Service.Emails;
+using Application.Service.ExecutiveSupervision;
+using Application.Service.EvaluationFollowUp;
+using Application.Service.FinancialDevelopment;
 using Application.Service.Invitations;
+using Application.Service.HumanResources;
+using Application.Service.InstitutionalExcellence;
 using Application.Service.Meetings;
 using Application.Service.Members;
+using Application.Service.Messaging;
 using Application.Service.Minutes;
+using Application.Service.MovementMaintenance;
 using Application.Service.Permissions;
+using Application.Service.ProgramsProjects;
+using Application.Service.PublicRelationsMedia;
 using Application.Service.Realtime;
+using Application.Service.ReportsStatistics;
 using Application.Service.SystemCatalog;
+using Application.Service.TaskManagement;
+using Application.Service.TechEnablement;
+using Application.Service.Volunteering;
 using Application.Service.Voting;
 using Domain;
 using Domain.Auditing;
@@ -52,6 +71,7 @@ public static class ApplicationDependencies
                     SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
                     QueuePollInterval = TimeSpan.FromSeconds(15),
                     UseRecommendedIsolationLevel = true,
+                    PrepareSchemaIfNecessary = true,
                     DisableGlobalLocks = true,
                     CommandTimeout = TimeSpan.FromMinutes(2)
                 });
@@ -120,6 +140,8 @@ public static class ApplicationDependencies
 
         services.AddAuthorization();
         services.AddCascadingAuthenticationState();
+        services.AddScoped<IAccountingService, AccountingService>();
+        services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IEmailBackgroundJob, EmailBackgroundJob>();
@@ -128,14 +150,51 @@ public static class ApplicationDependencies
         services.AddScoped<IBoardService, BoardService>();
         services.AddScoped<IMeetingService, MeetingService>();
         services.AddScoped<IMemberService, MemberService>();
+        services.AddScoped<IBeneficiaryService, BeneficiaryService>();
+        services.AddScoped<IBeneficiaryServicesService, BeneficiaryServicesService>();
+        services.AddScoped<IDocumentationArchiveService, DocumentationArchiveService>();
+        services.AddScoped<IElectronicOfficeService, ElectronicOfficeService>();
+        services.AddScoped<IExecutiveSupervisionService, ExecutiveSupervisionService>();
+        services.AddScoped<IEvaluationFollowUpService, EvaluationFollowUpService>();
+        services.AddScoped<IFinancialDevelopmentService, FinancialDevelopmentService>();
+        services.AddScoped<IHumanResourceService, HumanResourceService>();
+        services.AddScoped<IInstitutionalExcellenceService, InstitutionalExcellenceService>();
+        services.AddScoped<IMessagingService, MessagingService>();
+        services.AddScoped<IMovementMaintenanceService, MovementMaintenanceService>();
+        services.AddScoped<IProgramsProjectsService, ProgramsProjectsService>();
+        services.AddScoped<IPublicRelationsMediaService, PublicRelationsMediaService>();
+        services.AddScoped<IReportsStatisticsService, ReportsStatisticsService>();
         services.AddScoped<IInvitationService, InvitationService>();
+        services.AddScoped<IVolunteeringService, VolunteeringService>();
         services.AddScoped<IVotingService, VotingService>();
         services.AddScoped<IMinuteService, MinuteService>();
         services.AddScoped<ISystemCatalogService, SystemCatalogService>();
+        services.AddScoped<ITaskManagementService, TaskManagementService>();
+        services.AddScoped<ITechEnablementService, TechEnablementService>();
         services.Configure<SeedOptions>(configuration.GetSection("Seed"));
         services.AddScoped<DataSeeder>();
+        services.AddScoped<AccountingUiService>();
         services.AddScoped<MeetingUiService>();
+        services.AddScoped<AdminUiService>();
         services.AddScoped<MemberUiService>();
+        services.AddScoped<BeneficiaryUiService>();
+        services.AddScoped<BeneficiaryServicesUiService>();
+        services.AddScoped<DocumentationArchiveUiService>();
+        services.AddScoped<ElectronicOfficeUiService>();
+        services.AddScoped<ExecutiveSupervisionUiService>();
+        services.AddScoped<EvaluationFollowUpUiService>();
+        services.AddScoped<FinancialDevelopmentUiService>();
+        services.AddScoped<HumanResourceUiService>();
+        services.AddScoped<InstitutionalExcellenceUiService>();
+        services.AddScoped<ProgramsProjectsUiService>();
+        services.AddScoped<PublicRelationsMediaUiService>();
+        services.AddScoped<ReportsStatisticsUiService>();
+        services.AddScoped<SystemCatalogUiService>();
+        services.AddScoped<MessagingUiService>();
+        services.AddScoped<MovementMaintenanceUiService>();
+        services.AddScoped<TechEnablementUiService>();
+        services.AddScoped<VolunteeringUiService>();
+        services.AddScoped<TaskUiService>();
 
         return services;
     }

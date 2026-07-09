@@ -1,0 +1,62 @@
+@page "/programs-projects/create"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ProgramsProjectsUiService ProgramsProjects
+
+<h1 class="page-title">إضافة مشروع جديد</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-plus"></i><div><h2>بيانات المشروع أو البرنامج</h2><p>إنشاء سجل أساسي للمتابعة والتخطيط والتنفيذ.</p></div></div>
+    <div class="form-grid">
+        <label>الاسم<input @bind="name" /></label>
+        <label>الكود<input @bind="projectCode" placeholder="يولد تلقائياً عند تركه فارغاً" /></label>
+        <label>النوع<select @bind="projectType"><option>Project</option><option>Program</option><option>Qualification</option><option>Design</option></select></label>
+        <label>المدير<input @bind="managerName" /></label>
+        <label>من<input type="date" @bind="startsAt" /></label>
+        <label>إلى<input type="date" @bind="endsAt" /></label>
+        <label>الحالة<select @bind="status"><option value="@ProgramProjectStatus.Draft">مسودة</option><option value="@ProgramProjectStatus.Planning">تخطيط</option><option value="@ProgramProjectStatus.Active">نشط</option></select></label>
+        <label>الميزانية<input type="number" step="0.01" @bind="budget" /></label>
+        <label>المستهدفون<input type="number" step="1" @bind="targetBeneficiaries" /></label>
+        <label class="span-2">الوصف<textarea @bind="description"></textarea></label>
+        <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المشروع</button><a class="secondary" href="/programs-projects/projects">قواعد بيانات المشاريع</a></div>
+</section>
+
+@code {
+    private string name = string.Empty;
+    private string? projectCode;
+    private string projectType = "Project";
+    private string? description;
+    private string? managerName;
+    private DateTime? startsAt = DateTime.UtcNow.AddHours(3).Date;
+    private DateTime? endsAt = DateTime.UtcNow.AddHours(3).Date.AddMonths(1);
+    private ProgramProjectStatus status = ProgramProjectStatus.Draft;
+    private decimal budget;
+    private decimal targetBeneficiaries;
+    private string? notes;
+    private bool success;
+    private string? message;
+
+    private async Task SaveAsync()
+    {
+        var result = await ProgramsProjects.SaveProjectAsync(null, new SaveProgramProjectRequest(name, projectCode, projectType, description, managerName, startsAt, endsAt, status, budget, targetBeneficiaries, notes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            name = string.Empty;
+            projectCode = null;
+            description = null;
+            managerName = null;
+            budget = 0;
+            targetBeneficiaries = 0;
+            notes = null;
+        }
+    }
+}

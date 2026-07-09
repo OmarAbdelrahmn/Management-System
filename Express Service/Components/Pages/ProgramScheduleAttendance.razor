@@ -1,0 +1,110 @@
+@page "/programs-projects/attendance"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ProgramsProjectsUiService ProgramsProjects
+
+<h1 class="page-title">جدولة وحضور البرامج</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-calendar-days"></i><div><h2>موعد برنامج</h2><p>إدارة جدول البرنامج وجلساته.</p></div></div>
+    <div class="form-grid compact">
+        <label>البرنامج<select @bind="projectId">@foreach (var project in projects){<option value="@project.Id">@project.Name</option>}</select></label>
+        <label>عنوان الموعد<input @bind="sessionTitle" /></label>
+        <label>البداية<input type="datetime-local" @bind="startsAt" /></label>
+        <label>النهاية<input type="datetime-local" @bind="endsAt" /></label>
+        <label>الموقع<input @bind="location" /></label>
+        <label>ملاحظات<input @bind="sessionNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveSessionAsync">حفظ الموعد</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-user-check"></i><div><h2>تحضير مشارك</h2><p>تسجيل الحضور والغياب والأعذار.</p></div></div>
+    <div class="form-grid compact">
+        <label>الموعد<select @bind="sessionId">@foreach (var session in sessions){<option value="@session.Id">@session.Title</option>}</select></label>
+        <label>اسم المشارك<input @bind="participantName" /></label>
+        <label>مرجع خارجي<input @bind="externalReference" /></label>
+        <label>الحالة<select @bind="attendanceStatus"><option value="@ProgramAttendanceStatus.Present">حاضر</option><option value="@ProgramAttendanceStatus.Absent">غائب</option><option value="@ProgramAttendanceStatus.Excused">بعذر</option></select></label>
+        <label class="span-2">ملاحظات<input @bind="attendanceNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAttendanceAsync">حفظ الحضور</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-list-check"></i> الجداول والحضور</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>البرنامج/الموعد</th><th>التفاصيل</th><th>النتيجة</th></tr></thead>
+        <tbody>
+            @foreach (var session in sessions)
+            {
+                <tr><td>موعد</td><td>@session.ProjectName</td><td>@session.Title<br />@session.StartsAt.ToString("yyyy-MM-dd HH:mm")</td><td>حضور @session.PresentCount / غياب @session.AbsentCount</td></tr>
+            }
+            @foreach (var item in attendance)
+            {
+                <tr><td>حضور</td><td>@item.SessionTitle</td><td>@item.ParticipantName<br />@item.ExternalReference</td><td>@item.Status</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ProgramProjectResponse> projects = [];
+    private List<ProgramSessionResponse> sessions = [];
+    private List<ProgramSessionAttendanceResponse> attendance = [];
+    private int projectId;
+    private int sessionId;
+    private string sessionTitle = string.Empty;
+    private DateTime startsAt = DateTime.UtcNow.AddHours(3).Date.AddHours(9);
+    private DateTime endsAt = DateTime.UtcNow.AddHours(3).Date.AddHours(11);
+    private string? location;
+    private string? sessionNotes;
+    private string participantName = string.Empty;
+    private string? externalReference;
+    private ProgramAttendanceStatus attendanceStatus = ProgramAttendanceStatus.Present;
+    private string? attendanceNotes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        projects = await ProgramsProjects.SearchProjectsAsync(projectType: "Program");
+        if (projects.Count == 0)
+            projects = await ProgramsProjects.SearchProjectsAsync();
+        projectId = projects.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        sessions = await ProgramsProjects.GetSessionsAsync();
+        sessionId = sessions.FirstOrDefault()?.Id ?? sessionId;
+        attendance = await ProgramsProjects.GetAttendanceAsync();
+    }
+
+    private async Task SaveSessionAsync()
+    {
+        var result = await ProgramsProjects.SaveSessionAsync(null, new SaveProgramSessionRequest(projectId, sessionTitle, startsAt, endsAt, location, sessionNotes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveAttendanceAsync()
+    {
+        var result = await ProgramsProjects.SaveAttendanceAsync(null, new SaveProgramSessionAttendanceRequest(sessionId, participantName, externalReference, attendanceStatus, attendanceNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            participantName = string.Empty;
+            externalReference = null;
+            attendanceNotes = null;
+        }
+        await LoadAsync();
+    }
+}

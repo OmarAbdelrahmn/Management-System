@@ -1,0 +1,39 @@
+@page "/meetings/minutes-approval"
+@attribute [Authorize(Roles = "Admin,BoardChairman")]
+@rendermode InteractiveServer
+@inject MeetingUiService UiService
+
+<h1 class="page-title">اعتماد محاضر الاجتماعات</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-signature"></i> محاضر بانتظار التوقيع</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>الاجتماع</th><th>الموعد</th><th>الحالة</th><th>عدد البنود</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var meeting in meetings)
+            {
+                <tr><td>@meeting.Title</td><td>@meeting.ScheduledAt.ToString("yyyy-MM-dd HH:mm")</td><td>@meeting.Status</td><td>@meeting.AgendaItems.Count()</td><td><button class="primary" @onclick="() => SignAsync(meeting.Id)">اعتماد وتوقيع</button></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<MeetingResponse> meetings = [];
+    private bool success;
+    private string? message;
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => meetings = await UiService.GetPendingChairmanMeetingsAsync();
+    private async Task SignAsync(int id)
+    {
+        var result = await UiService.SignMinuteAsync(id);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

@@ -91,3 +91,22 @@ public class MemberReportShareConfigration : IEntityTypeConfiguration<MemberRepo
         entity.Property(x => x.Audience).IsRequired().HasMaxLength(80);
     }
 }
+
+public class MemberParticipationAssignmentConfigration : IEntityTypeConfiguration<MemberParticipationAssignment>
+{
+    public void Configure(EntityTypeBuilder<MemberParticipationAssignment> entity)
+    {
+        entity.HasKey(x => x.Id);
+        entity.Property(x => x.PositionTitle).HasMaxLength(120);
+        entity.Property(x => x.CycleName).HasMaxLength(160);
+        entity.Property(x => x.VotingWeight).HasColumnType("decimal(18,2)");
+        entity.Property(x => x.Notes).HasMaxLength(1000);
+        entity.HasIndex(x => new { x.MemberProfileId, x.Role, x.Status });
+        entity.HasIndex(x => new { x.Role, x.Status });
+
+        entity.HasOne(x => x.MemberProfile)
+            .WithMany(x => x.ParticipationAssignments)
+            .HasForeignKey(x => x.MemberProfileId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}

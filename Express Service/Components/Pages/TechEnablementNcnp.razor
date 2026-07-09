@@ -1,0 +1,64 @@
+@page "/tech-enablement/ncnp"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject TechEnablementUiService Tech
+
+<h1 class="page-title">إدارة تجهيز بيانات المركز الوطني</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-cloud-arrow-up"></i><div><h2>سجل دعم للمركز الوطني</h2><p>المساعدات التي تحتاج تحديث، تحديث التواريخ والتكاليف، الجاهزة للإرسال، المعلقة والمحذوفة، الأرشيف السابق، والمسجلة بمنصة تبين.</p></div></div>
+    <div class="form-grid compact">
+        <label>رقم المرجع<input @bind="referenceNumber" /></label>
+        <label>المستفيد<input @bind="beneficiaryName" /></label>
+        <label>نوع الدعم<input @bind="supportType" /></label>
+        <label>تاريخ الدعم<input type="date" @bind="supportDate" /></label>
+        <label>التكلفة<input type="number" step="0.01" @bind="cost" /></label>
+        <label>الحالة<select @bind="status"><option value="@NcnpDataStatus.NeedsUpdate">بحاجة تحديث</option><option value="@NcnpDataStatus.ReadyToRegister">جاهزة للإرسال</option><option value="@NcnpDataStatus.Registered">مسجلة</option><option value="@NcnpDataStatus.RemovedOrSuspended">معلقة أو محذوفة</option><option value="@NcnpDataStatus.ArchivedExternalSupport">أرشيف دعم سابق</option></select></label>
+        <label>مرجع المنصة<input @bind="platformReference" /></label>
+        <label class="span-2">ملاحظات<input @bind="notes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ السجل</button><button class="secondary" @onclick="LoadNeedsUpdateAsync">بحاجة تحديث</button><button class="secondary" @onclick="LoadReadyAsync">جاهزة</button><button class="secondary" @onclick="LoadRegisteredAsync">مسجلة</button><button class="secondary" @onclick="LoadAsync">كل السجلات</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> بيانات المركز الوطني</span></div>
+    <table>
+        <thead><tr><th>المرجع</th><th>المستفيد</th><th>الدعم</th><th>التكلفة</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var item in records)
+            {
+                <tr>
+                    <td>@item.ReferenceNumber<br />@item.PlatformReference</td><td>@item.BeneficiaryName</td><td>@item.SupportType<br />@item.SupportDate?.ToString("yyyy-MM-dd")</td><td>@item.Cost</td><td>@item.Status<br />@item.Notes</td>
+                    <td><button class="secondary" @onclick="@(() => UpdateStatusAsync(item.Id, NcnpDataStatus.ReadyToRegister))">تجهيز</button><button class="secondary" @onclick="@(() => UpdateStatusAsync(item.Id, NcnpDataStatus.Registered))">تسجيل</button><button class="secondary" @onclick="@(() => UpdateStatusAsync(item.Id, NcnpDataStatus.RemovedOrSuspended))">تعليق</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<NcnpDataRecordResponse> records = [];
+    private string referenceNumber = $"NCNP-{DateTime.UtcNow:yyyyMMddHHmm}";
+    private string beneficiaryName = string.Empty;
+    private string supportType = string.Empty;
+    private DateTime? supportDate = DateTime.UtcNow.AddHours(3).Date;
+    private decimal cost;
+    private NcnpDataStatus status = NcnpDataStatus.NeedsUpdate;
+    private string? platformReference;
+    private string? notes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => records = await Tech.GetNcnpDataAsync();
+    private async Task LoadNeedsUpdateAsync() => records = await Tech.GetNcnpDataAsync(NcnpDataStatus.NeedsUpdate);
+    private async Task LoadReadyAsync() => records = await Tech.GetNcnpDataAsync(NcnpDataStatus.ReadyToRegister);
+    private async Task LoadRegisteredAsync() => records = await Tech.GetNcnpDataAsync(NcnpDataStatus.Registered);
+    private async Task SaveAsync(){ var result = await Tech.SaveNcnpDataAsync(null, new SaveNcnpDataRecordRequest(referenceNumber, beneficiaryName, supportType, supportDate, cost, status, platformReference, notes)); success = result.Success; message = result.Message; if (success) referenceNumber = $"NCNP-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+    private async Task UpdateStatusAsync(int id, NcnpDataStatus nextStatus){ var result = await Tech.UpdateNcnpStatusAsync(id, nextStatus, platformReference, notes); success = result.Success; message = result.Message; await LoadAsync(); }
+}

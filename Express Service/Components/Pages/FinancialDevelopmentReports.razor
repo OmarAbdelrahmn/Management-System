@@ -1,0 +1,48 @@
+@page "/financial-development/reports"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject FinancialDevelopmentUiService FinancialDevelopment
+
+<h1 class="page-title">إدارة تقارير التبرعات</h1>
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-chart-pie"></i><div><h2>مرشحات التقارير</h2><p>تقارير فئات المتبرعين، معدل التكرار، الحملات، الإهداءات، الأجهزة، والمسوق الذكي.</p></div></div>
+    <div class="form-grid compact">
+        <label>من تاريخ<input type="date" @bind="fromDate" /></label>
+        <label>إلى تاريخ<input type="date" @bind="toDate" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="LoadAsync">تحديث التقرير</button></div>
+</section>
+
+<section class="circle-tiles" style="margin-top:14px">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-sack-dollar"></i></span><span>إجمالي مؤكد</span><strong class="tile-number">@(report?.TotalConfirmedAmount ?? 0)</strong><span class="tile-footer">ريال</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-repeat"></i></span><span>عدد التبرعات</span><strong class="tile-number">@(report?.ConfirmedCount ?? 0)</strong><span class="tile-footer">عملية</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-gift"></i></span><span>إهداءات</span><strong class="tile-number">@(report?.GiftCount ?? 0)</strong><span class="tile-footer">سجل</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-certificate"></i></span><span>شهادات</span><strong class="tile-number">@(report?.CertificateCount ?? 0)</strong><span class="tile-footer">شهادة</span></article>
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-list"></i> ملخص القنوات والأجهزة والحملات</span></div>
+    <table>
+        <thead><tr><th>المصدر</th><th>عدد العمليات</th><th>المبلغ</th></tr></thead>
+        <tbody>
+            @foreach (var source in report?.SourceSummaries ?? [])
+            {
+                <tr><td>@source.SourceChannel</td><td>@source.Count</td><td>@source.Amount</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-lightbulb"></i><div><h2>المسوق الذكي</h2><p>متوسط التبرع: @(report?.AverageConfirmedAmount ?? 0) ريال. عدد الداعمين الفريدين: @(report?.UniqueSupportersCount ?? 0).</p></div></div>
+</section>
+
+@code {
+    private DonationReportSummaryResponse? report;
+    private DateTime? fromDate = DateTime.UtcNow.AddHours(3).Date.AddMonths(-1);
+    private DateTime? toDate = DateTime.UtcNow.AddHours(3).Date.AddDays(1);
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => report = await FinancialDevelopment.GetDonationReportAsync(fromDate, toDate);
+}

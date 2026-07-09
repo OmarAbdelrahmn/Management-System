@@ -1,0 +1,154 @@
+@page "/mail/inbox"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject MessagingUiService Messaging
+
+<h1 class="page-title">البريد الداخلي</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-inbox"></i></span><span>الرسائل</span><strong class="tile-number">@messages.Count</strong><span class="tile-footer">الوارد</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-envelope"></i></span><span>غير مقروء</span><strong class="tile-number">@UnreadCount</strong><span class="tile-footer">بحاجة قراءة</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="actions-row">
+        <button class="secondary" @onclick="LoadInboxAsync">الوارد</button>
+        <button class="secondary" @onclick="LoadSentAsync">المرسل</button>
+        <button class="secondary" @onclick="LoadArchivedAsync">الأرشيف</button>
+        <a class="primary" href="/mail/compose">رسالة جديدة</a>
+        <a class="secondary" href="/mail/drafts">المسودات</a>
+    </div>
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-envelope-open-text"></i> @ViewTitle</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>المرسل</th><th>الموضوع</th><th>التاريخ</th><th>الحالة</th><th>المستلمون</th><th>إجراءات</th></tr></thead>
+        <tbody>
+            @foreach (var mail in messages)
+            {
+                var currentRecipient = CurrentRecipient(mail);
+                <tr>
+                    <td>@mail.SenderName</td>
+                    <td>@mail.Subject</td>
+                    <td>@mail.SentAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td><span class="status">@(currentRecipient?.IsRead == true ? "مقروءة" : mail.Status)</span></td>
+                    <td>@mail.Recipients.Count</td>
+                    <td>
+                        <button class="secondary" @onclick="() => SelectMail(mail)">عرض</button>
+                        @if (currentRecipient is not null && !currentRecipient.IsRead)
+                        {
+                            <button class="secondary" @onclick="() => MarkReadAsync(currentRecipient.Id)">تعليم كمقروءة</button>
+                        }
+                        @if (view == "inbox" && currentRecipient is not null)
+                        {
+                            <button class="secondary" @onclick="() => ArchiveAsync(currentRecipient.Id, true)">أرشفة</button>
+                        }
+                        @if (view == "archived" && currentRecipient is not null)
+                        {
+                            <button class="secondary" @onclick="() => ArchiveAsync(currentRecipient.Id, false)">استعادة</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@if (selectedMail is not null)
+{
+    <section class="panel">
+        <div class="panel-heading"><i class="fa-solid fa-envelope-open"></i><div><h2>@selectedMail.Subject</h2><p>من @selectedMail.SenderName - @(selectedMail.SentAt?.ToString("yyyy-MM-dd HH:mm") ?? selectedMail.CreatedAt.ToString("yyyy-MM-dd HH:mm"))</p></div></div>
+        <div class="panel-body">
+            <p>@selectedMail.Body</p>
+        </div>
+        <div class="table-section">
+            <div class="table-title"><span><i class="fa-solid fa-users"></i> المستلمون</span></div>
+            <table>
+                <thead><tr><th>المستلم</th><th>القراءة</th><th>الأرشفة</th></tr></thead>
+                <tbody>
+                    @foreach (var recipient in selectedMail.Recipients)
+                    {
+                        <tr><td>@recipient.RecipientName</td><td>@(recipient.IsRead ? $"مقروءة {recipient.ReadAt:yyyy-MM-dd HH:mm}" : "غير مقروءة")</td><td>@(recipient.IsArchived ? "مؤرشفة" : "نشطة")</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+
+@code {
+    private List<InternalMailResponse> messages = [];
+    private InternalMailResponse? selectedMail;
+    private string view = "inbox";
+    private bool success;
+    private string? message;
+    private int UnreadCount => messages.Sum(x => x.Recipients.Count(r => r.RecipientUserId == Messaging.CurrentUserId && !r.IsRead));
+    private string ViewTitle => view switch
+    {
+        "sent" => "المرسل",
+        "archived" => "الأرشيف",
+        _ => "الوارد"
+    };
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var selectedId = selectedMail?.Id;
+        messages = view switch
+        {
+            "sent" => await Messaging.GetSentAsync(),
+            "archived" => await Messaging.GetArchivedAsync(),
+            _ => await Messaging.GetInboxAsync()
+        };
+        selectedMail = selectedId.HasValue ? messages.FirstOrDefault(x => x.Id == selectedId.Value) : messages.FirstOrDefault();
+    }
+
+    private async Task LoadInboxAsync()
+    {
+        view = "inbox";
+        await LoadAsync();
+    }
+
+    private async Task LoadSentAsync()
+    {
+        view = "sent";
+        await LoadAsync();
+    }
+
+    private async Task LoadArchivedAsync()
+    {
+        view = "archived";
+        await LoadAsync();
+    }
+
+    private void SelectMail(InternalMailResponse mail) => selectedMail = mail;
+
+    private InternalMailRecipientResponse? CurrentRecipient(InternalMailResponse mail) =>
+        mail.Recipients.FirstOrDefault(x => x.RecipientUserId == Messaging.CurrentUserId);
+
+    private async Task MarkReadAsync(int recipientId)
+    {
+        var result = await Messaging.MarkMailReadAsync(recipientId);
+        await ApplyResultAsync(result);
+    }
+
+    private async Task ArchiveAsync(int recipientId, bool isArchived)
+    {
+        var result = await Messaging.ArchiveMailRecipientAsync(recipientId, isArchived);
+        await ApplyResultAsync(result);
+    }
+
+    private async Task ApplyResultAsync((bool Success, string Message) result)
+    {
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

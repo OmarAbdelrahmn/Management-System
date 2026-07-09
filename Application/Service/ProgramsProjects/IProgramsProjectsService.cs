@@ -1,0 +1,58 @@
+using Application.Abstraction;
+using Application.Contracts.ProgramsProjects;
+using Domain.Entities;
+
+namespace Application.Service.ProgramsProjects;
+
+public interface IProgramsProjectsService
+{
+    Task<Result<ProgramsProjectsDashboardResponse>> GetDashboardAsync(CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramProjectResponse>>> SearchProjectsAsync(ProgramProjectSearchRequest request, CancellationToken cancellationToken = default);
+    Task<Result<ProgramProjectResponse>> GetProjectAsync(int id, CancellationToken cancellationToken = default);
+    Task<Result<ProgramProjectResponse>> SaveProjectAsync(int? id, SaveProgramProjectRequest request, CancellationToken cancellationToken = default);
+    Task<Result<ProgramProjectResponse>> UpdateProjectStatusAsync(int id, UpdateProgramProjectStatusRequest request, CancellationToken cancellationToken = default);
+    Task<Result<ProgramProjectResponse>> PublishProjectAsync(int id, PublishProgramProjectRequest request, CancellationToken cancellationToken = default);
+    Task<Result<ProgramProjectResponse>> SaveRegistrationFormAsync(int id, SaveProgramRegistrationFormRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramProjectTaskResponse>>> GetTasksAsync(int? projectId, ProgramProjectTaskStatus? status, CancellationToken cancellationToken = default);
+    Task<Result<ProgramProjectTaskResponse>> SaveTaskAsync(int? id, SaveProgramProjectTaskRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramProjectMilestoneResponse>>> GetMilestonesAsync(int? projectId, CancellationToken cancellationToken = default);
+    Task<Result<ProgramProjectMilestoneResponse>> SaveMilestoneAsync(int? id, SaveProgramProjectMilestoneRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramProjectContractResponse>>> GetContractsAsync(int? projectId, CancellationToken cancellationToken = default);
+    Task<Result<ProgramProjectContractResponse>> SaveContractAsync(int? id, SaveProgramProjectContractRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramProjectFinanceEntryResponse>>> GetFinanceEntriesAsync(int? projectId, ProgramProjectFinanceEntryType? entryType, CancellationToken cancellationToken = default);
+    Task<Result<ProgramProjectFinanceEntryResponse>> AddFinanceEntryAsync(AddProgramProjectFinanceEntryRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramProjectAssignmentResponse>>> GetAssignmentsAsync(int? projectId, ProgramProjectAssignmentType? assignmentType, CancellationToken cancellationToken = default);
+    Task<Result<ProgramProjectAssignmentResponse>> AddAssignmentAsync(AddProgramProjectAssignmentRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramProjectReportResponse>>> GetReportsAsync(int? projectId, string? reportType, CancellationToken cancellationToken = default);
+    Task<Result<ProgramProjectReportResponse>> AddReportAsync(AddProgramProjectReportRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramProjectActivityResponse>>> GetProjectActivitiesAsync(int projectId, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramSupplierResponse>>> GetSuppliersAsync(string? search, ProgramSupplierStatus? status, CancellationToken cancellationToken = default);
+    Task<Result<ProgramSupplierResponse>> SaveSupplierAsync(int? id, SaveProgramSupplierRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramIdeaResponse>>> GetIdeasAsync(ProgramIdeaStatus? status, CancellationToken cancellationToken = default);
+    Task<Result<ProgramIdeaResponse>> SaveIdeaAsync(int? id, SaveProgramIdeaRequest request, CancellationToken cancellationToken = default);
+    Task<Result<ProgramIdeaResponse>> UpdateIdeaStatusAsync(int id, UpdateProgramIdeaStatusRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramApprovalResponse>>> GetApprovalsAsync(ProgramApprovalStatus? status, CancellationToken cancellationToken = default);
+    Task<Result<ProgramApprovalResponse>> SaveApprovalAsync(int? id, SaveProgramApprovalRequest request, CancellationToken cancellationToken = default);
+    Task<Result<ProgramApprovalResponse>> DecideApprovalAsync(int id, DecideProgramApprovalRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramRegistrationResponse>>> GetRegistrationsAsync(int? projectId, ProgramRegistrationStatus? status, CancellationToken cancellationToken = default);
+    Task<Result<ProgramRegistrationResponse>> SaveRegistrationAsync(int? id, SaveProgramRegistrationRequest request, CancellationToken cancellationToken = default);
+    Task<Result<ProgramRegistrationResponse>> DecideRegistrationAsync(int id, DecideProgramRegistrationRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramSessionResponse>>> GetSessionsAsync(int? projectId, CancellationToken cancellationToken = default);
+    Task<Result<ProgramSessionResponse>> SaveSessionAsync(int? id, SaveProgramSessionRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramSessionAttendanceResponse>>> GetAttendanceAsync(int? sessionId, ProgramAttendanceStatus? status, CancellationToken cancellationToken = default);
+    Task<Result<ProgramSessionAttendanceResponse>> SaveAttendanceAsync(int? id, SaveProgramSessionAttendanceRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramSurveyResponse>>> GetSurveysAsync(int? projectId, ProgramSurveyStatus? status, CancellationToken cancellationToken = default);
+    Task<Result<ProgramSurveyResponse>> SaveSurveyAsync(int? id, SaveProgramSurveyRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramSurveySubmissionResponse>>> GetSurveySubmissionsAsync(int? surveyId, CancellationToken cancellationToken = default);
+    Task<Result<ProgramSurveySubmissionResponse>> AddSurveySubmissionAsync(AddProgramSurveySubmissionRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramCertificateTemplateResponse>>> GetCertificateTemplatesAsync(int? projectId, bool? isActive, CancellationToken cancellationToken = default);
+    Task<Result<ProgramCertificateTemplateResponse>> SaveCertificateTemplateAsync(int? id, SaveProgramCertificateTemplateRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramCertificateIssueResponse>>> GetCertificateIssuesAsync(int? projectId, ProgramCertificateIssueStatus? status, CancellationToken cancellationToken = default);
+    Task<Result<ProgramCertificateIssueResponse>> IssueCertificateAsync(IssueProgramCertificateRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramQualificationCaseResponse>>> GetQualificationCasesAsync(ProgramQualificationCaseStatus? status, CancellationToken cancellationToken = default);
+    Task<Result<ProgramQualificationCaseResponse>> SaveQualificationCaseAsync(int? id, SaveProgramQualificationCaseRequest request, CancellationToken cancellationToken = default);
+    Task<Result<ProgramQualificationCaseResponse>> UpdateQualificationCaseStatusAsync(int id, UpdateProgramQualificationCaseStatusRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<ProgramQualificationInstallmentResponse>>> GetQualificationInstallmentsAsync(int? caseId, ProgramQualificationInstallmentStatus? status, CancellationToken cancellationToken = default);
+    Task<Result<ProgramQualificationInstallmentResponse>> SaveQualificationInstallmentAsync(int? id, SaveProgramQualificationInstallmentRequest request, CancellationToken cancellationToken = default);
+    Task<Result<ProgramQualificationInstallmentResponse>> RecordQualificationInstallmentPaymentAsync(int id, RecordQualificationInstallmentPaymentRequest request, CancellationToken cancellationToken = default);
+}

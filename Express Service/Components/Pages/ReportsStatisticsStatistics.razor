@@ -1,0 +1,56 @@
+@page "/reports-statistics/statistics"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ReportsStatisticsUiService Reports
+
+<h1 class="page-title">إحصائيات النظام</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-chart-pie"></i><div><h2>تحديث لوحة إحصائية</h2><p>تشغيل إحصائيات المستفيدين والتابعين والكفالات والطلبات والمشاريع والمهام والمالية والمناطق.</p></div></div>
+    <div class="form-grid compact">
+        <label>الإحصائية<select @bind="selectedKey">@foreach (var definition in definitions){<option value="@definition.Key">@definition.NameAr</option>}</select></label>
+        <label>الصيغة<select @bind="format"><option>Dashboard</option><option>Table</option><option>Excel</option></select></label>
+        <label>طالب التقرير<input @bind="requestedBy" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="GenerateAsync">تحديث الإحصائية</button></div>
+</section>
+
+<section class="circle-tiles" style="margin-top:14px">
+    @foreach (var run in runs.Take(4))
+    {
+        <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-chart-simple"></i></span><span>@run.ReportName</span><strong class="tile-number">@run.RowCount</strong><span class="tile-footer">@run.GeneratedAt.ToString("MM-dd HH:mm")</span></article>
+    }
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-list"></i> إحصائيات النظام</span></div>
+    <table>
+        <thead><tr><th>الإحصائية</th><th>النطاق</th><th>آخر توليد</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var definition in definitions)
+            {
+                <tr><td>@definition.NameAr<br />@definition.Key</td><td>@definition.SourceDomain</td><td>@definition.LastGeneratedAt?.ToString("yyyy-MM-dd HH:mm")</td><td><button class="secondary" @onclick="@(() => SelectAndGenerateAsync(definition.Key))">تحديث</button></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<SystemReportDefinitionResponse> definitions = [];
+    private List<SystemReportRunResponse> runs = [];
+    private string selectedKey = string.Empty;
+    private string format = "Dashboard";
+    private string? requestedBy;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync(){ definitions = await Reports.GetDefinitionsAsync(SystemReportKind.Statistic); runs = await Reports.GetRunsAsync(); selectedKey = string.IsNullOrWhiteSpace(selectedKey) ? definitions.FirstOrDefault()?.Key ?? string.Empty : selectedKey; }
+    private async Task GenerateAsync(){ var result = await Reports.GenerateReportAsync(new GenerateSystemReportRequest(selectedKey, format, "{}", requestedBy)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task SelectAndGenerateAsync(string key){ selectedKey = key; await GenerateAsync(); }
+}

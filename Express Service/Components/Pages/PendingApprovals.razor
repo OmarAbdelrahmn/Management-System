@@ -1,0 +1,81 @@
+@page "/approvals/pending"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject TaskUiService Tasks
+
+<h1 class="page-title">اعتمادات بانتظار الإجراء</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-paper-plane"></i><div><h2>إرسال طلب اعتماد</h2><p>إنشاء طلب اعتماد على مسار معرف مسبقاً.</p></div></div>
+    <div class="form-grid">
+        <label>المسار<select @bind="routeId">@foreach (var route in routes){<option value="@route.Id">@route.NameAr</option>}</select></label>
+        <label>العنوان<input @bind="title" /></label>
+        <label>نوع المرجع<input @bind="referenceType" /></label>
+        <label>رقم المرجع<input type="number" @bind="referenceId" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="CreateRequestAsync">إرسال طلب الاعتماد</button><button class="secondary" @onclick="LoadMineAsync">اعتماداتي فقط</button><button class="secondary" @onclick="LoadAllAsync">كل المعلّق</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-inbox"></i> الطلبات المعلقة</span></div>
+    <table>
+        <thead><tr><th>العنوان</th><th>المسار</th><th>مقدم الطلب</th><th>الخطوة</th><th>الموافق الحالي</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var request in requests)
+            {
+                <tr>
+                    <td>@request.Title</td>
+                    <td>@request.RouteName</td>
+                    <td>@request.RequestedByName</td>
+                    <td>@request.CurrentStepOrder</td>
+                    <td>@request.CurrentApproverName</td>
+                    <td><button class="primary" @onclick="() => DecideAsync(request.Id, ApprovalActionDecision.Approved)">اعتماد</button> <button class="danger" @onclick="() => DecideAsync(request.Id, ApprovalActionDecision.Rejected)">رفض</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ApprovalRouteResponse> routes = [];
+    private List<ApprovalRequestResponse> requests = [];
+    private int routeId;
+    private string title = string.Empty;
+    private string referenceType = "Task";
+    private int? referenceId;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        routes = await Tasks.GetApprovalRoutesAsync();
+        routeId = routes.FirstOrDefault()?.Id ?? 0;
+        await LoadAllAsync();
+    }
+
+    private async Task LoadAllAsync() => requests = await Tasks.GetPendingApprovalsAsync(false);
+    private async Task LoadMineAsync() => requests = await Tasks.GetPendingApprovalsAsync(true);
+
+    private async Task CreateRequestAsync()
+    {
+        var result = await Tasks.CreateApprovalRequestAsync(new CreateApprovalRequestRequest(routeId, title, referenceType, referenceId));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            title = string.Empty;
+        await LoadAllAsync();
+    }
+
+    private async Task DecideAsync(int id, ApprovalActionDecision decision)
+    {
+        var result = await Tasks.DecideApprovalAsync(id, decision, decision == ApprovalActionDecision.Approved ? "تم الاعتماد" : "تم الرفض");
+        success = result.Success;
+        message = result.Message;
+        await LoadAllAsync();
+    }
+}

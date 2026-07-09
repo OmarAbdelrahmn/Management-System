@@ -1,0 +1,50 @@
+@page "/notifications/manage"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MessagingUiService Messaging
+
+<h1 class="page-title">إدارة الإشعارات</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-bell"></i><div><h2>إشعار جديد</h2><p>ينشئ إشعاراً داخلياً أو يسجل طلب إرسال لقناة خارجية حسب الاختيار.</p></div></div>
+    <div class="form-grid">
+        <label>العنوان<input @bind="title" /></label>
+        <label>القناة<select @bind="channel"><option value="@MessageChannel.Internal">داخلي</option><option value="@MessageChannel.Email">Email</option><option value="@MessageChannel.Sms">SMS</option><option value="@MessageChannel.Push">Push</option></select></label>
+        <label>موعد الإرسال<input type="datetime-local" @bind="scheduledAt" /></label>
+        <label class="span-2">المستلمون<select multiple @bind="selectedRecipients">@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
+        <label class="span-2">النص<textarea @bind="body"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="CreateAsync">إنشاء الإشعار</button><a class="secondary" href="/notifications/database">قاعدة الإشعارات</a></div>
+</section>
+
+@code {
+    private List<UserPickerResponse> users = [];
+    private string title = string.Empty;
+    private string body = string.Empty;
+    private MessageChannel channel = MessageChannel.Internal;
+    private DateTime? scheduledAt;
+    private string[] selectedRecipients = [];
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => users = await Messaging.GetUsersAsync();
+
+    private async Task CreateAsync()
+    {
+        var result = await Messaging.CreateNotificationAsync(new CreateNotificationRequest(title, body, channel, selectedRecipients, scheduledAt));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            title = string.Empty;
+            body = string.Empty;
+            selectedRecipients = [];
+            scheduledAt = null;
+        }
+    }
+}

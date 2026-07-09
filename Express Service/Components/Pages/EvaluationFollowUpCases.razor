@@ -1,0 +1,89 @@
+@page "/evaluation-followup/cases"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject EvaluationFollowUpUiService FollowUp
+
+<h1 class="page-title">إدارة متابعة الحالات</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-folder-plus"></i><div><h2>طلب متابعة حالة</h2><p>إنشاء طلب متابعة وإدارته بين الطلبات، الجاري، المرفوض، والمنتهي بحاجة للاعتماد.</p></div></div>
+    <div class="form-grid compact">
+        <label>نوع الحالة<select @bind="subjectType"><option value="@FollowUpSubjectType.General">عام</option><option value="@FollowUpSubjectType.Beneficiary">مستفيد</option><option value="@FollowUpSubjectType.Relative">تابع</option><option value="@FollowUpSubjectType.AidRequest">طلب إعانة</option><option value="@FollowUpSubjectType.Sponsor">كافل</option><option value="@FollowUpSubjectType.Sponsorship">كفالة</option><option value="@FollowUpSubjectType.Supporter">داعم</option></select></label>
+        <label>اسم الحالة<input @bind="subjectName" /></label>
+        <label>المرجع<input @bind="referenceNumber" /></label>
+        <label>طالب المتابعة<input @bind="requestedBy" /></label>
+        <label>تاريخ الطلب<input type="date" @bind="requestDate" /></label>
+        <label>تاريخ الاستحقاق<input type="date" @bind="dueDate" /></label>
+        <label>الأولوية<select @bind="priority"><option value="@FollowUpPriority.Low">منخفضة</option><option value="@FollowUpPriority.Normal">عادية</option><option value="@FollowUpPriority.High">عالية</option><option value="@FollowUpPriority.Urgent">عاجلة</option></select></label>
+        <label>الحالة<select @bind="caseStatus"><option value="@FollowUpCaseStatus.Requested">طلب</option><option value="@FollowUpCaseStatus.Running">قيد المتابعة</option><option value="@FollowUpCaseStatus.PendingApproval">منتهية بحاجة لاعتماد</option><option value="@FollowUpCaseStatus.Rejected">مرفوضة</option><option value="@FollowUpCaseStatus.Approved">معتمدة</option></select></label>
+        <label class="span-2">ملاحظة/ملخص<input @bind="caseNote" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المتابعة</button><button class="secondary" @onclick="LoadRunningAsync">الجارية</button><button class="secondary" @onclick="LoadCompletedAsync">المكتملة</button><button class="secondary" @onclick="LoadRejectedAsync">المرفوضة</button><button class="secondary" @onclick="LoadAsync">كل السجل</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> قاعدة بيانات المتابعات</span></div>
+    <table>
+        <thead><tr><th>رقم الحالة</th><th>الحالة</th><th>الطلب</th><th>الأولوية</th><th>الوضع</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var item in cases)
+            {
+                <tr>
+                    <td>@item.CaseNumber</td>
+                    <td>@item.SubjectName<br />@item.SubjectType<br />@item.ReferenceNumber</td>
+                    <td>@item.RequestedBy<br />@item.RequestDate.ToString("yyyy-MM-dd")</td>
+                    <td>@item.Priority</td>
+                    <td>@item.Status<br />@item.RejectionNote @item.CompletionSummary</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => ChangeStatusAsync(item.Id, FollowUpCaseStatus.Running))">تشغيل</button>
+                        <button class="secondary" @onclick="@(() => ChangeStatusAsync(item.Id, FollowUpCaseStatus.PendingApproval))">إنهاء</button>
+                        <button class="secondary" @onclick="@(() => ChangeStatusAsync(item.Id, FollowUpCaseStatus.Rejected))">رفض</button>
+                        <button class="secondary" @onclick="@(() => ChangeStatusAsync(item.Id, FollowUpCaseStatus.Approved))">اعتماد</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<FollowUpCaseResponse> cases = [];
+    private FollowUpSubjectType subjectType = FollowUpSubjectType.General;
+    private string subjectName = string.Empty;
+    private string? referenceNumber;
+    private string requestedBy = string.Empty;
+    private DateTime requestDate = DateTime.UtcNow.AddHours(3).Date;
+    private DateTime? dueDate = DateTime.UtcNow.AddHours(3).Date.AddDays(14);
+    private FollowUpPriority priority = FollowUpPriority.Normal;
+    private FollowUpCaseStatus caseStatus = FollowUpCaseStatus.Requested;
+    private string? caseNote;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => cases = await FollowUp.GetCasesAsync();
+    private async Task LoadRunningAsync() => cases = await FollowUp.GetCasesAsync(FollowUpCaseStatus.Running);
+    private async Task LoadCompletedAsync() => cases = await FollowUp.GetCasesAsync(FollowUpCaseStatus.PendingApproval);
+    private async Task LoadRejectedAsync() => cases = await FollowUp.GetCasesAsync(FollowUpCaseStatus.Rejected);
+
+    private async Task SaveAsync()
+    {
+        var result = await FollowUp.SaveCaseAsync(null, new SaveFollowUpCaseRequest(subjectType, subjectName, referenceNumber, requestedBy, requestDate, dueDate, priority, caseStatus, caseStatus == FollowUpCaseStatus.Rejected ? caseNote : null, caseStatus == FollowUpCaseStatus.PendingApproval ? caseNote : null, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task ChangeStatusAsync(int id, FollowUpCaseStatus status)
+    {
+        var result = await FollowUp.UpdateCaseStatusAsync(id, status, caseNote);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

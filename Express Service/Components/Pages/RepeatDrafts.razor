@@ -1,0 +1,25 @@
+@page "/meetings/repeat-drafts"
+@attribute [Authorize(Roles = "Admin,BoardSecretary")]
+@rendermode InteractiveServer
+@inject MeetingUiService UiService
+
+<h1 class="page-title">مسودات الاجتماعات المتكررة</h1>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-repeat"></i> مسودات التكرار</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>المصدر</th><th>الاجتماع المنشأ</th><th>الموعد</th></tr></thead>
+        <tbody>
+            @foreach (var draft in drafts)
+            {
+                <tr><td>@draft.SourceBoardMeetingId</td><td>@draft.CreatedBoardMeetingId</td><td>@draft.ScheduledAt.ToString("yyyy-MM-dd HH:mm")</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<MeetingRepeatDraftResponse> drafts = [];
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => drafts = await UiService.GetRepeatedDraftsAsync();
+}

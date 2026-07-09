@@ -1,0 +1,55 @@
+@page "/mail/compose"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MessagingUiService Messaging
+
+<h1 class="page-title">رسالة جديدة</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-pen"></i><div><h2>إنشاء رسالة داخلية</h2><p>يمكن إرسال الرسالة مباشرة أو حفظها كمسودة.</p></div></div>
+    <div class="form-grid">
+        <label>الموضوع<input @bind="subject" /></label>
+        <label class="span-2">المستلمون
+            <select multiple @bind="selectedRecipients">
+                @foreach (var user in users)
+                {
+                    <option value="@user.Id">@user.FullName</option>
+                }
+            </select>
+        </label>
+        <label class="span-2">نص الرسالة<textarea @bind="body"></textarea></label>
+    </div>
+    <div class="actions-row">
+        <button class="primary" @onclick="() => SaveAsync(true)">إرسال</button>
+        <button class="secondary" @onclick="() => SaveAsync(false)">حفظ كمسودة</button>
+    </div>
+</section>
+
+@code {
+    private List<UserPickerResponse> users = [];
+    private string subject = string.Empty;
+    private string body = string.Empty;
+    private string[] selectedRecipients = [];
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => users = await Messaging.GetUsersAsync();
+
+    private async Task SaveAsync(bool sendNow)
+    {
+        var result = await Messaging.CreateMailAsync(new CreateInternalMailRequest(subject, body, selectedRecipients, sendNow));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            subject = string.Empty;
+            body = string.Empty;
+            selectedRecipients = [];
+        }
+    }
+}

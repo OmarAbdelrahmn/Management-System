@@ -1,0 +1,26 @@
+@page "/evaluation-followup"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject EvaluationFollowUpUiService FollowUp
+
+<h1 class="page-title">إدارة التقييم و المتابعة</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-inbox"></i></span><span>طلبات</span><strong class="tile-number">@(dashboard?.RequestedCount ?? 0)</strong><span class="tile-footer">متابعة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-spinner"></i></span><span>قيد المتابعة</span><strong class="tile-number">@(dashboard?.RunningCount ?? 0)</strong><span class="tile-footer">حالة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-check-double"></i></span><span>تحتاج اعتماد</span><strong class="tile-number">@(dashboard?.PendingApprovalCount ?? 0)</strong><span class="tile-footer">منتهية</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-calendar-plus"></i></span><span>إجراءات تالية</span><strong class="tile-number">@(dashboard?.NextActionsCount ?? 0)</strong><span class="tile-footer">نشاط</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-clipboard-list-check"></i><div><h2>عمليات التقييم والمتابعة</h2><p>متابعة الحالات وسجلات النشاطات للمستفيدين والتابعين وطلبات الإعانة والكفلاء والكفالات والداعمين.</p></div></div>
+    <div class="actions-row">
+        <a class="primary" href="/evaluation-followup/cases">متابعة الحالات</a>
+        <a class="secondary" href="/evaluation-followup/activities">متابعة النشاطات</a>
+    </div>
+</section>
+
+@code {
+    private EvaluationFollowUpDashboardResponse? dashboard;
+    protected override async Task OnInitializedAsync() => dashboard = await FollowUp.GetDashboardAsync();
+}

@@ -1,0 +1,123 @@
+@page "/programs-projects/suppliers"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ProgramsProjectsUiService ProgramsProjects
+
+<h1 class="page-title">إدارة الموردين</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-truck-field"></i><div><h2>حساب مورد</h2><p>إنشاء وتحديث موردين البرامج والمشاريع.</p></div></div>
+    <div class="form-grid compact">
+        <label>اسم المورد<input @bind="name" /></label>
+        <label>مسؤول التواصل<input @bind="contactPerson" /></label>
+        <label>الجوال<input @bind="mobile" /></label>
+        <label>البريد<input type="email" @bind="email" /></label>
+        <label>المدينة<input @bind="city" /></label>
+        <label>الحالة<select @bind="status"><option value="@ProgramSupplierStatus.Active">نشط</option><option value="@ProgramSupplierStatus.Inactive">غير نشط</option><option value="@ProgramSupplierStatus.Archived">مؤرشف</option></select></label>
+        <label class="span-2">ملاحظات<input @bind="notes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المورد</button><button class="secondary" @onclick="ResetForm">تفريغ</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-magnifying-glass"></i><div><h2>بحث الموردين</h2><p>قاعدة بيانات الموردين مع الحذف والاستعادة كحالة أرشفة.</p></div></div>
+    <div class="form-grid compact">
+        <label>بحث<input @bind="search" /></label>
+        <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="Active">نشط</option><option value="Inactive">غير نشط</option><option value="Archived">مؤرشف</option></select></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="LoadAsync">بحث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> قاعدة بيانات الموردين</span></div>
+    <table>
+        <thead><tr><th>المورد</th><th>التواصل</th><th>المدينة</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var supplier in suppliers)
+            {
+                <tr>
+                    <td>@supplier.Name</td>
+                    <td>@supplier.ContactPerson<br />@supplier.Mobile<br />@supplier.Email</td>
+                    <td>@supplier.City</td>
+                    <td><span class="status">@supplier.Status</span></td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => Edit(supplier))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => ChangeStatusAsync(supplier, ProgramSupplierStatus.Archived))">حذف</button>
+                        <button class="secondary" @onclick="@(() => ChangeStatusAsync(supplier, ProgramSupplierStatus.Active))">استعادة</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ProgramSupplierResponse> suppliers = [];
+    private int? editingId;
+    private string name = string.Empty;
+    private string? contactPerson;
+    private string? mobile;
+    private string? email;
+    private string? city;
+    private ProgramSupplierStatus status = ProgramSupplierStatus.Active;
+    private string? notes;
+    private string? search;
+    private string statusText = string.Empty;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var parsedStatus = Enum.TryParse<ProgramSupplierStatus>(statusText, out var value) ? value : (ProgramSupplierStatus?)null;
+        suppliers = await ProgramsProjects.GetSuppliersAsync(search, parsedStatus);
+    }
+
+    private async Task SaveAsync()
+    {
+        var result = await ProgramsProjects.SaveSupplierAsync(editingId, new SaveProgramSupplierRequest(name, contactPerson, mobile, email, city, status, notes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetForm();
+        await LoadAsync();
+    }
+
+    private async Task ChangeStatusAsync(ProgramSupplierResponse supplier, ProgramSupplierStatus newStatus)
+    {
+        var result = await ProgramsProjects.SaveSupplierAsync(supplier.Id, new SaveProgramSupplierRequest(supplier.Name, supplier.ContactPerson, supplier.Mobile, supplier.Email, supplier.City, newStatus, supplier.Notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void Edit(ProgramSupplierResponse supplier)
+    {
+        editingId = supplier.Id;
+        name = supplier.Name;
+        contactPerson = supplier.ContactPerson;
+        mobile = supplier.Mobile;
+        email = supplier.Email;
+        city = supplier.City;
+        status = Enum.TryParse<ProgramSupplierStatus>(supplier.Status, out var value) ? value : ProgramSupplierStatus.Active;
+        notes = supplier.Notes;
+    }
+
+    private void ResetForm()
+    {
+        editingId = null;
+        name = string.Empty;
+        contactPerson = null;
+        mobile = null;
+        email = null;
+        city = null;
+        status = ProgramSupplierStatus.Active;
+        notes = null;
+    }
+}

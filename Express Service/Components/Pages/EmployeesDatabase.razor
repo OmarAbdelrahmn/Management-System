@@ -1,0 +1,77 @@
+@page "/hr/employees"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">قاعدة بيانات الموظفين</h1>
+
+<section class="panel">
+    <div class="panel-heading">
+        <i class="fa-solid fa-users-gear"></i>
+        <div><h2>بحث وإدارة الموظفين</h2><p>عرض الموظفين حسب الحالة والقسم والمسمى الوظيفي.</p></div>
+        <a class="primary" href="/hr/employees/create">إضافة موظف</a>
+    </div>
+    <div class="form-grid compact">
+        <label>بحث<input @bind="search" placeholder="الاسم، الرقم الوظيفي، الهوية، البريد، الجوال" /></label>
+        <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="Active">نشط</option><option value="OnLeave">إجازة</option><option value="Suspended">موقوف</option><option value="Terminated">منتهي الخدمة</option></select></label>
+        <label>القسم<select @bind="departmentIdText"><option value="">الكل</option>@foreach (var department in departments){<option value="@department.Id">@department.NameAr</option>}</select></label>
+        <label>المسمى<select @bind="jobTitleIdText"><option value="">الكل</option>@foreach (var title in jobTitles){<option value="@title.Id">@title.NameAr</option>}</select></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SearchAsync">بحث</button><button class="secondary" @onclick="ClearAsync">مسح الفلاتر</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> الموظفون</span></div>
+    <table>
+        <thead><tr><th>الرقم</th><th>الاسم</th><th>القسم</th><th>المسمى</th><th>الجوال</th><th>الحالة</th><th>الراتب</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var employee in employees)
+            {
+                <tr>
+                    <td>@employee.EmployeeNumber</td>
+                    <td>@employee.FullName</td>
+                    <td>@employee.DepartmentName</td>
+                    <td>@employee.JobTitleName</td>
+                    <td>@employee.Mobile</td>
+                    <td><span class="status">@employee.Status</span></td>
+                    <td>@employee.TotalSalary</td>
+                    <td><a class="secondary" href="@($"/hr/employees/update/{employee.Id}")">تعديل</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EmployeeResponse> employees = [];
+    private List<EmployeeDepartmentResponse> departments = [];
+    private List<JobTitleResponse> jobTitles = [];
+    private string? search;
+    private string statusText = string.Empty;
+    private string departmentIdText = string.Empty;
+    private string jobTitleIdText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        departments = await HR.GetDepartmentsAsync();
+        jobTitles = await HR.GetJobTitlesAsync();
+        await SearchAsync();
+    }
+
+    private async Task SearchAsync()
+    {
+        var status = Enum.TryParse<EmployeeStatus>(statusText, out var parsedStatus) ? parsedStatus : (EmployeeStatus?)null;
+        var departmentId = int.TryParse(departmentIdText, out var parsedDepartmentId) ? parsedDepartmentId : (int?)null;
+        var jobTitleId = int.TryParse(jobTitleIdText, out var parsedJobTitleId) ? parsedJobTitleId : (int?)null;
+        employees = await HR.SearchEmployeesAsync(search, status, departmentId, jobTitleId);
+    }
+
+    private async Task ClearAsync()
+    {
+        search = null;
+        statusText = string.Empty;
+        departmentIdText = string.Empty;
+        jobTitleIdText = string.Empty;
+        await SearchAsync();
+    }
+}

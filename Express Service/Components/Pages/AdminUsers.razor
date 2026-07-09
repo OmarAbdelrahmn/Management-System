@@ -1,0 +1,72 @@
+@page "/admin/users"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+@inject AdminUiService Admin
+
+<h1 class="page-title">مستخدمو النظام</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-user-plus"></i><div><h2>إضافة مستخدم</h2><p>إنشاء حساب Identity وربطه بالأدوار.</p></div></div>
+    <div class="form-grid">
+        <label>الاسم الكامل<input @bind="fullName" /></label>
+        <label>البريد<input type="email" @bind="email" /></label>
+        <label>كلمة المرور<input type="password" @bind="password" /></label>
+        <label>الجوال<input @bind="phone" /></label>
+        <label class="span-2">الأدوار<select multiple @bind="selectedRoles">@foreach (var role in roles){<option value="@role.Name">@role.Name</option>}</select></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="CreateAsync">إنشاء المستخدم</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-users-gear"></i> المستخدمون</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>الاسم</th><th>البريد</th><th>الجوال</th><th>الحالة</th><th>الأدوار</th></tr></thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr><td>@user.FullName</td><td>@user.Email</td><td>@user.PhoneNumber</td><td><span class="status @(user.IsActive ? "ok" : "warn")">@(user.IsActive ? "فعال" : "موقوف")</span></td><td>@string.Join(", ", user.Roles)</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<AdminUserResponse> users = [];
+    private List<RoleResponse> roles = [];
+    private string fullName = string.Empty;
+    private string email = string.Empty;
+    private string password = string.Empty;
+    private string? phone;
+    private string[] selectedRoles = [];
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        users = await Admin.GetUsersAsync();
+        roles = await Admin.GetRolesAsync();
+    }
+
+    private async Task CreateAsync()
+    {
+        var result = await Admin.CreateUserAsync(new CreateAdminUserRequest(fullName, email, password, phone, selectedRoles));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            fullName = string.Empty;
+            email = string.Empty;
+            password = string.Empty;
+            phone = null;
+            selectedRoles = [];
+        }
+        await LoadAsync();
+    }
+}

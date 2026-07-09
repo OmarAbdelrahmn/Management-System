@@ -1,0 +1,46 @@
+@page "/notifications/cancel"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MessagingUiService Messaging
+
+<h1 class="page-title">إلغاء إشعار</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-bell-slash"></i><div><h2>إلغاء إشعار فعال</h2><p>الإلغاء يحفظ السبب والتاريخ ولا يحذف السجل.</p></div></div>
+    <div class="form-grid">
+        <label>الإشعار<select @bind="notificationId">@foreach (var item in notifications){<option value="@item.Id">@item.Title</option>}</select></label>
+        <label class="span-2">سبب الإلغاء<textarea @bind="reason"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="danger" @onclick="CancelAsync">إلغاء الإشعار</button></div>
+</section>
+
+@code {
+    private List<NotificationResponse> notifications = [];
+    private int notificationId;
+    private string reason = string.Empty;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        notifications = await Messaging.GetNotificationsAsync(NotificationStatus.Active);
+        notificationId = notifications.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private async Task CancelAsync()
+    {
+        var result = await Messaging.CancelNotificationAsync(notificationId, reason);
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            reason = string.Empty;
+        await LoadAsync();
+    }
+}

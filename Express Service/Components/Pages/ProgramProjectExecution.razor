@@ -1,0 +1,128 @@
+@page "/programs-projects/execution"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ProgramsProjectsUiService ProgramsProjects
+
+<h1 class="page-title">مرحلة التنفيذ والمتابعة</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-money-check-dollar"></i><div><h2>حركة مالية</h2><p>تسجيل إيراد أو مصروف أو عهدة أو تحويل رصيد.</p></div></div>
+    <div class="form-grid compact">
+        <label>المشروع<select @bind="projectId">@foreach (var project in projects){<option value="@project.Id">@project.Name</option>}</select></label>
+        <label>النوع<select @bind="entryType"><option value="@ProgramProjectFinanceEntryType.Income">إيراد</option><option value="@ProgramProjectFinanceEntryType.Expense">مصروف</option><option value="@ProgramProjectFinanceEntryType.BalanceTransfer">تحويل رصيد</option><option value="@ProgramProjectFinanceEntryType.Custody">عهدة</option></select></label>
+        <label>التاريخ<input type="date" @bind="entryDate" /></label>
+        <label>المبلغ<input type="number" step="0.01" @bind="amount" /></label>
+        <label>المصدر/المستفيد<input @bind="sourceOrPayee" /></label>
+        <label>المرجع<input @bind="referenceNumber" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveFinanceAsync">تسجيل الحركة</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-people-arrows"></i><div><h2>إلحاق بالمشروع</h2><p>إلحاق مستفيدين أو جهات أو فريق عمل.</p></div></div>
+    <div class="form-grid compact">
+        <label>نوع الإلحاق<select @bind="assignmentType"><option value="@ProgramProjectAssignmentType.Beneficiary">مستفيد</option><option value="@ProgramProjectAssignmentType.Entity">جهة</option><option value="@ProgramProjectAssignmentType.TeamMember">فريق عمل</option></select></label>
+        <label>الاسم<input @bind="displayName" /></label>
+        <label>مرجع خارجي<input @bind="externalReference" /></label>
+        <label class="span-2">ملاحظات<input @bind="assignmentNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAssignmentAsync">إلحاق</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-file-lines"></i><div><h2>تقرير مشروع</h2><p>إدارة تقارير المشروع والمتابعة.</p></div></div>
+    <div class="form-grid">
+        <label>نوع التقرير<input @bind="reportType" /></label>
+        <label>التاريخ<input type="date" @bind="reportDate" /></label>
+        <label class="span-2">الملخص<textarea @bind="summary"></textarea></label>
+        <label class="span-2">مسار ملف<input @bind="filePath" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveReportAsync">حفظ التقرير</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-chart-line"></i> سجلات التنفيذ</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>المشروع</th><th>التفاصيل</th><th>القيمة/الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var item in finance)
+            {
+                <tr><td>@item.EntryType</td><td>@item.ProjectName</td><td>@item.SourceOrPayee / @item.EntryDate.ToString("yyyy-MM-dd")</td><td>@item.Amount</td></tr>
+            }
+            @foreach (var item in assignments)
+            {
+                <tr><td>@item.AssignmentType</td><td>@item.ProjectName</td><td>@item.DisplayName</td><td>@item.ExternalReference</td></tr>
+            }
+            @foreach (var item in reports)
+            {
+                <tr><td>تقرير</td><td>@item.ProjectName</td><td>@item.ReportType / @item.ReportDate.ToString("yyyy-MM-dd")</td><td>@item.Summary</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ProgramProjectResponse> projects = [];
+    private List<ProgramProjectFinanceEntryResponse> finance = [];
+    private List<ProgramProjectAssignmentResponse> assignments = [];
+    private List<ProgramProjectReportResponse> reports = [];
+    private int projectId;
+    private ProgramProjectFinanceEntryType entryType = ProgramProjectFinanceEntryType.Income;
+    private DateTime entryDate = DateTime.UtcNow.AddHours(3).Date;
+    private decimal amount;
+    private string sourceOrPayee = string.Empty;
+    private string? referenceNumber;
+    private ProgramProjectAssignmentType assignmentType = ProgramProjectAssignmentType.Beneficiary;
+    private string displayName = string.Empty;
+    private string? externalReference;
+    private string? assignmentNotes;
+    private string reportType = "تقرير متابعة";
+    private DateTime reportDate = DateTime.UtcNow.AddHours(3).Date;
+    private string summary = string.Empty;
+    private string? filePath;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        projects = await ProgramsProjects.SearchProjectsAsync();
+        projectId = projects.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        finance = await ProgramsProjects.GetFinanceEntriesAsync();
+        assignments = await ProgramsProjects.GetAssignmentsAsync();
+        reports = await ProgramsProjects.GetReportsAsync();
+    }
+
+    private async Task SaveFinanceAsync()
+    {
+        var result = await ProgramsProjects.AddFinanceEntryAsync(new AddProgramProjectFinanceEntryRequest(projectId, entryType, entryDate, amount, sourceOrPayee, referenceNumber, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveAssignmentAsync()
+    {
+        var result = await ProgramsProjects.AddAssignmentAsync(new AddProgramProjectAssignmentRequest(projectId, assignmentType, displayName, externalReference, DateTime.UtcNow.AddHours(3), assignmentNotes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveReportAsync()
+    {
+        var result = await ProgramsProjects.AddReportAsync(new AddProgramProjectReportRequest(projectId, reportType, reportDate, summary, filePath));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

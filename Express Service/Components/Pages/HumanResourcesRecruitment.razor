@@ -1,0 +1,108 @@
+@page "/hr/recruitment"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">إدارة التوظيف</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-user-tie"></i><div><h2>طلب تعيين موظف</h2><p>إنشاء طلب التوظيف وإضافة بيانات المرشح والمقابلة عند توفرها.</p></div></div>
+    <div class="form-grid">
+        <label>القسم<select @bind="departmentId">@foreach (var department in departments){<option value="@department.Id">@department.NameAr</option>}</select></label>
+        <label>المسمى<select @bind="jobTitleId">@foreach (var title in jobTitles){<option value="@title.Id">@title.NameAr</option>}</select></label>
+        <label class="span-2">عنوان الطلب<input @bind="requestTitle" /></label>
+        <label>العدد المطلوب<input type="number" @bind="requestedCount" /></label>
+        <label>اسم المرشح<input @bind="candidateName" /></label>
+        <label>جوال المرشح<input @bind="candidateMobile" /></label>
+        <label>بريد المرشح<input @bind="candidateEmail" /></label>
+        <label>موعد المقابلة<input type="datetime-local" @bind="interviewAt" /></label>
+        <label class="span-2">المبررات<textarea @bind="justification"></textarea></label>
+        <label class="span-2">ملاحظات المقابلة<textarea @bind="interviewNotes"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الطلب</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-briefcase"></i> طلبات التوظيف</span></div>
+    <table>
+        <thead><tr><th>العنوان</th><th>القسم</th><th>المسمى</th><th>العدد</th><th>المرشح</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var item in requests)
+            {
+                <tr>
+                    <td>@item.RequestTitle</td>
+                    <td>@item.DepartmentName</td>
+                    <td>@item.JobTitleName</td>
+                    <td>@item.RequestedCount</td>
+                    <td>@item.CandidateName</td>
+                    <td><span class="status">@item.Status</span></td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => StatusAsync(item.Id, RecruitmentRequestStatus.Announced))">إعلان</button>
+                        <button class="secondary" @onclick="@(() => StatusAsync(item.Id, RecruitmentRequestStatus.Interviewed))">مقابلة</button>
+                        <button class="secondary" @onclick="@(() => StatusAsync(item.Id, RecruitmentRequestStatus.Completed))">إكمال</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EmployeeDepartmentResponse> departments = [];
+    private List<JobTitleResponse> jobTitles = [];
+    private List<RecruitmentRequestResponse> requests = [];
+    private int departmentId;
+    private int jobTitleId;
+    private string requestTitle = string.Empty;
+    private int requestedCount = 1;
+    private string? justification;
+    private string? candidateName;
+    private string? candidateMobile;
+    private string? candidateEmail;
+    private DateTime? interviewAt;
+    private string? interviewNotes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        departments = await HR.GetDepartmentsAsync();
+        jobTitles = await HR.GetJobTitlesAsync();
+        departmentId = departments.FirstOrDefault()?.Id ?? 0;
+        jobTitleId = jobTitles.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => requests = await HR.GetRecruitmentRequestsAsync();
+
+    private async Task SaveAsync()
+    {
+        var result = await HR.SaveRecruitmentRequestAsync(null, new SaveRecruitmentRequest(departmentId, jobTitleId, requestTitle, requestedCount, justification, candidateName, candidateMobile, candidateEmail, interviewAt, interviewNotes, null));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            requestTitle = string.Empty;
+            justification = null;
+            candidateName = null;
+            candidateMobile = null;
+            candidateEmail = null;
+            interviewAt = null;
+            interviewNotes = null;
+            await LoadAsync();
+        }
+    }
+
+    private async Task StatusAsync(int id, RecruitmentRequestStatus status)
+    {
+        var result = await HR.UpdateRecruitmentStatusAsync(id, new UpdateRecruitmentStatusRequest(status, null, null, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

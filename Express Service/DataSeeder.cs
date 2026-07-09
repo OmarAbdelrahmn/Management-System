@@ -31,6 +31,8 @@ public class DataSeeder(
 
         if (seedOptions.CreateDemoBoard && admin is not null)
             await SeedDemoBoardAsync(admin, cancellationToken);
+
+        await SeedHumanResourcesLookupsAsync(cancellationToken);
     }
 
     private async Task SeedRolesAsync()
@@ -122,5 +124,26 @@ public class DataSeeder(
         dbcontext.Boards.Add(board);
         await dbcontext.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Seeded demo board {Code}", board.Code);
+    }
+
+    private async Task SeedHumanResourcesLookupsAsync(CancellationToken cancellationToken)
+    {
+        if (!await dbcontext.EmployeeDepartments.AnyAsync(cancellationToken))
+        {
+            dbcontext.EmployeeDepartments.AddRange(
+                new EmployeeDepartment { NameAr = "الإدارة التنفيذية", NameEn = "Executive Management" },
+                new EmployeeDepartment { NameAr = "الموارد البشرية", NameEn = "Human Resources" },
+                new EmployeeDepartment { NameAr = "الشؤون المالية", NameEn = "Finance" });
+        }
+
+        if (!await dbcontext.JobTitles.AnyAsync(cancellationToken))
+        {
+            dbcontext.JobTitles.AddRange(
+                new JobTitle { NameAr = "مدير إدارة", NameEn = "Department Manager" },
+                new JobTitle { NameAr = "أخصائي موارد بشرية", NameEn = "HR Specialist" },
+                new JobTitle { NameAr = "محاسب", NameEn = "Accountant" });
+        }
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
     }
 }

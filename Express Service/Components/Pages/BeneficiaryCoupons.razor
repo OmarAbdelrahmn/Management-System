@@ -1,0 +1,80 @@
+@page "/beneficiary-services/coupons"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject BeneficiaryServicesUiService Services
+@inject BeneficiaryUiService Beneficiaries
+
+<h1 class="page-title">إدارة القسائم الشرائية</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-ticket"></i><div><h2>قسيمة شرائية</h2><p>طلب وإصدار واعتماد وتسليم القسائم.</p></div></div>
+    <div class="form-grid compact">
+        <label>المستفيد<select @bind="beneficiaryIdText"><option value="">بدون مستفيد</option>@foreach (var beneficiary in beneficiaries){<option value="@beneficiary.Id">@beneficiary.FullName</option>}</select></label>
+        <label>نوع القسيمة<input @bind="couponType" /></label>
+        <label>المبلغ<input type="number" step="0.01" @bind="amount" /></label>
+        <label>تاريخ الطلب<input type="date" @bind="requiredAt" /></label>
+        <label class="span-2">ملاحظات<input @bind="notes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ القسيمة</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> القسائم</span></div>
+    <table>
+        <thead><tr><th>المستفيد</th><th>النوع</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var coupon in coupons)
+            {
+                <tr>
+                    <td>@coupon.BeneficiaryName</td>
+                    <td>@coupon.CouponType</td>
+                    <td>@coupon.Amount</td>
+                    <td>@coupon.Status</td>
+                    <td><button class="secondary" @onclick="@(() => StatusAsync(coupon.Id, CouponStatus.Issued))">إصدار</button><button class="secondary" @onclick="@(() => StatusAsync(coupon.Id, CouponStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => StatusAsync(coupon.Id, CouponStatus.Delivered))">تسليم</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<BeneficiaryResponse> beneficiaries = [];
+    private List<CouponRequestResponse> coupons = [];
+    private string beneficiaryIdText = string.Empty;
+    private string couponType = string.Empty;
+    private decimal amount;
+    private DateTime? requiredAt = DateTime.UtcNow.AddHours(3).Date;
+    private string? notes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        beneficiaries = await Beneficiaries.SearchAsync(status: BeneficiaryStatus.Active);
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => coupons = await Services.GetCouponsAsync();
+
+    private async Task SaveAsync()
+    {
+        var beneficiaryId = int.TryParse(beneficiaryIdText, out var value) ? value : (int?)null;
+        var result = await Services.SaveCouponAsync(null, new SaveCouponRequestRequest(beneficiaryId, couponType, amount, requiredAt, notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task StatusAsync(int id, CouponStatus status)
+    {
+        var result = await Services.UpdateCouponStatusAsync(id, status, notes);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

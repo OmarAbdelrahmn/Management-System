@@ -1,0 +1,132 @@
+@page "/financial-development/supporters"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject FinancialDevelopmentUiService FinancialDevelopment
+
+<h1 class="page-title">إدارة حسابات الداعمين</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-user-plus"></i><div><h2>حساب داعم</h2><p>إنشاء وتحديث حسابات الداعمين وقنوات التواصل المفضلة.</p></div></div>
+    <div class="form-grid compact">
+        <label>اسم الداعم<input @bind="name" /></label>
+        <label>النوع<select @bind="supporterType"><option value="@FinancialSupporterType.Individual">فرد</option><option value="@FinancialSupporterType.Company">شركة</option><option value="@FinancialSupporterType.Foundation">مؤسسة</option><option value="@FinancialSupporterType.Government">حكومي</option><option value="@FinancialSupporterType.Other">أخرى</option></select></label>
+        <label>الفئة<input @bind="category" /></label>
+        <label>الجوال<input @bind="mobile" /></label>
+        <label>البريد<input type="email" @bind="email" /></label>
+        <label>رقم الهوية/السجل<input @bind="registrationNo" /></label>
+        <label>قناة التواصل<input @bind="preferredContactChannel" /></label>
+        <label>الحالة<select @bind="status"><option value="@FinancialSupporterStatus.Active">نشط</option><option value="@FinancialSupporterStatus.Paused">متوقف</option><option value="@FinancialSupporterStatus.Archived">مؤرشف</option></select></label>
+        <label class="span-2">ملاحظات<input @bind="notes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الداعم</button><button class="secondary" @onclick="ResetForm">تفريغ</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-comment-sms"></i><div><h2>رسالة نصية للداعمين</h2><p>تجهيز قائمة الداعمين النشطين لإرسال تنبيه أو شكر عبر القناة المفضلة.</p></div></div>
+    <div class="form-grid compact">
+        <label>بحث<input @bind="search" /></label>
+        <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="Active">نشط</option><option value="Paused">متوقف</option><option value="Archived">مؤرشف</option></select></label>
+        <label class="span-2">نص الرسالة<input @bind="smsBody" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="LoadAsync">بحث</button><button class="secondary" @onclick="PrepareSmsAsync">تجهيز الرسالة</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> قاعدة بيانات الداعمين</span></div>
+    <table>
+        <thead><tr><th>الداعم</th><th>التواصل</th><th>الفئة</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var supporter in supporters)
+            {
+                <tr>
+                    <td>@supporter.Name<br /><small>@supporter.SupporterType</small></td>
+                    <td>@supporter.Mobile<br />@supporter.Email<br />@supporter.PreferredContactChannel</td>
+                    <td>@supporter.Category</td>
+                    <td><span class="status">@supporter.Status</span></td>
+                    <td><button class="secondary" @onclick="@(() => Edit(supporter))">تعديل</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(preparedSms))
+{
+    <section class="panel" style="margin-top:14px"><div class="panel-heading"><i class="fa-solid fa-paper-plane"></i><div><h2>ملخص الإرسال</h2><p>@preparedSms</p></div></div></section>
+}
+
+@code {
+    private List<FinancialSupporterResponse> supporters = [];
+    private int? editingId;
+    private string name = string.Empty;
+    private FinancialSupporterType supporterType = FinancialSupporterType.Individual;
+    private string? category;
+    private string? mobile;
+    private string? email;
+    private string? registrationNo;
+    private string preferredContactChannel = "SMS";
+    private FinancialSupporterStatus status = FinancialSupporterStatus.Active;
+    private string? notes;
+    private string? search;
+    private string statusText = string.Empty;
+    private string smsBody = "شكراً لدعمكم برامج الجمعية.";
+    private string? preparedSms;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var parsedStatus = Enum.TryParse<FinancialSupporterStatus>(statusText, out var value) ? value : (FinancialSupporterStatus?)null;
+        supporters = await FinancialDevelopment.GetSupportersAsync(parsedStatus, search);
+    }
+
+    private async Task SaveAsync()
+    {
+        var result = await FinancialDevelopment.SaveSupporterAsync(editingId, new SaveFinancialSupporterRequest(name, supporterType, category, mobile, email, registrationNo, preferredContactChannel, status, notes));
+        success = result.Success;
+        message = result.Message;
+        if (success) ResetForm();
+        await LoadAsync();
+    }
+
+    private async Task PrepareSmsAsync()
+    {
+        await LoadAsync();
+        var active = supporters.Where(x => x.Status == FinancialSupporterStatus.Active.ToString()).ToList();
+        preparedSms = $"تم تجهيز رسالة لعدد {active.Count} داعم: {smsBody}";
+    }
+
+    private void Edit(FinancialSupporterResponse supporter)
+    {
+        editingId = supporter.Id;
+        name = supporter.Name;
+        supporterType = Enum.TryParse<FinancialSupporterType>(supporter.SupporterType, out var parsedType) ? parsedType : FinancialSupporterType.Individual;
+        category = supporter.Category;
+        mobile = supporter.Mobile;
+        email = supporter.Email;
+        preferredContactChannel = supporter.PreferredContactChannel;
+        status = Enum.TryParse<FinancialSupporterStatus>(supporter.Status, out var parsedStatus) ? parsedStatus : FinancialSupporterStatus.Active;
+        notes = supporter.Notes;
+    }
+
+    private void ResetForm()
+    {
+        editingId = null;
+        name = string.Empty;
+        supporterType = FinancialSupporterType.Individual;
+        category = null;
+        mobile = null;
+        email = null;
+        registrationNo = null;
+        preferredContactChannel = "SMS";
+        status = FinancialSupporterStatus.Active;
+        notes = null;
+    }
+}

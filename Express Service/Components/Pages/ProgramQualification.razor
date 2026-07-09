@@ -1,0 +1,139 @@
+@page "/programs-projects/qualification"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ProgramsProjectsUiService ProgramsProjects
+
+<h1 class="page-title">إدارة المشاريع التأهيلية</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-hands-holding-circle"></i><div><h2>حالة تأهيل</h2><p>تسجيل المستفيدين المحتاجين للتأهيل ورأي الإدارة والمشروع المرتبط.</p></div></div>
+    <div class="form-grid">
+        <label>مشروع مرتبط<select @bind="projectIdText"><option value="">بدون مشروع</option>@foreach (var project in projects){<option value="@project.Id">@project.Name</option>}</select></label>
+        <label>اسم المستفيد<input @bind="beneficiaryName" /></label>
+        <label>الحالة<select @bind="caseStatus"><option value="@ProgramQualificationCaseStatus.Required">بحاجة لتأهيل</option><option value="@ProgramQualificationCaseStatus.Opinion">رأي الإدارة</option><option value="@ProgramQualificationCaseStatus.Approved">معتمد</option><option value="@ProgramQualificationCaseStatus.Active">نشط</option><option value="@ProgramQualificationCaseStatus.Late">متأخر</option><option value="@ProgramQualificationCaseStatus.Paid">مسدد</option><option value="@ProgramQualificationCaseStatus.Completed">مكتمل</option></select></label>
+        <label>المبلغ المعتمد<input type="number" step="0.01" @bind="approvedAmount" /></label>
+        <label>عدد الأقساط<input type="number" step="1" @bind="installmentCount" /></label>
+        <label class="span-2">ملخص الاحتياج<textarea @bind="needSummary"></textarea></label>
+        <label class="span-2">رأي الإدارة<textarea @bind="managementOpinion"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveCaseAsync">حفظ الحالة</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-money-check"></i><div><h2>قسط تأهيل</h2><p>إدارة الأقساط والمتأخرين والمبالغ المسددة.</p></div></div>
+    <div class="form-grid compact">
+        <label>الحالة<select @bind="caseId">@foreach (var item in cases){<option value="@item.Id">@item.BeneficiaryName</option>}</select></label>
+        <label>تاريخ الاستحقاق<input type="date" @bind="dueDate" /></label>
+        <label>المبلغ<input type="number" step="0.01" @bind="installmentAmount" /></label>
+        <label>السداد<input type="number" step="0.01" @bind="paymentAmount" /></label>
+        <label class="span-2">ملاحظات<input @bind="installmentNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveInstallmentAsync">حفظ قسط</button><button class="secondary" @onclick="PaySelectedInstallmentAsync">تسجيل سداد أول قسط ظاهر</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> حالات التأهيل والأقساط</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>المستفيد</th><th>التفاصيل</th><th>الحالة/المتبقي</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var item in cases)
+            {
+                <tr>
+                    <td>حالة</td>
+                    <td>@item.BeneficiaryName</td>
+                    <td>@item.ProjectName<br />@item.ManagementOpinion</td>
+                    <td>@item.Status / @item.RemainingAmount</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => UpdateCaseStatusAsync(item.Id, ProgramQualificationCaseStatus.Approved))">اعتماد</button>
+                        <button class="secondary" @onclick="@(() => UpdateCaseStatusAsync(item.Id, ProgramQualificationCaseStatus.Completed))">إكمال</button>
+                    </td>
+                </tr>
+            }
+            @foreach (var installment in installments)
+            {
+                <tr><td>قسط</td><td>@installment.BeneficiaryName</td><td>@installment.DueDate.ToString("yyyy-MM-dd") / @installment.Amount</td><td>@installment.Status / @installment.PaidAmount</td><td></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ProgramProjectResponse> projects = [];
+    private List<ProgramQualificationCaseResponse> cases = [];
+    private List<ProgramQualificationInstallmentResponse> installments = [];
+    private string projectIdText = string.Empty;
+    private string beneficiaryName = string.Empty;
+    private string needSummary = string.Empty;
+    private string? managementOpinion;
+    private ProgramQualificationCaseStatus caseStatus = ProgramQualificationCaseStatus.Required;
+    private decimal approvedAmount;
+    private int installmentCount;
+    private int caseId;
+    private DateTime dueDate = DateTime.UtcNow.AddHours(3).Date.AddMonths(1);
+    private decimal installmentAmount;
+    private decimal paymentAmount;
+    private string? installmentNotes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        projects = await ProgramsProjects.SearchProjectsAsync(projectType: "Qualification");
+        if (projects.Count == 0)
+            projects = await ProgramsProjects.SearchProjectsAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        cases = await ProgramsProjects.GetQualificationCasesAsync();
+        caseId = cases.FirstOrDefault()?.Id ?? caseId;
+        installments = await ProgramsProjects.GetQualificationInstallmentsAsync();
+    }
+
+    private async Task SaveCaseAsync()
+    {
+        var projectId = int.TryParse(projectIdText, out var value) ? value : (int?)null;
+        var result = await ProgramsProjects.SaveQualificationCaseAsync(null, new SaveProgramQualificationCaseRequest(projectId, beneficiaryName, needSummary, managementOpinion, caseStatus, approvedAmount, installmentCount, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task UpdateCaseStatusAsync(int id, ProgramQualificationCaseStatus status)
+    {
+        var result = await ProgramsProjects.UpdateQualificationCaseStatusAsync(id, status, managementOpinion, null);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveInstallmentAsync()
+    {
+        var result = await ProgramsProjects.SaveQualificationInstallmentAsync(null, new SaveProgramQualificationInstallmentRequest(caseId, dueDate, installmentAmount, installmentNotes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task PaySelectedInstallmentAsync()
+    {
+        var installment = installments.FirstOrDefault(x => x.ProgramQualificationCaseId == caseId);
+        if (installment is null)
+        {
+            success = false;
+            message = "لا يوجد قسط للسداد.";
+            return;
+        }
+
+        var result = await ProgramsProjects.RecordQualificationInstallmentPaymentAsync(installment.Id, new RecordQualificationInstallmentPaymentRequest(paymentAmount, DateTime.UtcNow.AddHours(3), installmentNotes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

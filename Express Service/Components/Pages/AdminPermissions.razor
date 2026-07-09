@@ -1,0 +1,93 @@
+@page "/admin/permissions"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+@inject AdminUiService Admin
+
+<h1 class="page-title">الصلاحيات التفصيلية</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-key"></i><div><h2>إضافة صلاحية</h2><p>تستخدم كطبقة تفصيلية فوق الأدوار الحالية.</p></div></div>
+    <div class="form-grid">
+        <label>المفتاح<input @bind="permissionKey" /></label>
+        <label>الاسم العربي<input @bind="permissionName" /></label>
+        <label>التصنيف<input @bind="category" /></label>
+        <label class="span-2">الوصف<textarea @bind="description"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SavePermissionAsync">حفظ الصلاحية</button></div>
+</section>
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-toggle-on"></i><div><h2>منح صلاحية لدور</h2><p>حفظ العلاقة في جدول RolePermissions.</p></div></div>
+    <div class="form-grid">
+        <label>الدور<select @bind="roleId">@foreach (var role in roles){<option value="@role.Id">@role.Name</option>}</select></label>
+        <label>الصلاحية<select @bind="permissionId">@foreach (var permission in permissions){<option value="@permission.Id">@permission.NameAr</option>}</select></label>
+        <label class="check-row"><input type="checkbox" @bind="isGranted" /> ممنوحة</label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="GrantAsync">حفظ المنح</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-table"></i> الصلاحيات الممنوحة</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>الدور</th><th>الصلاحية</th><th>المفتاح</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var grant in grants)
+            {
+                <tr><td>@grant.RoleName</td><td>@grant.PermissionNameAr</td><td>@grant.PermissionKey</td><td><span class="status @(grant.IsGranted ? "ok" : "warn")">@(grant.IsGranted ? "ممنوحة" : "موقوفة")</span></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<RoleResponse> roles = [];
+    private List<PermissionResponse> permissions = [];
+    private List<RolePermissionResponse> grants = [];
+    private string permissionKey = string.Empty;
+    private string permissionName = string.Empty;
+    private string category = "General";
+    private string? description;
+    private string roleId = string.Empty;
+    private int permissionId;
+    private bool isGranted = true;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        roles = await Admin.GetRolesAsync();
+        permissions = await Admin.GetPermissionsAsync();
+        grants = await Admin.GetRolePermissionsAsync();
+        roleId = roles.FirstOrDefault()?.Id ?? string.Empty;
+        permissionId = permissions.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private async Task SavePermissionAsync()
+    {
+        var result = await Admin.SavePermissionAsync(new SavePermissionRequest(permissionKey, permissionName, category, description));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            permissionKey = string.Empty;
+            permissionName = string.Empty;
+            description = null;
+        }
+        await LoadAsync();
+    }
+
+    private async Task GrantAsync()
+    {
+        var result = await Admin.GrantPermissionAsync(new GrantRolePermissionRequest(roleId, permissionId, isGranted));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

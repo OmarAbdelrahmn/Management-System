@@ -1,0 +1,55 @@
+@page "/pr-media/channels"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject PublicRelationsMediaUiService PrMedia
+
+<h1 class="page-title">قنوات التواصل</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="form-grid compact">
+        <label>القناة<select @bind="channel"><option value="@CommunicationChannelType.Sms">SMS</option><option value="@CommunicationChannelType.WhatsApp">WhatsApp</option><option value="@CommunicationChannelType.Email">Email</option><option value="@CommunicationChannelType.Push">Push</option></select></label>
+        <label>اسم القالب<input @bind="templateName" /></label>
+        <label>نص القالب<input @bind="templateBody" /></label>
+        <label>اسم القائمة<input @bind="listName" /></label>
+        <label>المستلمون CSV<input @bind="recipientsCsv" /></label>
+        <label>عنوان الحملة<input @bind="campaignTitle" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveTemplateAsync">حفظ قالب</button><button class="secondary" @onclick="SaveListAsync">حفظ قائمة</button><button class="secondary" @onclick="SaveCampaignAsync">حفظ حملة</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-bullhorn"></i> سجلات القنوات</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>القناة</th><th>العنوان</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var item in templates){<tr><td>قالب</td><td>@item.ChannelType</td><td>@item.Name</td><td>@item.IsActive</td><td></td></tr>}
+            @foreach (var item in lists){<tr><td>قائمة</td><td>@item.ChannelType</td><td>@item.Name</td><td>@item.IsActive</td><td></td></tr>}
+            @foreach (var item in campaigns){<tr><td>حملة</td><td>@item.ChannelType</td><td>@item.Title</td><td>@item.Status</td><td><button class="secondary" @onclick="@(() => SendAsync(item.Id))">إرسال</button></td></tr>}
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<CommunicationTemplateResponse> templates = [];
+    private List<CommunicationListResponse> lists = [];
+    private List<CommunicationCampaignResponse> campaigns = [];
+    private CommunicationChannelType channel = CommunicationChannelType.Sms;
+    private string templateName = string.Empty;
+    private string templateBody = string.Empty;
+    private string listName = string.Empty;
+    private string recipientsCsv = string.Empty;
+    private string campaignTitle = string.Empty;
+    private bool success;
+    private string? message;
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync(){ templates = await PrMedia.GetTemplatesAsync(); lists = await PrMedia.GetListsAsync(); campaigns = await PrMedia.GetCampaignsAsync(); }
+    private async Task SaveTemplateAsync(){ var r = await PrMedia.SaveTemplateAsync(null, new SaveCommunicationTemplateRequest(channel, templateName, templateBody, true)); success = r.Success; message = r.Message; await LoadAsync(); }
+    private async Task SaveListAsync(){ var r = await PrMedia.SaveListAsync(null, new SaveCommunicationListRequest(channel, listName, recipientsCsv, true)); success = r.Success; message = r.Message; await LoadAsync(); }
+    private async Task SaveCampaignAsync(){ var r = await PrMedia.SaveCampaignAsync(null, new SaveCommunicationCampaignRequest(channel, templates.FirstOrDefault()?.Id, lists.FirstOrDefault()?.Id, campaignTitle, templateBody, CommunicationMessageStatus.Draft)); success = r.Success; message = r.Message; await LoadAsync(); }
+    private async Task SendAsync(int id){ var r = await PrMedia.SendCampaignAsync(id); success = r.Success; message = r.Message; await LoadAsync(); }
+}

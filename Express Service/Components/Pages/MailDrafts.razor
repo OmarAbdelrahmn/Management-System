@@ -1,0 +1,110 @@
+@page "/mail/drafts"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject MessagingUiService Messaging
+
+<h1 class="page-title">المسودات</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-paper-plane"></i><div><h2>تحرير وإرسال مسودة</h2><p>اختر المسودة، عدل بياناتها، ثم احفظها أو أرسلها.</p></div></div>
+    <div class="form-grid">
+        <label>المسودة<select @bind="draftId">@foreach (var draft in drafts){<option value="@draft.Id">@draft.Subject</option>}</select></label>
+        <label>الموضوع<input @bind="subject" /></label>
+        <label class="span-2">المستلمون<select multiple @bind="selectedRecipients">@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
+        <label class="span-2">النص<textarea @bind="body"></textarea></label>
+    </div>
+    <div class="actions-row">
+        <button class="secondary" @onclick="LoadSelectedDraft">تحميل المسودة</button>
+        <button class="secondary" @onclick="SaveDraftAsync">حفظ التعديل</button>
+        <button class="primary" @onclick="SendAsync">إرسال المسودة</button>
+        <button class="danger" @onclick="CancelDraftAsync">حذف المسودة</button>
+    </div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-file-lines"></i> مسوداتي</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>الموضوع</th><th>تاريخ الإنشاء</th><th>عدد المستلمين</th><th>إجراءات</th></tr></thead>
+        <tbody>
+            @foreach (var draft in drafts)
+            {
+                <tr><td>@draft.Subject</td><td>@draft.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td><td>@draft.Recipients.Count</td><td><button class="secondary" @onclick="() => SelectDraft(draft)">تحرير</button></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<InternalMailResponse> drafts = [];
+    private List<UserPickerResponse> users = [];
+    private int draftId;
+    private string subject = string.Empty;
+    private string body = string.Empty;
+    private string[] selectedRecipients = [];
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await Messaging.GetUsersAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        drafts = await Messaging.GetDraftsAsync();
+        draftId = drafts.FirstOrDefault()?.Id ?? 0;
+        LoadSelectedDraft();
+    }
+
+    private void SelectDraft(InternalMailResponse draft)
+    {
+        draftId = draft.Id;
+        subject = draft.Subject;
+        body = draft.Body;
+        selectedRecipients = draft.Recipients.Select(x => x.RecipientUserId).ToArray();
+    }
+
+    private void LoadSelectedDraft()
+    {
+        var draft = drafts.FirstOrDefault(x => x.Id == draftId);
+        if (draft is null)
+        {
+            subject = string.Empty;
+            body = string.Empty;
+            selectedRecipients = [];
+            return;
+        }
+
+        SelectDraft(draft);
+    }
+
+    private async Task SaveDraftAsync()
+    {
+        var result = await Messaging.UpdateDraftAsync(draftId, new UpdateInternalMailDraftRequest(subject, body, selectedRecipients));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SendAsync()
+    {
+        var result = await Messaging.SendDraftAsync(draftId, selectedRecipients);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task CancelDraftAsync()
+    {
+        var result = await Messaging.CancelDraftAsync(draftId);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

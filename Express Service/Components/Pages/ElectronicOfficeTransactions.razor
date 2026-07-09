@@ -1,0 +1,26 @@
+@page "/electronic-office/transactions"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ElectronicOfficeUiService Office
+
+<h1 class="page-title">المعاملات الداخلية</h1>
+@if (!string.IsNullOrWhiteSpace(message)){<section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>}
+<section class="panel"><div class="panel-heading"><i class="fa-solid fa-diagram-project"></i><div><h2>معاملة داخلية</h2><p>طلب معاملة، الإلغاء، المتابعة، إنجاز المهام، المرفوض، المدار، والجاري/المكتمل.</p></div></div><div class="form-grid compact"><label>رقم المعاملة<input @bind="transactionNumber" /></label><label>الموضوع<input @bind="subject" /></label><label>طالب المعاملة<input @bind="requestedBy" /></label><label>الخطوة الحالية<input @bind="currentStep" /></label><label>الحالة<select @bind="status"><option value="@OfficeTransactionStatus.Pending">جارية</option><option value="@OfficeTransactionStatus.RequiredFollowUp">بحاجة متابعة</option><option value="@OfficeTransactionStatus.RejectedWithNote">مرفوضة بملاحظة</option><option value="@OfficeTransactionStatus.Managed">تمت متابعتها</option><option value="@OfficeTransactionStatus.Completed">مكتملة</option><option value="@OfficeTransactionStatus.Canceled">ملغاة</option></select></label><label>التاريخ<input type="date" @bind="requestedAt" /></label><label class="span-2">ملاحظات<input @bind="notes" /></label></div><div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المعاملة</button><button class="secondary" @onclick="LoadRequiredAsync">بحاجة متابعة</button><button class="secondary" @onclick="LoadAsync">كل المعاملات</button></div></section>
+<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> المعاملات</span></div><table><thead><tr><th>المعاملة</th><th>الموضوع</th><th>الخطوة</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>@foreach (var item in transactions){<tr><td>@item.TransactionNumber<br />@item.RequestedAt.ToString("yyyy-MM-dd")</td><td>@item.Subject<br />@item.RequestedBy</td><td>@item.CurrentStep</td><td>@item.Status<br />@item.Notes</td><td><button class="secondary" @onclick="@(() => UpdateAsync(item.Id, OfficeTransactionStatus.Completed))">إكمال</button><button class="secondary" @onclick="@(() => UpdateAsync(item.Id, OfficeTransactionStatus.Canceled))">إلغاء</button></td></tr>}</tbody></table></section>
+@code {
+    private List<OfficeTransactionResponse> transactions = [];
+    private string transactionNumber = $"TR-{DateTime.UtcNow:yyyyMMddHHmm}";
+    private string subject = string.Empty;
+    private string requestedBy = string.Empty;
+    private string? currentStep;
+    private OfficeTransactionStatus status = OfficeTransactionStatus.Pending;
+    private string? notes;
+    private DateTime requestedAt = DateTime.UtcNow.AddHours(3).Date;
+    private bool success;
+    private string? message;
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => transactions = await Office.GetTransactionsAsync();
+    private async Task LoadRequiredAsync() => transactions = await Office.GetTransactionsAsync(OfficeTransactionStatus.RequiredFollowUp);
+    private async Task SaveAsync(){ var result = await Office.SaveTransactionAsync(null, new SaveOfficeTransactionRequest(transactionNumber, subject, requestedBy, currentStep, status, notes, requestedAt)); success = result.Success; message = result.Message; if (success) transactionNumber = $"TR-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+    private async Task UpdateAsync(int id, OfficeTransactionStatus next){ var result = await Office.UpdateTransactionStatusAsync(id, next, notes); success = result.Success; message = result.Message; await LoadAsync(); }
+}

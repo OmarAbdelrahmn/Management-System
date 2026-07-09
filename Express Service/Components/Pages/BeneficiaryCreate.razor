@@ -1,0 +1,76 @@
+@page "/beneficiaries/create"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject BeneficiaryUiService Beneficiaries
+
+<h1 class="page-title">إضافة ملف مستفيد</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-user-plus"></i><div><h2>بيانات المستفيد</h2><p>إنشاء ملف مستفيد أساسي مع التصنيف والدخل وبيانات التواصل.</p></div></div>
+    <div class="form-grid">
+        <label>الاسم الكامل<input @bind="fullName" /></label>
+        <label>رقم الملف<input @bind="beneficiaryNumber" placeholder="يولد تلقائياً عند تركه فارغاً" /></label>
+        <label>رقم الهوية<input @bind="nationalId" /></label>
+        <label>الجنس<input @bind="gender" /></label>
+        <label>تاريخ الميلاد<input type="date" @bind="birthDate" /></label>
+        <label>الجوال<input @bind="mobile" /></label>
+        <label>البريد<input @bind="email" /></label>
+        <label>المدينة<input @bind="city" /></label>
+        <label class="span-2">العنوان<input @bind="address" /></label>
+        <label>الفئة<input @bind="category" /></label>
+        <label>الدرجة<input @bind="grade" /></label>
+        <label>الدخل الشهري<input type="number" step="0.01" @bind="monthlyIncome" /></label>
+        <label>عدد أفراد الأسرة<input type="number" @bind="familyMembersCount" /></label>
+        <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الملف</button><a class="secondary" href="/beneficiaries">قاعدة المستفيدين</a></div>
+</section>
+
+@code {
+    private string fullName = string.Empty;
+    private string? beneficiaryNumber;
+    private string? nationalId;
+    private string? gender;
+    private DateTime? birthDate;
+    private string? mobile;
+    private string? email;
+    private string? city;
+    private string? address;
+    private string? category;
+    private string? grade;
+    private decimal monthlyIncome;
+    private int familyMembersCount = 1;
+    private string? notes;
+    private bool success;
+    private string? message;
+
+    private async Task SaveAsync()
+    {
+        var result = await Beneficiaries.CreateAsync(new CreateBeneficiaryRequest(fullName, beneficiaryNumber, nationalId, gender, birthDate, mobile, email, city, address, category, grade, monthlyIncome, familyMembersCount, notes));
+        success = result.Success;
+        message = result.Message;
+
+        if (success)
+        {
+            fullName = string.Empty;
+            beneficiaryNumber = null;
+            nationalId = null;
+            gender = null;
+            birthDate = null;
+            mobile = null;
+            email = null;
+            city = null;
+            address = null;
+            category = null;
+            grade = null;
+            monthlyIncome = 0;
+            familyMembersCount = 1;
+            notes = null;
+        }
+    }
+}

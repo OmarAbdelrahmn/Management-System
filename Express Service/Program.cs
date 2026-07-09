@@ -1,4 +1,6 @@
 using Application.Service.Emails;
+using Domain;
+using Domain.Entities;
 using Domain.Identity;
 using Express_Service;
 using Express_Service.Hangfire;
@@ -74,6 +76,31 @@ app.Use(async (context, next) =>
     var isProtectedUiPath =
         path == "/" ||
         path.StartsWithSegments("/meetings") ||
+        path.StartsWithSegments("/members") ||
+        path.StartsWithSegments("/beneficiaries") ||
+        path.StartsWithSegments("/beneficiary-services") ||
+        path.StartsWithSegments("/hr") ||
+        path.StartsWithSegments("/programs-projects") ||
+        path.StartsWithSegments("/tasks") ||
+        path.StartsWithSegments("/approvals") ||
+        path.StartsWithSegments("/accounting") ||
+        path.StartsWithSegments("/pr-media") ||
+        path.StartsWithSegments("/financial-development") ||
+        path.StartsWithSegments("/institutional-excellence") ||
+        path.StartsWithSegments("/evaluation-followup") ||
+        path.StartsWithSegments("/movement-maintenance") ||
+        path.StartsWithSegments("/reports-statistics") ||
+        path.StartsWithSegments("/documentation-archive") ||
+        path.StartsWithSegments("/volunteering") ||
+        path.StartsWithSegments("/tech-enablement") ||
+        path.StartsWithSegments("/executive-supervision") ||
+        path.StartsWithSegments("/electronic-office") ||
+        path.StartsWithSegments("/mail") ||
+        path.StartsWithSegments("/notifications") ||
+        path.StartsWithSegments("/channels") ||
+        path.StartsWithSegments("/admin") ||
+        path.StartsWithSegments("/system") ||
+        path.StartsWithSegments("/rafed") ||
         path.StartsWithSegments("/_blazor");
 
     if (isProtectedUiPath && context.User.Identity?.IsAuthenticated != true)
@@ -111,7 +138,7 @@ if (builder.Configuration.GetValue("Hangfire:Enabled", false))
 }
 
 app.MapControllers();
-app.MapPost("/ui/login", async (HttpContext httpContext, SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager) =>
+app.MapPost("/ui/login", async (HttpContext httpContext, SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, ApplicationDbcontext dbcontext) =>
 {
     var form = await httpContext.Request.ReadFormAsync();
     var email = form["email"].ToString();
@@ -124,9 +151,32 @@ app.MapPost("/ui/login", async (HttpContext httpContext, SignInManager<Applicati
 
     var user = await userManager.FindByEmailAsync(email);
     if (user is null || !user.IsActive)
+    {
+        dbcontext.UserLoginAudits.Add(new UserLoginAudit
+        {
+            UserId = user?.Id,
+            UserName = email,
+            Result = user is null ? LoginAuditResult.Failed : LoginAuditResult.Inactive,
+            FailureReason = user is null ? "User not found" : "User is inactive",
+            IpAddress = httpContext.Connection.RemoteIpAddress?.ToString(),
+            UserAgent = httpContext.Request.Headers.UserAgent.ToString()
+        });
+        await dbcontext.SaveChangesAsync();
         return Results.Redirect($"/login?error=1&returnUrl={Uri.EscapeDataString(safeReturnUrl)}");
+    }
 
     var result = await signInManager.PasswordSignInAsync(user, password, remember, lockoutOnFailure: false);
+    dbcontext.UserLoginAudits.Add(new UserLoginAudit
+    {
+        UserId = user.Id,
+        UserName = email,
+        Result = result.Succeeded ? LoginAuditResult.Success : LoginAuditResult.Failed,
+        FailureReason = result.Succeeded ? null : "Invalid password",
+        IpAddress = httpContext.Connection.RemoteIpAddress?.ToString(),
+        UserAgent = httpContext.Request.Headers.UserAgent.ToString()
+    });
+    await dbcontext.SaveChangesAsync();
+
     return result.Succeeded
         ? Results.Redirect(safeReturnUrl)
         : Results.Redirect($"/login?error=1&returnUrl={Uri.EscapeDataString(safeReturnUrl)}");

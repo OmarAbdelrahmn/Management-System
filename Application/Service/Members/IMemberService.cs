@@ -21,4 +21,7 @@ public interface IMemberService
     Task<Result<IEnumerable<MemberCardResponse>>> GetCardsAsync(CancellationToken cancellationToken = default);
     Task<Result<MemberReportShareResponse>> ShareReportAsync(ShareMemberReportRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<MemberReportShareResponse>>> GetReportSharesAsync(CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<MemberParticipationResponse>>> GetParticipationAssignmentsAsync(MemberParticipationSearchRequest request, CancellationToken cancellationToken = default);
+    Task<Result<MemberParticipationResponse>> SaveParticipationAssignmentAsync(int? id, SaveMemberParticipationRequest request, CancellationToken cancellationToken = default);
+    Task<Result<MemberParticipationResponse>> EndParticipationAssignmentAsync(int id, EndMemberParticipationRequest request, CancellationToken cancellationToken = default);
 }

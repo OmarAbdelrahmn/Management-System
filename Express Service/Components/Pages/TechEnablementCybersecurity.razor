@@ -1,0 +1,56 @@
+@page "/tech-enablement/cybersecurity"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject TechEnablementUiService Tech
+
+<h1 class="page-title">إدارة الأمن السيبراني</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-shield-halved"></i><div><h2>مراجعة أمنية</h2><p>تقرير الأمن السيبراني وحوكمة ومتابعة الصلاحيات والصفحات الحساسة.</p></div></div>
+    <div class="form-grid compact">
+        <label>النطاق<input @bind="area" /></label>
+        <label>الشدة<select @bind="severity"><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></label>
+        <label>الحالة<select @bind="status"><option value="@CybersecurityReviewStatus.Open">مفتوحة</option><option value="@CybersecurityReviewStatus.InReview">قيد المراجعة</option><option value="@CybersecurityReviewStatus.Mitigated">معالجة</option><option value="@CybersecurityReviewStatus.Accepted">مقبولة</option></select></label>
+        <label>المالك<input @bind="owner" /></label>
+        <label>تاريخ الاستحقاق<input type="date" @bind="dueDate" /></label>
+        <label class="span-2">الملاحظة الأمنية<input @bind="finding" /></label>
+        <label class="span-2">خطة المعالجة<input @bind="mitigationPlan" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المراجعة</button><button class="secondary" @onclick="LoadOpenAsync">المفتوحة</button><button class="secondary" @onclick="LoadAsync">كل المراجعات</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> مراجعات الأمن السيبراني</span></div>
+    <table>
+        <thead><tr><th>النطاق</th><th>الملاحظة</th><th>الشدة</th><th>الحالة</th><th>المعالجة</th></tr></thead>
+        <tbody>
+            @foreach (var item in reviews)
+            {
+                <tr><td>@item.Area<br />@item.Owner</td><td>@item.Finding</td><td>@item.Severity</td><td>@item.Status<br />@item.DueDate?.ToString("yyyy-MM-dd")</td><td>@item.MitigationPlan</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<CybersecurityReviewResponse> reviews = [];
+    private string area = string.Empty;
+    private string finding = string.Empty;
+    private string severity = "Medium";
+    private CybersecurityReviewStatus status = CybersecurityReviewStatus.Open;
+    private string? owner;
+    private DateTime? dueDate = DateTime.UtcNow.AddHours(3).Date.AddDays(14);
+    private string? mitigationPlan;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => reviews = await Tech.GetCybersecurityReviewsAsync();
+    private async Task LoadOpenAsync() => reviews = await Tech.GetCybersecurityReviewsAsync(CybersecurityReviewStatus.Open);
+    private async Task SaveAsync(){ var result = await Tech.SaveCybersecurityReviewAsync(null, new SaveCybersecurityReviewRequest(area, finding, severity, status, owner, dueDate, mitigationPlan)); success = result.Success; message = result.Message; await LoadAsync(); }
+}

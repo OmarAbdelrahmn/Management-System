@@ -1,0 +1,112 @@
+@page "/programs-projects/registration"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ProgramsProjectsUiService ProgramsProjects
+
+<h1 class="page-title">تسجيلات وطلبات البرامج</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-user-plus"></i><div><h2>تسجيل مستفيد في برنامج</h2><p>إدارة التسجيلات والطلبات واعتمادها.</p></div></div>
+    <div class="form-grid compact">
+        <label>البرنامج<select @bind="projectId">@foreach (var project in projects){<option value="@project.Id">@project.Name</option>}</select></label>
+        <label>اسم المشارك<input @bind="participantName" /></label>
+        <label>الجوال<input @bind="mobile" /></label>
+        <label>البريد<input type="email" @bind="email" /></label>
+        <label>مرجع خارجي<input @bind="externalReference" /></label>
+        <label>تاريخ التسجيل<input type="date" @bind="registeredAt" /></label>
+        <label class="span-2">ملاحظات<input @bind="notes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ التسجيل</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-filter"></i><div><h2>سجل التسجيلات</h2><p>اعتماد أو رفض أو إلغاء طلبات التسجيل.</p></div></div>
+    <div class="form-grid compact">
+        <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="Pending">قيد المراجعة</option><option value="Approved">معتمد</option><option value="Rejected">مرفوض</option><option value="Cancelled">ملغى</option><option value="Attended">حضر</option></select></label>
+        <label>ملاحظة القرار<input @bind="decisionNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-clipboard-list"></i> قاعدة بيانات التسجيلات</span></div>
+    <table>
+        <thead><tr><th>البرنامج</th><th>المشارك</th><th>التواصل</th><th>الحالة</th><th>قرار</th></tr></thead>
+        <tbody>
+            @foreach (var item in registrations)
+            {
+                <tr>
+                    <td>@item.ProjectName</td>
+                    <td>@item.ParticipantName<br />@item.ExternalReference</td>
+                    <td>@item.Mobile<br />@item.Email</td>
+                    <td><span class="status">@item.Status</span></td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => DecideAsync(item.Id, ProgramRegistrationStatus.Approved))">اعتماد</button>
+                        <button class="secondary" @onclick="@(() => DecideAsync(item.Id, ProgramRegistrationStatus.Rejected))">رفض</button>
+                        <button class="secondary" @onclick="@(() => DecideAsync(item.Id, ProgramRegistrationStatus.Attended))">حضر</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ProgramProjectResponse> projects = [];
+    private List<ProgramRegistrationResponse> registrations = [];
+    private int projectId;
+    private string participantName = string.Empty;
+    private string? mobile;
+    private string? email;
+    private string? externalReference;
+    private DateTime? registeredAt = DateTime.UtcNow.AddHours(3).Date;
+    private string? notes;
+    private string statusText = string.Empty;
+    private string? decisionNotes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        projects = await ProgramsProjects.SearchProjectsAsync(projectType: "Program");
+        if (projects.Count == 0)
+            projects = await ProgramsProjects.SearchProjectsAsync();
+        projectId = projects.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var parsedStatus = Enum.TryParse<ProgramRegistrationStatus>(statusText, out var value) ? value : (ProgramRegistrationStatus?)null;
+        registrations = await ProgramsProjects.GetRegistrationsAsync(null, parsedStatus);
+    }
+
+    private async Task SaveAsync()
+    {
+        var result = await ProgramsProjects.SaveRegistrationAsync(null, new SaveProgramRegistrationRequest(projectId, participantName, mobile, email, externalReference, registeredAt, notes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            participantName = string.Empty;
+            mobile = null;
+            email = null;
+            externalReference = null;
+            notes = null;
+        }
+        await LoadAsync();
+    }
+
+    private async Task DecideAsync(int id, ProgramRegistrationStatus status)
+    {
+        var result = await ProgramsProjects.DecideRegistrationAsync(id, status, decisionNotes);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

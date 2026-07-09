@@ -1,0 +1,92 @@
+@page "/beneficiary-services/payment-orders"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject BeneficiaryServicesUiService Services
+@inject BeneficiaryUiService Beneficiaries
+
+<h1 class="page-title">إدارة أوامر الصرف</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-money-check"></i><div><h2>أمر صرف</h2><p>أوامر الصرف المالية والعينية وحالات الرفض والإغلاق.</p></div></div>
+    <div class="form-grid compact">
+        <label>المستفيد<select @bind="beneficiaryIdText"><option value="">بدون مستفيد</option>@foreach (var beneficiary in beneficiaries){<option value="@beneficiary.Id">@beneficiary.FullName</option>}</select></label>
+        <label>طلب الإعانة<select @bind="aidRequestIdText"><option value="">بدون طلب</option>@foreach (var request in aidRequests){<option value="@request.Id">@request.RequestNumber</option>}</select></label>
+        <label>النوع<select @bind="orderType"><option value="@PaymentOrderType.Finance">مالي</option><option value="@PaymentOrderType.Storage">عيني</option></select></label>
+        <label>المبلغ<input type="number" step="0.01" @bind="amount" /></label>
+        <label>الاستحقاق<input type="date" @bind="dueDate" /></label>
+        <label>الوصف<input @bind="itemDescription" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ أمر الصرف</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> أوامر الصرف</span></div>
+    <table>
+        <thead><tr><th>الرقم</th><th>المستفيد</th><th>النوع</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var order in orders)
+            {
+                <tr>
+                    <td>@order.OrderNumber</td>
+                    <td>@order.BeneficiaryName</td>
+                    <td>@order.OrderType</td>
+                    <td>@order.Amount</td>
+                    <td><span class="status">@order.Status</span></td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => DecideAsync(order.Id, PaymentOrderStatus.Approved))">اعتماد</button>
+                        <button class="secondary" @onclick="@(() => DecideAsync(order.Id, PaymentOrderStatus.RejectedWithNote))">ملاحظة</button>
+                        <button class="secondary" @onclick="@(() => DecideAsync(order.Id, PaymentOrderStatus.Rejected))">رفض</button>
+                        <button class="secondary" @onclick="@(() => DecideAsync(order.Id, PaymentOrderStatus.Closed))">إغلاق</button>
+                        <button class="secondary" @onclick="@(() => DecideAsync(order.Id, PaymentOrderStatus.Removed))">حذف</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<BeneficiaryResponse> beneficiaries = [];
+    private List<AidRequestResponse> aidRequests = [];
+    private List<PaymentOrderResponse> orders = [];
+    private string beneficiaryIdText = string.Empty;
+    private string aidRequestIdText = string.Empty;
+    private PaymentOrderType orderType = PaymentOrderType.Finance;
+    private decimal amount;
+    private DateTime? dueDate = DateTime.UtcNow.AddHours(3).Date;
+    private string itemDescription = string.Empty;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        beneficiaries = await Beneficiaries.SearchAsync(status: BeneficiaryStatus.Active);
+        aidRequests = await Services.GetAidRequestsAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => orders = await Services.GetPaymentOrdersAsync();
+
+    private async Task SaveAsync()
+    {
+        var beneficiaryId = int.TryParse(beneficiaryIdText, out var beneficiaryValue) ? beneficiaryValue : (int?)null;
+        var aidRequestId = int.TryParse(aidRequestIdText, out var aidValue) ? aidValue : (int?)null;
+        var result = await Services.SavePaymentOrderAsync(null, new SavePaymentOrderRequest(aidRequestId, beneficiaryId, null, orderType, amount, itemDescription, dueDate));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task DecideAsync(int id, PaymentOrderStatus status)
+    {
+        var result = await Services.DecidePaymentOrderAsync(id, status, null);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

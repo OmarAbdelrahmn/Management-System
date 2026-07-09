@@ -1,0 +1,60 @@
+@page "/admin/settings"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+@inject AdminUiService Admin
+
+<h1 class="page-title">إعدادات النظام</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-sliders"></i><div><h2>إعداد جديد/تعديل</h2><p>إعدادات محفوظة في قاعدة البيانات للتوسع الإداري.</p></div></div>
+    <div class="form-grid">
+        <label>المفتاح<input @bind="key" /></label>
+        <label>الاسم العربي<input @bind="nameAr" /></label>
+        <label>التصنيف<input @bind="category" /></label>
+        <label>النوع<select @bind="valueType"><option value="@SystemSettingValueType.Text">Text</option><option value="@SystemSettingValueType.Number">Number</option><option value="@SystemSettingValueType.Boolean">Boolean</option><option value="@SystemSettingValueType.Secret">Secret</option></select></label>
+        <label class="span-2">القيمة<textarea @bind="value"></textarea></label>
+        <label class="check-row"><input type="checkbox" @bind="isEditable" /> قابل للتعديل</label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الإعداد</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-gear"></i> الإعدادات</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>المفتاح</th><th>الاسم</th><th>التصنيف</th><th>النوع</th><th>القيمة</th></tr></thead>
+        <tbody>
+            @foreach (var item in settings)
+            {
+                <tr><td>@item.Key</td><td>@item.NameAr</td><td>@item.Category</td><td>@item.ValueType</td><td>@item.Value</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<SystemSettingResponse> settings = [];
+    private string key = string.Empty;
+    private string nameAr = string.Empty;
+    private string? value;
+    private string category = "General";
+    private SystemSettingValueType valueType = SystemSettingValueType.Text;
+    private bool isEditable = true;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => settings = await Admin.GetSettingsAsync();
+
+    private async Task SaveAsync()
+    {
+        var result = await Admin.SaveSettingAsync(new SaveSystemSettingRequest(key, nameAr, value, valueType, category, isEditable));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

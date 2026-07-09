@@ -1,0 +1,47 @@
+@page "/pr-media/website-users"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject PublicRelationsMediaUiService PrMedia
+
+<h1 class="page-title">حسابات الموقع الإلكتروني</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="form-grid compact">
+        <label>الاسم<input @bind="fullName" /></label>
+        <label>اسم المستخدم<input @bind="username" /></label>
+        <label>البريد<input type="email" @bind="email" /></label>
+        <label>الدور<input @bind="roleName" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ حساب</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-users"></i> حسابات الموقع</span></div>
+    <table>
+        <thead><tr><th>المستخدم</th><th>الاسم</th><th>الدور</th><th>آخر دخول</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr><td>@user.Username</td><td>@user.FullName</td><td>@user.RoleName</td><td>@user.LastLoginAt?.ToString("yyyy-MM-dd HH:mm")</td><td><button class="secondary" @onclick="@(() => LoginAsync(user.Id))">تسجيل دخول</button></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<WebsiteUserAccountResponse> users = [];
+    private string fullName = string.Empty;
+    private string username = string.Empty;
+    private string? email;
+    private string roleName = "WebsiteEditor";
+    private bool success;
+    private string? message;
+    protected override async Task OnInitializedAsync() => users = await PrMedia.GetWebsiteUsersAsync();
+    private async Task SaveAsync(){ var r = await PrMedia.SaveWebsiteUserAsync(null, new SaveWebsiteUserAccountRequest(fullName, username, email, roleName, WebsiteUserStatus.Active)); success = r.Success; message = r.Message; users = await PrMedia.GetWebsiteUsersAsync(); }
+    private async Task LoginAsync(int id){ var r = await PrMedia.RecordWebsiteLoginAsync(id); success = r.Success; message = r.Message; users = await PrMedia.GetWebsiteUsersAsync(); }
+}

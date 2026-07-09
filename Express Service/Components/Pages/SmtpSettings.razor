@@ -1,0 +1,60 @@
+@page "/admin/smtp"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+@inject AdminUiService Admin
+
+<h1 class="page-title">إعدادات البريد</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-server"></i><div><h2>SMTP</h2><p>تحفظ هذه القيم في إعدادات النظام. كلمة المرور لا تعرض بعد الحفظ.</p></div></div>
+    <div class="form-grid">
+        <label>Host<input @bind="host" /></label>
+        <label>Email<input @bind="email" /></label>
+        <label>Password<input type="password" @bind="password" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ SMTP</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-list"></i> إعدادات SMTP المحفوظة</span></div>
+    <table>
+        <thead><tr><th>المفتاح</th><th>القيمة</th></tr></thead>
+        <tbody>
+            @foreach (var item in settings)
+            {
+                <tr><td>@item.Key</td><td>@item.Value</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<SystemSettingResponse> settings = [];
+    private string? host;
+    private string? email;
+    private string? password;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => settings = await Admin.GetSettingsAsync("SMTP");
+
+    private async Task SaveAsync()
+    {
+        var results = new[]
+        {
+            await Admin.SaveSettingAsync(new SaveSystemSettingRequest("Smtp.Host", "SMTP Host", host, SystemSettingValueType.Text, "SMTP")),
+            await Admin.SaveSettingAsync(new SaveSystemSettingRequest("Smtp.Email", "SMTP Email", email, SystemSettingValueType.Text, "SMTP")),
+            await Admin.SaveSettingAsync(new SaveSystemSettingRequest("Smtp.Password", "SMTP Password", password, SystemSettingValueType.Secret, "SMTP"))
+        };
+        success = results.All(x => x.Success);
+        message = success ? "تم حفظ إعدادات SMTP." : string.Join(" - ", results.Where(x => !x.Success).Select(x => x.Message));
+        password = null;
+        await LoadAsync();
+    }
+}

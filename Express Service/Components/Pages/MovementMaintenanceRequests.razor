@@ -1,0 +1,65 @@
+@page "/movement-maintenance/maintenance"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MovementMaintenanceUiService Movement
+
+<h1 class="page-title">إدارة طلبات الصيانة</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-screwdriver-wrench"></i><div><h2>طلب صيانة</h2><p>إدارة طلبات صيانة السيارات والصيانة العامة.</p></div></div>
+    <div class="form-grid compact">
+        <label>النوع<select @bind="requestType"><option value="@MaintenanceRequestType.Vehicle">سيارة</option><option value="@MaintenanceRequestType.Building">مبنى</option><option value="@MaintenanceRequestType.Equipment">تجهيزات</option><option value="@MaintenanceRequestType.Other">أخرى</option></select></label>
+        <label>السيارة<select @bind="fleetVehicleId"><option value="">بدون</option>@foreach (var vehicle in vehicles){<option value="@vehicle.Id">@vehicle.PlateNumber - @vehicle.Model</option>}</select></label>
+        <label>مقدم الطلب<input @bind="requestedBy" /></label>
+        <label>الأصل<input @bind="assetName" /></label>
+        <label>تاريخ الطلب<input type="date" @bind="requestDate" /></label>
+        <label>الحالة<select @bind="status"><option value="@MaintenanceRequestStatus.Requested">مطلوبة</option><option value="@MaintenanceRequestStatus.Approved">معتمدة</option><option value="@MaintenanceRequestStatus.InProgress">قيد التنفيذ</option><option value="@MaintenanceRequestStatus.Completed">مكتملة</option><option value="@MaintenanceRequestStatus.Rejected">مرفوضة</option></select></label>
+        <label>التكلفة المقدرة<input type="number" step="0.01" @bind="estimatedCost" /></label>
+        <label>التكلفة الفعلية<input type="number" step="0.01" @bind="actualCost" /></label>
+        <label>المورد<input @bind="vendorName" /></label>
+        <label class="span-2">وصف المشكلة<input @bind="issueDescription" /></label>
+        <label class="span-2">ملاحظات الإكمال<input @bind="completionNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ طلب الصيانة</button><button class="secondary" @onclick="CompleteFirstAsync">إكمال أول طلب</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-table"></i> سجل طلبات الصيانة</span></div>
+    <table>
+        <thead><tr><th>الطلب</th><th>الأصل</th><th>الوصف</th><th>التكلفة</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var item in requests)
+            {
+                <tr><td>@item.RequestNumber<br />@item.RequestType</td><td>@item.AssetName<br />@item.VehiclePlateNumber</td><td>@item.IssueDescription<br />@item.VendorName</td><td>@item.EstimatedCost / @item.ActualCost</td><td>@item.Status</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<FleetVehicleResponse> vehicles = [];
+    private List<MaintenanceRequestResponse> requests = [];
+    private MaintenanceRequestType requestType = MaintenanceRequestType.Vehicle;
+    private int? fleetVehicleId;
+    private string requestedBy = string.Empty;
+    private string assetName = string.Empty;
+    private string issueDescription = string.Empty;
+    private DateTime requestDate = DateTime.UtcNow.AddHours(3).Date;
+    private MaintenanceRequestStatus status = MaintenanceRequestStatus.Requested;
+    private decimal estimatedCost;
+    private decimal actualCost;
+    private string? vendorName;
+    private string? completionNotes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync(){ vehicles = await Movement.GetVehiclesAsync(); requests = await Movement.GetMaintenanceRequestsAsync(); }
+    private async Task SaveAsync(){ var result = await Movement.SaveMaintenanceRequestAsync(null, new SaveMaintenanceRequestRequest(requestType, fleetVehicleId, requestedBy, assetName, issueDescription, requestDate, status, estimatedCost, actualCost, vendorName, completionNotes)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task CompleteFirstAsync(){ var request = requests.FirstOrDefault(x => x.Status != MaintenanceRequestStatus.Completed.ToString()); if (request is null){ success = false; message = "لا يوجد طلب صيانة."; return; } var result = await Movement.UpdateMaintenanceStatusAsync(request.Id, MaintenanceRequestStatus.Completed, actualCost, completionNotes); success = result.Success; message = result.Message; await LoadAsync(); }
+}

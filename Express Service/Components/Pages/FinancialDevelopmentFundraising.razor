@@ -1,0 +1,138 @@
+@page "/financial-development/fundraising"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject FinancialDevelopmentUiService FinancialDevelopment
+
+<h1 class="page-title">إدارة تنمية الموارد المالية</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-bullseye"></i><div><h2>فرصة تسويق مالي</h2><p>تسويق عام، مشروع، طلب إعانة، برنامج، روابط خارجية، إهداءات، وشهادات.</p></div></div>
+    <div class="form-grid compact">
+        <label>العنوان<input @bind="opportunityTitle" /></label>
+        <label>النوع<select @bind="opportunityType"><option value="@FundraisingOpportunityType.General">عام</option><option value="@FundraisingOpportunityType.Project">مشروع</option><option value="@FundraisingOpportunityType.AidRequest">طلب إعانة</option><option value="@FundraisingOpportunityType.Program">برنامج</option><option value="@FundraisingOpportunityType.External">رابط خارجي</option><option value="@FundraisingOpportunityType.Gift">إهداء</option><option value="@FundraisingOpportunityType.Certificate">شهادة</option></select></label>
+        <label>رقم مرجعي<input @bind="referenceNumber" /></label>
+        <label>المستهدف<input type="number" step="0.01" @bind="targetAmount" /></label>
+        <label>تاريخ البداية<input type="date" @bind="startDate" /></label>
+        <label>تاريخ النهاية<input type="date" @bind="endDate" /></label>
+        <label>الحالة<select @bind="opportunityStatus"><option value="@FundraisingOpportunityStatus.Draft">مسودة</option><option value="@FundraisingOpportunityStatus.Active">نشط</option><option value="@FundraisingOpportunityStatus.Completed">مكتمل</option><option value="@FundraisingOpportunityStatus.Archived">مؤرشف</option></select></label>
+        <label>الرابط الخارجي<input @bind="externalUrl" /></label>
+        <label class="span-2">ملاحظات<input @bind="opportunityNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveOpportunityAsync">حفظ الفرصة</button><button class="secondary" @onclick="ResetOpportunity">تفريغ</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-hand-holding-dollar"></i><div><h2>سجل تبرعات الموقع</h2><p>تسجيل التبرعات وربطها بالداعم والفرصة مع الإهداءات والشهادات.</p></div></div>
+    <div class="form-grid compact">
+        <label>الداعم<select @bind="supporterId"><option value="">بدون</option>@foreach (var supporter in supporters){<option value="@supporter.Id">@supporter.Name</option>}</select></label>
+        <label>الفرصة<select @bind="opportunityId"><option value="">بدون</option>@foreach (var opportunity in opportunities){<option value="@opportunity.Id">@opportunity.Title</option>}</select></label>
+        <label>المبلغ<input type="number" step="0.01" @bind="donationAmount" /></label>
+        <label>تاريخ التبرع<input type="date" @bind="donationDate" /></label>
+        <label>المصدر<input @bind="sourceChannel" /></label>
+        <label>طريقة الدفع<input @bind="paymentMethod" /></label>
+        <label>مرجع العملية<input @bind="transactionReference" /></label>
+        <label>الحالة<select @bind="contributionStatus"><option value="@DonationContributionStatus.Pending">معلق</option><option value="@DonationContributionStatus.Confirmed">مؤكد</option><option value="@DonationContributionStatus.Refunded">مرتجع</option><option value="@DonationContributionStatus.Cancelled">ملغى</option></select></label>
+        <label><input type="checkbox" @bind="isGift" /> إهداء</label>
+        <label>اسم المهدى إليه<input @bind="giftRecipientName" /></label>
+        <label>رقم الشهادة<input @bind="certificateNumber" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveContributionAsync">حفظ التبرع</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-chart-line"></i> فرص التسويق والتبرعات</span></div>
+    <table>
+        <thead><tr><th>الفرصة</th><th>النوع</th><th>المستهدف/المحصل</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var opportunity in opportunities)
+            {
+                <tr><td>@opportunity.Title<br />@opportunity.ReferenceNumber</td><td>@opportunity.OpportunityType</td><td>@opportunity.TargetAmount / @opportunity.CurrentAmount</td><td>@opportunity.Status</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-receipt"></i> سجل التبرعات</span></div>
+    <table>
+        <thead><tr><th>الداعم</th><th>الفرصة</th><th>المبلغ</th><th>المصدر</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var contribution in contributions)
+            {
+                <tr><td>@contribution.SupporterName</td><td>@contribution.OpportunityTitle</td><td>@contribution.Amount</td><td>@contribution.SourceChannel<br />@contribution.PaymentMethod</td><td>@contribution.Status</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<FinancialSupporterResponse> supporters = [];
+    private List<FundraisingOpportunityResponse> opportunities = [];
+    private List<DonationContributionResponse> contributions = [];
+    private string opportunityTitle = string.Empty;
+    private FundraisingOpportunityType opportunityType = FundraisingOpportunityType.General;
+    private string? referenceNumber;
+    private decimal targetAmount;
+    private DateTime? startDate = DateTime.UtcNow.AddHours(3).Date;
+    private DateTime? endDate = DateTime.UtcNow.AddHours(3).Date.AddMonths(1);
+    private FundraisingOpportunityStatus opportunityStatus = FundraisingOpportunityStatus.Active;
+    private string? externalUrl;
+    private string? opportunityNotes;
+    private int? supporterId;
+    private int? opportunityId;
+    private decimal donationAmount;
+    private DateTime donationDate = DateTime.UtcNow.AddHours(3).Date;
+    private string sourceChannel = "Website";
+    private string? paymentMethod;
+    private string? transactionReference;
+    private bool isGift;
+    private string? giftRecipientName;
+    private string? certificateNumber;
+    private DonationContributionStatus contributionStatus = DonationContributionStatus.Confirmed;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        supporters = await FinancialDevelopment.GetSupportersAsync(FinancialSupporterStatus.Active);
+        opportunities = await FinancialDevelopment.GetOpportunitiesAsync();
+        contributions = await FinancialDevelopment.GetContributionsAsync();
+    }
+
+    private async Task SaveOpportunityAsync()
+    {
+        var result = await FinancialDevelopment.SaveOpportunityAsync(null, new SaveFundraisingOpportunityRequest(opportunityTitle, opportunityType, referenceNumber, targetAmount, startDate, endDate, opportunityStatus, externalUrl, opportunityNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success) ResetOpportunity();
+        await LoadAsync();
+    }
+
+    private async Task SaveContributionAsync()
+    {
+        var result = await FinancialDevelopment.SaveContributionAsync(null, new SaveDonationContributionRequest(supporterId, opportunityId, donationAmount, donationDate, sourceChannel, paymentMethod, transactionReference, isGift, giftRecipientName, certificateNumber, contributionStatus, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void ResetOpportunity()
+    {
+        opportunityTitle = string.Empty;
+        opportunityType = FundraisingOpportunityType.General;
+        referenceNumber = null;
+        targetAmount = 0;
+        startDate = DateTime.UtcNow.AddHours(3).Date;
+        endDate = DateTime.UtcNow.AddHours(3).Date.AddMonths(1);
+        opportunityStatus = FundraisingOpportunityStatus.Active;
+        externalUrl = null;
+        opportunityNotes = null;
+    }
+}

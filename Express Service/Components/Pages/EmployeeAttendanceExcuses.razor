@@ -1,0 +1,75 @@
+@page "/hr/attendance-excuses"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">تسجيل الأذونات</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-door-open"></i><div><h2>إذن حضور أو انصراف</h2><p>تسجيل إذن يومي ومتابعة الاعتماد.</p></div></div>
+    <div class="form-grid compact">
+        <label>الموظف<select @bind="employeeId">@foreach (var employee in employees){<option value="@employee.Id">@employee.FullName</option>}</select></label>
+        <label>اليوم<input type="date" @bind="workDate" /></label>
+        <label>نوع الإذن<input @bind="excuseType" /></label>
+        <label>من<input type="time" @bind="fromTime" /></label>
+        <label>إلى<input type="time" @bind="toTime" /></label>
+        <label class="span-2">السبب<input @bind="reason" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الإذن</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-clipboard-list"></i> الأذونات</span></div>
+    <table>
+        <thead><tr><th>الموظف</th><th>اليوم</th><th>النوع</th><th>الوقت</th><th>الحالة</th><th>قرار</th></tr></thead>
+        <tbody>
+            @foreach (var item in excuses)
+            {
+                <tr><td>@item.EmployeeName</td><td>@item.WorkDate.ToString("yyyy-MM-dd")</td><td>@item.ExcuseType</td><td>@item.FromTime - @item.ToTime</td><td><span class="status">@item.Status</span></td><td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Rejected))">رفض</button></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EmployeeResponse> employees = [];
+    private List<AttendanceExcuseResponse> excuses = [];
+    private int employeeId;
+    private DateTime workDate = DateTime.UtcNow.AddHours(3).Date;
+    private string excuseType = "استئذان";
+    private TimeOnly fromTime = new(8, 0);
+    private TimeOnly toTime = new(9, 0);
+    private string reason = string.Empty;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        employees = await HR.SearchEmployeesAsync(null, null, null, null);
+        employeeId = employees.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => excuses = await HR.GetAttendanceExcusesAsync();
+
+    private async Task SaveAsync()
+    {
+        var result = await HR.CreateAttendanceExcuseAsync(new CreateAttendanceExcuseRequest(employeeId, workDate, excuseType, fromTime.ToTimeSpan(), toTime.ToTimeSpan(), reason));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task DecideAsync(int id, HumanResourceRequestStatus status)
+    {
+        var result = await HR.DecideAttendanceExcuseAsync(id, status, null);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

@@ -1,0 +1,135 @@
+@page "/accounting/setup"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject AccountingUiService Accounting
+
+<h1 class="page-title">إعدادات النظام المحاسبي</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-sitemap"></i><div><h2>الدليل والحسابات البنكية ومراكز التكلفة</h2><p>تهيئة الأساس المحاسبي وقيود اليومية.</p></div></div>
+    <div class="form-grid compact">
+        <label>كود الحساب<input @bind="accountCode" /></label>
+        <label>اسم الحساب<input @bind="accountName" /></label>
+        <label>نوع الحساب<select @bind="accountType"><option value="@AccountingAccountType.Asset">أصل</option><option value="@AccountingAccountType.Liability">التزام</option><option value="@AccountingAccountType.Equity">حقوق</option><option value="@AccountingAccountType.Income">إيراد</option><option value="@AccountingAccountType.Expense">مصروف</option></select></label>
+        <label>البنك<input @bind="bankName" /></label>
+        <label>اسم الحساب البنكي<input @bind="bankAccountName" /></label>
+        <label>IBAN<input @bind="iban" /></label>
+        <label>كود مركز التكلفة<input @bind="costCode" /></label>
+        <label>اسم مركز التكلفة<input @bind="costName" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAccountAsync">حفظ حساب</button><button class="secondary" @onclick="SaveBankAsync">حفظ بنك</button><button class="secondary" @onclick="SaveCostAsync">حفظ مركز تكلفة</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-book"></i><div><h2>قيد يومية</h2><p>إضافة قيد متوازن من حسابين.</p></div></div>
+    <div class="form-grid compact">
+        <label>الوصف<input @bind="ledgerDescription" /></label>
+        <label>مدين<select @bind="debitAccountId">@foreach (var account in accounts){<option value="@account.Id">@account.Code - @account.NameAr</option>}</select></label>
+        <label>دائن<select @bind="creditAccountId">@foreach (var account in accounts){<option value="@account.Id">@account.Code - @account.NameAr</option>}</select></label>
+        <label>المبلغ<input type="number" step="0.01" @bind="ledgerAmount" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveLedgerAsync">حفظ قيد</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-table"></i> السجلات</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>الكود/الرقم</th><th>الاسم/الوصف</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var account in accounts){<tr><td>حساب</td><td>@account.Code</td><td>@account.NameAr</td><td>@account.AccountType</td></tr>}
+            @foreach (var bank in banks){<tr><td>بنك</td><td>@bank.Iban</td><td>@bank.BankName - @bank.AccountName</td><td>@bank.OpeningBalance</td></tr>}
+            @foreach (var center in costs){<tr><td>مركز</td><td>@center.Code</td><td>@center.NameAr</td><td>@center.IsActive</td></tr>}
+            @foreach (var ledger in ledgers){<tr><td>قيد</td><td>@ledger.EntryNumber</td><td>@ledger.Description</td><td><span class="status">@ledger.Status</span> <button class="secondary" @onclick="() => SelectLedger(ledger)">تفاصيل</button></td></tr>}
+        </tbody>
+    </table>
+</section>
+
+@if (selectedLedger is not null)
+{
+    <section class="table-section">
+        <div class="table-title"><span><i class="fa-solid fa-scale-balanced"></i> تفاصيل القيد: @selectedLedger.EntryNumber</span></div>
+        <table>
+            <thead><tr><th>الحساب</th><th>مركز التكلفة</th><th>مدين</th><th>دائن</th><th>ملاحظات</th></tr></thead>
+            <tbody>
+                @foreach (var line in selectedLedger.Lines)
+                {
+                    <tr>
+                        <td>@line.AccountCode - @line.AccountNameAr</td>
+                        <td>@(line.CostCenterCode is null ? "-" : $"{line.CostCenterCode} - {line.CostCenterNameAr}")</td>
+                        <td>@line.Debit</td>
+                        <td>@line.Credit</td>
+                        <td>@(line.Notes ?? "-")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+@code {
+    private List<FinanceAccountResponse> accounts = [];
+    private List<FinanceBankAccountResponse> banks = [];
+    private List<FinanceCostCenterResponse> costs = [];
+    private List<LedgerEntryResponse> ledgers = [];
+    private LedgerEntryResponse? selectedLedger;
+    private string accountCode = string.Empty;
+    private string accountName = string.Empty;
+    private AccountingAccountType accountType = AccountingAccountType.Asset;
+    private string bankName = string.Empty;
+    private string bankAccountName = string.Empty;
+    private string iban = string.Empty;
+    private string costCode = string.Empty;
+    private string costName = string.Empty;
+    private string ledgerDescription = string.Empty;
+    private int debitAccountId;
+    private int creditAccountId;
+    private decimal ledgerAmount;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        accounts = await Accounting.GetAccountsAsync();
+        banks = await Accounting.GetBankAccountsAsync();
+        costs = await Accounting.GetCostCentersAsync();
+        ledgers = await Accounting.GetLedgerEntriesAsync();
+        if (selectedLedger is not null)
+            selectedLedger = ledgers.FirstOrDefault(x => x.Id == selectedLedger.Id);
+        debitAccountId = accounts.FirstOrDefault()?.Id ?? debitAccountId;
+        creditAccountId = accounts.Skip(1).FirstOrDefault()?.Id ?? creditAccountId;
+    }
+
+    private async Task SaveAccountAsync()
+    {
+        var result = await Accounting.SaveAccountAsync(null, new SaveFinanceAccountRequest(accountCode, accountName, accountType, null, true));
+        success = result.Success; message = result.Message; await LoadAsync();
+    }
+
+    private async Task SaveBankAsync()
+    {
+        var result = await Accounting.SaveBankAccountAsync(null, new SaveFinanceBankAccountRequest(bankName, bankAccountName, iban, 0, true));
+        success = result.Success; message = result.Message; await LoadAsync();
+    }
+
+    private async Task SaveCostAsync()
+    {
+        var result = await Accounting.SaveCostCenterAsync(null, new SaveFinanceCostCenterRequest(costCode, costName, true));
+        success = result.Success; message = result.Message; await LoadAsync();
+    }
+
+    private async Task SaveLedgerAsync()
+    {
+        var lines = new List<SaveLedgerLineRequest> { new(debitAccountId, null, ledgerAmount, 0, null), new(creditAccountId, null, 0, ledgerAmount, null) };
+        var result = await Accounting.SaveLedgerEntryAsync(null, new SaveLedgerEntryRequest(null, DateTime.UtcNow.AddHours(3), ledgerDescription, AccountingRecordStatus.Posted, lines));
+        success = result.Success; message = result.Message; await LoadAsync();
+    }
+
+    private void SelectLedger(LedgerEntryResponse ledger) => selectedLedger = ledger;
+}

@@ -1,0 +1,27 @@
+@page "/electronic-office/admin-office"
+@page "/electronic-office/requests"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ElectronicOfficeUiService Office
+
+<h1 class="page-title">الطلبات الإدارية والمكتب الإداري</h1>
+@if (!string.IsNullOrWhiteSpace(message)){<section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>}
+<section class="panel"><div class="panel-heading"><i class="fa-solid fa-file-signature"></i><div><h2>طلب مكتبي</h2><p>الإجازة، الإذن، الطلب المالي، العام، المجموعة التطوعية، الشراء، السيارة، تقييمات الموظفين، الإشعارات، المؤشرات، الحضور الحالي، المسائلات والإنذارات.</p></div></div><div class="form-grid compact"><label>رقم الطلب<input @bind="requestNumber" /></label><label>النوع<select @bind="requestType"><option value="@OfficeRequestType.Vacation">إجازة</option><option value="@OfficeRequestType.Excuse">إذن</option><option value="@OfficeRequestType.Finance">مالي</option><option value="@OfficeRequestType.General">عام</option><option value="@OfficeRequestType.VolunteerGroup">مجموعة تطوعية</option><option value="@OfficeRequestType.Purchase">شراء</option><option value="@OfficeRequestType.Car">سيارة</option><option value="@OfficeRequestType.Evaluation">تقييم</option><option value="@OfficeRequestType.Notification">إشعار</option><option value="@OfficeRequestType.StrategyIndicator">مؤشر</option><option value="@OfficeRequestType.Question">مساءلة</option><option value="@OfficeRequestType.Warning">إنذار</option></select></label><label>مقدم الطلب<input @bind="requestedBy" /></label><label>الموضوع<input @bind="subject" /></label><label>الحالة<select @bind="status"><option value="@OfficeRecordStatus.Pending">قيد الاعتماد</option><option value="@OfficeRecordStatus.Approved">معتمد</option><option value="@OfficeRecordStatus.RejectedWithNote">مرفوض بملاحظة</option><option value="@OfficeRecordStatus.Rejected">مرفوض نهائيا</option><option value="@OfficeRecordStatus.Completed">مكتمل</option><option value="@OfficeRecordStatus.Canceled">ملغى</option></select></label><label>التاريخ<input type="date" @bind="requestedAt" /></label><label class="span-2">ملاحظات القرار<input @bind="decisionNotes" /></label></div><div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الطلب</button><button class="secondary" @onclick="LoadPendingAsync">المعلقة</button><button class="secondary" @onclick="LoadAsync">كل الطلبات</button></div></section>
+<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> الطلبات</span></div><table><thead><tr><th>الطلب</th><th>النوع</th><th>الموضوع</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>@foreach (var item in requests){<tr><td>@item.RequestNumber<br />@item.RequestedAt.ToString("yyyy-MM-dd")</td><td>@item.RequestType</td><td>@item.Subject<br />@item.RequestedBy</td><td>@item.Status<br />@item.DecisionNotes</td><td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, OfficeRecordStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, OfficeRecordStatus.Canceled))">إلغاء</button></td></tr>}</tbody></table></section>
+@code {
+    private List<OfficeAdministrativeRequestResponse> requests = [];
+    private string requestNumber = $"OFF-{DateTime.UtcNow:yyyyMMddHHmm}";
+    private OfficeRequestType requestType = OfficeRequestType.General;
+    private string requestedBy = string.Empty;
+    private string subject = string.Empty;
+    private OfficeRecordStatus status = OfficeRecordStatus.Pending;
+    private string? decisionNotes;
+    private DateTime requestedAt = DateTime.UtcNow.AddHours(3).Date;
+    private bool success;
+    private string? message;
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => requests = await Office.GetRequestsAsync();
+    private async Task LoadPendingAsync() => requests = await Office.GetRequestsAsync(status: OfficeRecordStatus.Pending);
+    private async Task SaveAsync(){ var result = await Office.SaveRequestAsync(null, new SaveOfficeAdministrativeRequestRequest(requestNumber, requestType, requestedBy, subject, status, decisionNotes, requestedAt)); success = result.Success; message = result.Message; if (success) requestNumber = $"OFF-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+    private async Task DecideAsync(int id, OfficeRecordStatus next){ var result = await Office.DecideRequestAsync(id, next, decisionNotes); success = result.Success; message = result.Message; await LoadAsync(); }
+}

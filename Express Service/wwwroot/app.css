@@ -256,6 +256,26 @@ textarea {
     border-top: 1px solid rgba(255, 255, 255, .05);
 }
 
+.side-separator {
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    padding: 7px 42px 7px 10px;
+    background: rgba(16, 46, 77, .9);
+    color: rgba(255, 255, 255, .72);
+    font-weight: 700;
+    font-size: 11px;
+}
+
+.side-panel a small {
+    float: left;
+    border-radius: 9px;
+    background: rgba(240, 173, 78, .18);
+    color: #ffd894;
+    padding: 0 6px;
+    font-size: 10px;
+}
+
 .side-panel a:hover {
     background: rgba(255, 255, 255, .11);
 }

@@ -1,0 +1,178 @@
+@page "/members/participation"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MemberUiService Members
+
+<h1 class="page-title">إدارة الأعضاء المشاركين</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading">
+        <i class="fa-solid fa-people-group"></i>
+        <div>
+            <h2>@(selectedId.HasValue ? "تحديث تصنيف مشاركة" : "إضافة تصنيف مشاركة")</h2>
+            <p>تمييز عضو مجلس الإدارة عن عضو الجمعية العمومية مع المنصب والدورة والوزن التصويتي.</p>
+        </div>
+        <a class="secondary" href="/members/create">إضافة ملف عضو</a>
+    </div>
+    <div class="form-grid">
+        <label>العضو<select @bind="memberProfileId">@foreach (var member in members){<option value="@member.Id">@member.MemberNumber - @member.FullName</option>}</select></label>
+        <label>الدور<select @bind="role"><option value="@MemberParticipationRole.BoardMember">عضو مجلس إدارة</option><option value="@MemberParticipationRole.GeneralAssembly">عضو جمعية عمومية</option></select></label>
+        <label>المنصب<input @bind="positionTitle" /></label>
+        <label>الدورة<input @bind="cycleName" /></label>
+        <label>بداية العضوية<input type="date" @bind="startsAt" /></label>
+        <label>نهاية العضوية<input type="date" @bind="endsAt" /></label>
+        <label>الحالة<select @bind="status"><option value="@MemberParticipationStatus.Active">نشط</option><option value="@MemberParticipationStatus.Suspended">معلق</option><option value="@MemberParticipationStatus.Ended">منتهي</option></select></label>
+        <label>الوزن التصويتي<input type="number" step="0.01" @bind="votingWeight" /></label>
+        <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
+    </div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">حفظ التصنيف</button>
+        <button class="secondary" @onclick="NewAsync">جديد</button>
+    </div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-filter"></i><div><h2>فلترة الأعضاء المشاركين</h2><p>عرض أعضاء مجلس الإدارة أو الجمعية العمومية حسب الحالة.</p></div></div>
+    <div class="form-grid compact">
+        <label>الدور<select @bind="roleFilter"><option value="">الكل</option><option value="BoardMember">مجلس الإدارة</option><option value="GeneralAssembly">الجمعية العمومية</option></select></label>
+        <label>الحالة<select @bind="statusFilter"><option value="">الكل</option><option value="Active">نشط</option><option value="Suspended">معلق</option><option value="Ended">منتهي</option></select></label>
+    </div>
+    <div class="actions-row"><button class="secondary" @onclick="LoadAsync">تطبيق الفلتر</button></div>
+</section>
+
+<section class="circle-tiles" style="margin-top:14px">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-user-tie"></i></span><span>مجلس الإدارة</span><strong class="tile-number">@assignments.Count(x => x.Role == "BoardMember")</strong><span class="tile-footer">في النتائج</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-users"></i></span><span>الجمعية العمومية</span><strong class="tile-number">@assignments.Count(x => x.Role == "GeneralAssembly")</strong><span class="tile-footer">في النتائج</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-check"></i></span><span>نشط</span><strong class="tile-number">@assignments.Count(x => x.Status == "Active")</strong><span class="tile-footer">تصنيف فعال</span></article>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> تصنيفات المشاركة</span></div>
+    <table>
+        <thead><tr><th>رقم العضوية</th><th>العضو</th><th>الدور</th><th>المنصب</th><th>الدورة</th><th>الفترة</th><th>الحالة</th><th>الوزن</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var item in assignments)
+            {
+                <tr>
+                    <td>@item.MemberNumber</td>
+                    <td>@item.MemberName</td>
+                    <td>@DisplayRole(item.Role)</td>
+                    <td>@item.PositionTitle</td>
+                    <td>@item.CycleName</td>
+                    <td>@item.StartsAt.ToString("yyyy-MM-dd") - @item.EndsAt?.ToString("yyyy-MM-dd")</td>
+                    <td><span class="status">@DisplayStatus(item.Status)</span></td>
+                    <td>@item.VotingWeight</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => Edit(item))">تعديل</button>
+                        @if (item.Status == "Active")
+                        {
+                            <button class="secondary" @onclick="@(() => EndAsync(item.Id))">إنهاء</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<MemberResponse> members = [];
+    private List<MemberParticipationResponse> assignments = [];
+    private int? selectedId;
+    private int memberProfileId;
+    private MemberParticipationRole role = MemberParticipationRole.BoardMember;
+    private string? positionTitle;
+    private string? cycleName;
+    private DateTime startsAt = DateTime.UtcNow.AddHours(3).Date;
+    private DateTime? endsAt;
+    private MemberParticipationStatus status = MemberParticipationStatus.Active;
+    private decimal votingWeight = 1;
+    private string? notes;
+    private string roleFilter = string.Empty;
+    private string statusFilter = string.Empty;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        members = await Members.GetMembersAsync(MemberStatus.Active);
+        memberProfileId = members.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var parsedRole = Enum.TryParse<MemberParticipationRole>(roleFilter, out var roleValue) ? roleValue : (MemberParticipationRole?)null;
+        var parsedStatus = Enum.TryParse<MemberParticipationStatus>(statusFilter, out var statusValue) ? statusValue : (MemberParticipationStatus?)null;
+        assignments = await Members.GetParticipationAsync(parsedRole, parsedStatus);
+    }
+
+    private async Task SaveAsync()
+    {
+        var result = await Members.SaveParticipationAsync(selectedId, new SaveMemberParticipationRequest(memberProfileId, role, positionTitle, cycleName, startsAt, endsAt, status, votingWeight, notes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            await NewAsync();
+            await LoadAsync();
+        }
+    }
+
+    private async Task EndAsync(int id)
+    {
+        var result = await Members.EndParticipationAsync(id, DateTime.UtcNow.AddHours(3).Date, notes);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private Task NewAsync()
+    {
+        selectedId = null;
+        memberProfileId = members.FirstOrDefault()?.Id ?? 0;
+        role = MemberParticipationRole.BoardMember;
+        positionTitle = null;
+        cycleName = null;
+        startsAt = DateTime.UtcNow.AddHours(3).Date;
+        endsAt = null;
+        status = MemberParticipationStatus.Active;
+        votingWeight = 1;
+        notes = null;
+        return Task.CompletedTask;
+    }
+
+    private void Edit(MemberParticipationResponse item)
+    {
+        selectedId = item.Id;
+        memberProfileId = item.MemberProfileId;
+        role = Enum.TryParse<MemberParticipationRole>(item.Role, out var parsedRole) ? parsedRole : MemberParticipationRole.BoardMember;
+        positionTitle = item.PositionTitle;
+        cycleName = item.CycleName;
+        startsAt = item.StartsAt;
+        endsAt = item.EndsAt;
+        status = Enum.TryParse<MemberParticipationStatus>(item.Status, out var parsedStatus) ? parsedStatus : MemberParticipationStatus.Active;
+        votingWeight = item.VotingWeight;
+        notes = item.Notes;
+    }
+
+    private static string DisplayRole(string value) => value switch
+    {
+        "BoardMember" => "مجلس الإدارة",
+        "GeneralAssembly" => "الجمعية العمومية",
+        _ => value
+    };
+
+    private static string DisplayStatus(string value) => value switch
+    {
+        "Active" => "نشط",
+        "Suspended" => "معلق",
+        "Ended" => "منتهي",
+        _ => value
+    };
+}

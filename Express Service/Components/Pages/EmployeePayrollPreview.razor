@@ -1,0 +1,55 @@
+@page "/hr/payroll"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">معاينة سجلات الرواتب</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-money-bill-wave"></i><div><h2>توليد معاينة الرواتب</h2><p>إنشاء سجل مسودة للموظفين النشطين حسب الشهر.</p></div></div>
+    <div class="form-grid compact">
+        <label>شهر الرواتب<input type="date" @bind="payrollMonth" /></label>
+        <label>استقطاع افتراضي<input type="number" step="0.01" @bind="defaultDeductions" /></label>
+        <label class="span-2">ملاحظات<input @bind="notes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="GenerateAsync">توليد المعاينة</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-table-list"></i> سجلات الرواتب</span></div>
+    <table>
+        <thead><tr><th>الشهر</th><th>الموظف</th><th>الأساسي</th><th>البدلات</th><th>الاستقطاعات</th><th>الصافي</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var item in records)
+            {
+                <tr><td>@item.PayrollMonth.ToString("yyyy-MM")</td><td>@item.EmployeeName</td><td>@item.BasicSalary</td><td>@item.Allowances</td><td>@item.Deductions</td><td>@item.NetSalary</td><td><span class="status">@item.Status</span></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EmployeePayrollRecordResponse> records = [];
+    private DateTime payrollMonth = new(DateTime.UtcNow.AddHours(3).Year, DateTime.UtcNow.AddHours(3).Month, 1);
+    private decimal defaultDeductions;
+    private string? notes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync() => records = await HR.GetPayrollRecordsAsync(payrollMonth);
+
+    private async Task GenerateAsync()
+    {
+        var result = await HR.GeneratePayrollPreviewAsync(new GeneratePayrollPreviewRequest(payrollMonth, defaultDeductions, notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

@@ -60,6 +60,18 @@ public class MeetingUiService(
         return result.IsSuccess ? result.Value.ToList() : [];
     }
 
+    public async Task<List<MeetingCalendarItemResponse>> GetMeetingCalendarAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await meetingService.GetCalendarAsync(cancellationToken);
+        return result.IsSuccess ? result.Value.ToList() : [];
+    }
+
+    public async Task<List<MeetingRepeatDraftResponse>> GetRepeatedDraftsAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await meetingService.GetRepeatedDraftsAsync(cancellationToken);
+        return result.IsSuccess ? result.Value.ToList() : [];
+    }
+
     public async Task<List<MeetingListItemResponse>> GetArchivedMeetingsAsync(string? type = null, CancellationToken cancellationToken = default)
     {
         var result = await meetingService.GetArchiveAsync(type, cancellationToken);
@@ -157,6 +169,12 @@ public class MeetingUiService(
     {
         var result = await meetingService.FinishAsync(meetingId, cancellationToken);
         return result.IsSuccess ? (true, "تم إنهاء الاجتماع.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> StartMeetingAsync(int meetingId, CancellationToken cancellationToken = default)
+    {
+        var result = await meetingService.StartAsync(meetingId, cancellationToken);
+        return result.IsSuccess ? (true, "تم بدء الاجتماع.") : (false, result.Error.Description);
     }
 
     public async Task<(bool Success, string Message)> AcceptInvitationAsync(int invitationId, bool agendaRead, string? note, MeetingNoteVisibility visibility, int? agendaItemId, CancellationToken cancellationToken = default)

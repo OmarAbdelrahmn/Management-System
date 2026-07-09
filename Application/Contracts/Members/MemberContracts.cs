@@ -121,3 +121,37 @@ public record MemberReportShareResponse(
     string Audience,
     DateTime SharedAt,
     int RecipientCount);
+
+public record MemberParticipationResponse(
+    int Id,
+    int MemberProfileId,
+    string MemberNumber,
+    string MemberName,
+    string Role,
+    string? PositionTitle,
+    string? CycleName,
+    DateTime StartsAt,
+    DateTime? EndsAt,
+    string Status,
+    decimal VotingWeight,
+    string? Notes);
+
+public record MemberParticipationSearchRequest(
+    MemberParticipationRole? Role,
+    MemberParticipationStatus? Status,
+    int? MemberProfileId);
+
+public record SaveMemberParticipationRequest(
+    int MemberProfileId,
+    MemberParticipationRole Role,
+    string? PositionTitle,
+    string? CycleName,
+    DateTime StartsAt,
+    DateTime? EndsAt,
+    MemberParticipationStatus Status,
+    decimal VotingWeight,
+    string? Notes);
+
+public record EndMemberParticipationRequest(
+    DateTime? EndsAt,
+    string? Notes);

@@ -1,0 +1,122 @@
+@page "/programs-projects/ideas"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ProgramsProjectsUiService ProgramsProjects
+
+<h1 class="page-title">إدارة مقترحات البرامج</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-lightbulb"></i><div><h2>تقديم اقتراح برنامج</h2><p>تسجيل المقترح وتمريره بين التسويق والاعتماد والرفض والإكمال.</p></div></div>
+    <div class="form-grid">
+        <label>العنوان<input @bind="title" /></label>
+        <label>صاحب المقترح<input @bind="ownerName" /></label>
+        <label>الميزانية التقديرية<input type="number" step="0.01" @bind="estimatedBudget" /></label>
+        <label>الحالة<select @bind="status"><option value="@ProgramIdeaStatus.Pending">قيد الاعتماد</option><option value="@ProgramIdeaStatus.Marketing">قيد التسويق</option><option value="@ProgramIdeaStatus.Approved">معتمد</option><option value="@ProgramIdeaStatus.Note">ملاحظة</option><option value="@ProgramIdeaStatus.Rejected">مرفوض</option><option value="@ProgramIdeaStatus.Cancelled">ملغى</option><option value="@ProgramIdeaStatus.Completed">مكتمل</option></select></label>
+        <label class="span-2">وصف المقترح<textarea @bind="description"></textarea></label>
+        <label class="span-2">ملاحظات التسويق<textarea @bind="marketingNotes"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المقترح</button><button class="secondary" @onclick="ResetForm">تفريغ</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-filter"></i><div><h2>تصفية المقترحات</h2><p>عرض قوائم Rafed حسب حالة المقترح.</p></div></div>
+    <div class="form-grid compact">
+        <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="Pending">قيد الاعتماد</option><option value="Marketing">قيد التسويق</option><option value="Approved">معتمد/جاري</option><option value="Note">ملاحظة</option><option value="Rejected">مرفوض نهائياً</option><option value="Cancelled">ملغى</option><option value="Completed">مكتمل</option></select></label>
+        <label>ملاحظة القرار<input @bind="decisionNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-list"></i> المقترحات</span></div>
+    <table>
+        <thead><tr><th>العنوان</th><th>المقترح</th><th>الميزانية</th><th>الحالة</th><th>القرار</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var idea in ideas)
+            {
+                <tr>
+                    <td>@idea.Title</td>
+                    <td>@idea.OwnerName</td>
+                    <td>@idea.EstimatedBudget</td>
+                    <td><span class="status">@idea.Status</span></td>
+                    <td>@idea.DecisionNotes</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => Edit(idea))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => UpdateStatusAsync(idea.Id, ProgramIdeaStatus.Marketing))">تسويق</button>
+                        <button class="secondary" @onclick="@(() => UpdateStatusAsync(idea.Id, ProgramIdeaStatus.Approved))">اعتماد</button>
+                        <button class="secondary" @onclick="@(() => UpdateStatusAsync(idea.Id, ProgramIdeaStatus.Rejected))">رفض</button>
+                        <button class="secondary" @onclick="@(() => UpdateStatusAsync(idea.Id, ProgramIdeaStatus.Completed))">إكمال</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ProgramIdeaResponse> ideas = [];
+    private int? editingId;
+    private string title = string.Empty;
+    private string? ownerName;
+    private string description = string.Empty;
+    private string? marketingNotes;
+    private decimal estimatedBudget;
+    private ProgramIdeaStatus status = ProgramIdeaStatus.Pending;
+    private string statusText = string.Empty;
+    private string? decisionNotes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var parsedStatus = Enum.TryParse<ProgramIdeaStatus>(statusText, out var value) ? value : (ProgramIdeaStatus?)null;
+        ideas = await ProgramsProjects.GetIdeasAsync(parsedStatus);
+    }
+
+    private async Task SaveAsync()
+    {
+        var result = await ProgramsProjects.SaveIdeaAsync(editingId, new SaveProgramIdeaRequest(title, ownerName, description, marketingNotes, estimatedBudget, status));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetForm();
+        await LoadAsync();
+    }
+
+    private async Task UpdateStatusAsync(int id, ProgramIdeaStatus newStatus)
+    {
+        var result = await ProgramsProjects.UpdateIdeaStatusAsync(id, newStatus, decisionNotes);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void Edit(ProgramIdeaResponse idea)
+    {
+        editingId = idea.Id;
+        title = idea.Title;
+        ownerName = idea.OwnerName;
+        description = idea.Description;
+        marketingNotes = idea.MarketingNotes;
+        estimatedBudget = idea.EstimatedBudget;
+        status = Enum.TryParse<ProgramIdeaStatus>(idea.Status, out var value) ? value : ProgramIdeaStatus.Pending;
+    }
+
+    private void ResetForm()
+    {
+        editingId = null;
+        title = string.Empty;
+        ownerName = null;
+        description = string.Empty;
+        marketingNotes = null;
+        estimatedBudget = 0;
+        status = ProgramIdeaStatus.Pending;
+    }
+}

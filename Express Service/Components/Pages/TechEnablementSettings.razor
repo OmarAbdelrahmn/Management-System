@@ -1,0 +1,56 @@
+@page "/tech-enablement/system"
+@page "/tech-enablement/website"
+@page "/tech-enablement/communication"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject TechEnablementUiService Tech
+
+<h1 class="page-title">إدارة النظام و إعدادات الموقع والتواصل</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-gears"></i><div><h2>إعداد تقني</h2><p>معلومات الجمعية، مقدمي الخدمات، أقسام لوحة التحكم، حسابات التكامل، المستودعات، القوالب، المتغيرات، إعدادات الموقع، SEO، والتواصل الداخلي.</p></div></div>
+    <div class="form-grid compact">
+        <label>المفتاح<input @bind="key" /></label>
+        <label>الاسم العربي<input @bind="nameAr" /></label>
+        <label>التصنيف<select @bind="category"><option>System</option><option>Website</option><option>Communication</option><option>Integration</option><option>Templates</option><option>Workflow</option></select></label>
+        <label>الحالة<select @bind="status"><option value="@TechSettingStatus.Active">نشط</option><option value="@TechSettingStatus.Inactive">غير نشط</option></select></label>
+        <label class="span-2">القيمة<input @bind="value" /></label>
+        <label class="span-2">ملاحظات<input @bind="notes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الإعداد</button><button class="secondary" @onclick="@(() => LoadCategoryAsync("System"))">النظام</button><button class="secondary" @onclick="@(() => LoadCategoryAsync("Website"))">الموقع</button><button class="secondary" @onclick="@(() => LoadCategoryAsync("Communication"))">التواصل</button><button class="secondary" @onclick="LoadAsync">كل الإعدادات</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> إعدادات التمكين التقني</span></div>
+    <table>
+        <thead><tr><th>المفتاح</th><th>الاسم</th><th>التصنيف</th><th>القيمة</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var item in settings)
+            {
+                <tr><td>@item.Key</td><td>@item.NameAr</td><td>@item.Category</td><td>@item.Value<br />@item.Notes</td><td>@item.Status</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<TechSystemSettingResponse> settings = [];
+    private string key = $"Tech.{DateTime.UtcNow:yyyyMMddHHmm}";
+    private string nameAr = string.Empty;
+    private string category = "System";
+    private string? value;
+    private string? notes;
+    private TechSettingStatus status = TechSettingStatus.Active;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => settings = await Tech.GetSettingsAsync();
+    private async Task LoadCategoryAsync(string selected) => settings = await Tech.GetSettingsAsync(selected);
+    private async Task SaveAsync(){ var result = await Tech.SaveSettingAsync(null, new SaveTechSystemSettingRequest(key, nameAr, category, value, notes, status)); success = result.Success; message = result.Message; if (success) key = $"Tech.{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+}

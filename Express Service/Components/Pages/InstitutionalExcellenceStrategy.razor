@@ -1,0 +1,185 @@
+@page "/institutional-excellence/strategy"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject InstitutionalExcellenceUiService Excellence
+
+<h1 class="page-title">إدارة الخطة الإستراتيجية</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-map"></i><div><h2>خطة إستراتيجية</h2><p>إدارة الخطط ومتغيراتها وقيم التحقق المؤتمتة.</p></div></div>
+    <div class="form-grid compact">
+        <label>عنوان الخطة<input @bind="planTitle" /></label>
+        <label>البداية<input type="date" @bind="startDate" /></label>
+        <label>النهاية<input type="date" @bind="endDate" /></label>
+        <label>الحالة<select @bind="planStatus"><option value="@ExcellenceRecordStatus.Draft">مسودة</option><option value="@ExcellenceRecordStatus.Active">نشطة</option><option value="@ExcellenceRecordStatus.Completed">مكتملة</option><option value="@ExcellenceRecordStatus.Archived">مؤرشفة</option></select></label>
+        <label class="span-2">الرؤية<input @bind="vision" /></label>
+        <label class="span-2">الرسالة<input @bind="mission" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SavePlanAsync">حفظ الخطة</button><button class="secondary" @onclick="FetchVariablesAsync">تحديث قيم التحقق المؤتمتة لأول خطة</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-sitemap"></i><div><h2>مناظير وأهداف الخطة</h2><p>إدارة مناظير الخطة، الأهداف الإستراتيجية، وتناغم رؤية 2030 والتنمية المستدامة.</p></div></div>
+    <div class="form-grid compact">
+        <label>الخطة<select @bind="perspectivePlanId"><option value="0">اختر الخطة</option>@foreach (var plan in plans){<option value="@plan.Id">@plan.Title</option>}</select></label>
+        <label>اسم المنظور<input @bind="perspectiveName" /></label>
+        <label>ترتيب المنظور<input type="number" @bind="perspectiveSortOrder" /></label>
+        <label>المنظور<select @bind="goalPerspectiveId"><option value="0">اختر المنظور</option>@foreach (var perspective in perspectives){<option value="@perspective.Id">@perspective.Name</option>}</select></label>
+        <label>الهدف<input @bind="goalTitle" /></label>
+        <label>ترتيب الهدف<input type="number" @bind="goalSortOrder" /></label>
+        <label class="span-2">تناغم رؤية 2030<input @bind="visionAlignment" /></label>
+        <label class="span-2">تناغم التنمية المستدامة<input @bind="sustainabilityAlignment" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SavePerspectiveAsync">حفظ منظور</button><button class="secondary" @onclick="SaveGoalAsync">حفظ هدف</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-chart-line"></i><div><h2>المؤشرات والمتغيرات</h2><p>إدارة المؤشرات الرئيسية والفرعية والمملوكة ومؤشرات المشاريع والبرامج.</p></div></div>
+    <div class="form-grid compact">
+        <label>الخطة<select @bind="indicatorPlanId"><option value="0">اختر الخطة</option>@foreach (var plan in plans){<option value="@plan.Id">@plan.Title</option>}</select></label>
+        <label>الهدف<select @bind="indicatorGoalId"><option value="">بدون</option>@foreach (var goal in goals){<option value="@goal.Id">@goal.Title</option>}</select></label>
+        <label>المؤشر الأب<select @bind="parentIndicatorId"><option value="">بدون</option>@foreach (var indicator in indicators.Where(x => x.Kind == StrategicIndicatorKind.Main.ToString())){<option value="@indicator.Id">@indicator.Name</option>}</select></label>
+        <label>نوع المؤشر<select @bind="indicatorKind"><option value="@StrategicIndicatorKind.Main">رئيسي</option><option value="@StrategicIndicatorKind.Sub">فرعي</option><option value="@StrategicIndicatorKind.Owned">مملوك</option><option value="@StrategicIndicatorKind.Project">مشروع</option><option value="@StrategicIndicatorKind.Program">برنامج</option></select></label>
+        <label>اسم المؤشر<input @bind="indicatorName" /></label>
+        <label>المستهدف<input type="number" step="0.01" @bind="indicatorTarget" /></label>
+        <label>المتحقق<input type="number" step="0.01" @bind="indicatorActual" /></label>
+        <label>الوحدة<input @bind="indicatorUnit" /></label>
+        <label>المالك<input @bind="indicatorOwner" /></label>
+        <label>مشروع مرتبط<input @bind="relatedProject" /></label>
+        <label>برنامج مرتبط<input @bind="relatedProgram" /></label>
+        <label>الحالة<select @bind="indicatorStatus"><option value="@StrategicIndicatorStatus.Draft">مسودة</option><option value="@StrategicIndicatorStatus.Active">نشط</option><option value="@StrategicIndicatorStatus.Achieved">محقق</option><option value="@StrategicIndicatorStatus.AtRisk">متعثر</option><option value="@StrategicIndicatorStatus.Closed">مغلق</option></select></label>
+        <label>متغير<input @bind="variableName" /></label>
+        <label>قيمة المتغير<input type="number" step="0.01" @bind="variableValue" /></label>
+        <label><input type="checkbox" @bind="isAutomated" /> مؤتمت</label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveIndicatorAsync">حفظ مؤشر</button><button class="secondary" @onclick="SaveVariableAsync">حفظ متغير</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-diagram-project"></i> خارطة وشجرة الخطة الإستراتيجية</span></div>
+    <table>
+        <thead><tr><th>الخطة</th><th>المناظير</th><th>المؤشرات</th><th>الإنجاز</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var plan in plans)
+            {
+                <tr><td>@plan.Title<br />@plan.StartDate.ToString("yyyy-MM-dd") - @plan.EndDate.ToString("yyyy-MM-dd")</td><td>@plan.PerspectivesCount</td><td>@plan.IndicatorsCount</td><td>@plan.AchievementPercent%</td><td>@plan.Status</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-chart-simple"></i> المؤشرات</span></div>
+    <table>
+        <thead><tr><th>المؤشر</th><th>النوع</th><th>الهدف</th><th>المستهدف/المتحقق</th><th>الإنجاز</th></tr></thead>
+        <tbody>
+            @foreach (var indicator in indicators)
+            {
+                <tr><td>@indicator.Name<br />@indicator.OwnerName</td><td>@indicator.Kind</td><td>@indicator.GoalTitle</td><td>@indicator.TargetValue / @indicator.ActualValue @indicator.Unit</td><td>@indicator.AchievementPercent%</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<StrategicPlanResponse> plans = [];
+    private List<StrategicPerspectiveResponse> perspectives = [];
+    private List<StrategicGoalResponse> goals = [];
+    private List<StrategicIndicatorResponse> indicators = [];
+    private string planTitle = string.Empty;
+    private DateTime startDate = DateTime.UtcNow.AddHours(3).Date;
+    private DateTime endDate = DateTime.UtcNow.AddHours(3).Date.AddYears(3);
+    private ExcellenceRecordStatus planStatus = ExcellenceRecordStatus.Active;
+    private string? vision;
+    private string? mission;
+    private int perspectivePlanId;
+    private string perspectiveName = string.Empty;
+    private int perspectiveSortOrder = 1;
+    private int goalPerspectiveId;
+    private string goalTitle = string.Empty;
+    private int goalSortOrder = 1;
+    private string? visionAlignment;
+    private string? sustainabilityAlignment;
+    private int indicatorPlanId;
+    private int? indicatorGoalId;
+    private int? parentIndicatorId;
+    private StrategicIndicatorKind indicatorKind = StrategicIndicatorKind.Main;
+    private string indicatorName = string.Empty;
+    private decimal indicatorTarget = 100;
+    private decimal indicatorActual;
+    private string indicatorUnit = "%";
+    private string? indicatorOwner;
+    private string? relatedProject;
+    private string? relatedProgram;
+    private StrategicIndicatorStatus indicatorStatus = StrategicIndicatorStatus.Active;
+    private string variableName = string.Empty;
+    private decimal variableValue;
+    private bool isAutomated = true;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        plans = await Excellence.GetStrategicPlansAsync();
+        perspectives = await Excellence.GetStrategicPerspectivesAsync();
+        goals = await Excellence.GetStrategicGoalsAsync();
+        indicators = await Excellence.GetStrategicIndicatorsAsync();
+    }
+
+    private async Task SavePlanAsync()
+    {
+        var result = await Excellence.SaveStrategicPlanAsync(null, new SaveStrategicPlanRequest(planTitle, startDate, endDate, planStatus, vision, mission, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SavePerspectiveAsync()
+    {
+        var result = await Excellence.SaveStrategicPerspectiveAsync(null, new SaveStrategicPerspectiveRequest(perspectivePlanId, perspectiveName, perspectiveSortOrder));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveGoalAsync()
+    {
+        var result = await Excellence.SaveStrategicGoalAsync(null, new SaveStrategicGoalRequest(goalPerspectiveId, goalTitle, null, visionAlignment, sustainabilityAlignment, goalSortOrder));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveIndicatorAsync()
+    {
+        var result = await Excellence.SaveStrategicIndicatorAsync(null, new SaveStrategicIndicatorRequest(indicatorPlanId, indicatorGoalId, parentIndicatorId, indicatorKind, indicatorName, indicatorTarget, indicatorActual, indicatorUnit, indicatorOwner, relatedProject, relatedProgram, indicatorStatus, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveVariableAsync()
+    {
+        var result = await Excellence.SaveStrategicVariableAsync(null, new SaveStrategicVariableRequest(indicatorPlanId, variableName, variableValue, "Manual", isAutomated));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task FetchVariablesAsync()
+    {
+        var plan = plans.FirstOrDefault();
+        if (plan is null) { success = false; message = "لا توجد خطة لتحديث المتغيرات."; return; }
+        await Excellence.FetchAutomatedStrategicVariablesAsync(plan.Id);
+        success = true;
+        message = "تم تحديث قيم التحقق المؤتمتة.";
+        await LoadAsync();
+    }
+}

@@ -1,0 +1,116 @@
+@page "/financial-development/digital-marketing"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject FinancialDevelopmentUiService FinancialDevelopment
+
+<h1 class="page-title">إدارة التسويق الإلكتروني</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-bullhorn"></i><div><h2>حملة تسويقية</h2><p>إنشاء حملة وقياس العملاء المحتملين والتبرعات الناتجة.</p></div></div>
+    <div class="form-grid compact">
+        <label>عنوان الحملة<input @bind="campaignTitle" /></label>
+        <label>القناة<select @bind="channel"><option value="@DigitalMarketingChannel.Website">الموقع</option><option value="@DigitalMarketingChannel.Sms">SMS</option><option value="@DigitalMarketingChannel.WhatsApp">واتساب</option><option value="@DigitalMarketingChannel.Email">البريد</option><option value="@DigitalMarketingChannel.SocialMedia">شبكات اجتماعية</option><option value="@DigitalMarketingChannel.SearchAds">إعلانات بحث</option><option value="@DigitalMarketingChannel.Other">أخرى</option></select></label>
+        <label>الميزانية<input type="number" step="0.01" @bind="budget" /></label>
+        <label>الجمهور المستهدف<input @bind="targetAudience" /></label>
+        <label>رابط الهبوط<input @bind="landingPageUrl" /></label>
+        <label>الحالة<select @bind="campaignStatus"><option value="@DigitalMarketingCampaignStatus.Draft">مسودة</option><option value="@DigitalMarketingCampaignStatus.Running">قيد التشغيل</option><option value="@DigitalMarketingCampaignStatus.Completed">مكتملة</option><option value="@DigitalMarketingCampaignStatus.Paused">متوقفة</option><option value="@DigitalMarketingCampaignStatus.Cancelled">ملغاة</option></select></label>
+        <label>العملاء المحتملون<input type="number" @bind="leadsCount" /></label>
+        <label>عدد التبرعات<input type="number" @bind="donationsCount" /></label>
+        <label>مبلغ التبرعات<input type="number" step="0.01" @bind="donationsAmount" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveCampaignAsync">حفظ الحملة</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-cart-shopping"></i><div><h2>السلال المتروكة</h2><p>متابعة متبرعين بدأوا التبرع ولم يكملوا الدفع.</p></div></div>
+    <div class="form-grid compact">
+        <label>الفرصة<select @bind="cartOpportunityId"><option value="">بدون</option>@foreach (var opportunity in opportunities){<option value="@opportunity.Id">@opportunity.Title</option>}</select></label>
+        <label>اسم الداعم<input @bind="cartSupporterName" /></label>
+        <label>الجوال<input @bind="cartMobile" /></label>
+        <label>المبلغ<input type="number" step="0.01" @bind="cartAmount" /></label>
+        <label>تاريخ السلة<input type="date" @bind="cartDate" /></label>
+        <label>الحالة<select @bind="cartStatus"><option value="@AbandonedDonationCartStatus.Open">مفتوحة</option><option value="@AbandonedDonationCartStatus.Contacted">تم التواصل</option><option value="@AbandonedDonationCartStatus.Recovered">مستعادة</option><option value="@AbandonedDonationCartStatus.Expired">منتهية</option></select></label>
+        <label class="span-2">ملاحظات المتابعة<input @bind="cartNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveCartAsync">حفظ السلة</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-table"></i> قاعدة بيانات الحملات</span></div>
+    <table>
+        <thead><tr><th>الحملة</th><th>القناة</th><th>الميزانية</th><th>النتائج</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var campaign in campaigns)
+            {
+                <tr><td>@campaign.Title</td><td>@campaign.Channel</td><td>@campaign.Budget</td><td>@campaign.LeadsCount عميل<br />@campaign.DonationsCount تبرع / @campaign.DonationsAmount</td><td>@campaign.Status</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-cart-arrow-down"></i> السلال المتروكة</span></div>
+    <table>
+        <thead><tr><th>الداعم</th><th>الفرصة</th><th>المبلغ</th><th>التاريخ</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var cart in carts)
+            {
+                <tr><td>@cart.SupporterName<br />@cart.Mobile</td><td>@cart.OpportunityTitle</td><td>@cart.Amount</td><td>@cart.CartDate.ToString("yyyy-MM-dd")</td><td>@cart.Status</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<DigitalMarketingCampaignResponse> campaigns = [];
+    private List<AbandonedDonationCartResponse> carts = [];
+    private List<FundraisingOpportunityResponse> opportunities = [];
+    private string campaignTitle = string.Empty;
+    private DigitalMarketingChannel channel = DigitalMarketingChannel.Website;
+    private decimal budget;
+    private string? targetAudience;
+    private string? landingPageUrl;
+    private DigitalMarketingCampaignStatus campaignStatus = DigitalMarketingCampaignStatus.Running;
+    private int leadsCount;
+    private int donationsCount;
+    private decimal donationsAmount;
+    private int? cartOpportunityId;
+    private string cartSupporterName = string.Empty;
+    private string? cartMobile;
+    private decimal cartAmount;
+    private DateTime cartDate = DateTime.UtcNow.AddHours(3).Date;
+    private AbandonedDonationCartStatus cartStatus = AbandonedDonationCartStatus.Open;
+    private string? cartNotes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        campaigns = await FinancialDevelopment.GetDigitalCampaignsAsync();
+        carts = await FinancialDevelopment.GetAbandonedCartsAsync();
+        opportunities = await FinancialDevelopment.GetOpportunitiesAsync();
+    }
+
+    private async Task SaveCampaignAsync()
+    {
+        var result = await FinancialDevelopment.SaveDigitalCampaignAsync(null, new SaveDigitalMarketingCampaignRequest(campaignTitle, channel, budget, targetAudience, landingPageUrl, DateTime.UtcNow.AddHours(3).Date, null, campaignStatus, leadsCount, donationsCount, donationsAmount, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveCartAsync()
+    {
+        var result = await FinancialDevelopment.SaveAbandonedCartAsync(null, new SaveAbandonedDonationCartRequest(cartOpportunityId, cartSupporterName, cartMobile, cartAmount, cartDate, cartStatus, cartNotes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

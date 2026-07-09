@@ -1,0 +1,92 @@
+@page "/mail/templates"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MessagingUiService Messaging
+
+<h1 class="page-title">قوالب البريد</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-file-signature"></i><div><h2>@(editId.HasValue ? "تعديل قالب" : "قالب جديد")</h2><p>القوالب تستخدم لاحقاً في البريد الداخلي والتنبيهات والبريد الخارجي.</p></div></div>
+    <div class="form-grid">
+        <label>المفتاح<input @bind="key" /></label>
+        <label>الاسم العربي<input @bind="nameAr" /></label>
+        <label>القناة<select @bind="channel"><option value="@MessageChannel.Internal">داخلي</option><option value="@MessageChannel.Email">Email</option><option value="@MessageChannel.Sms">SMS</option><option value="@MessageChannel.Push">Push</option></select></label>
+        <label class="check-row"><input type="checkbox" @bind="isActive" /> فعال</label>
+        <label class="span-2">الموضوع<input @bind="subject" /></label>
+        <label class="span-2">النص<textarea @bind="body"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ القالب</button><button class="secondary" @onclick="ResetForm">جديد</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-layer-group"></i> القوالب</span></div>
+    <table>
+        <thead><tr><th>المفتاح</th><th>الاسم</th><th>القناة</th><th>الموضوع</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var template in templates)
+            {
+                <tr>
+                    <td>@template.Key</td>
+                    <td>@template.NameAr</td>
+                    <td>@template.Channel</td>
+                    <td>@template.Subject</td>
+                    <td><span class="status @(template.IsActive ? "ok" : "warn")">@(template.IsActive ? "فعال" : "موقوف")</span></td>
+                    <td><button class="secondary" @onclick="() => Edit(template)">تعديل</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<MessageTemplateResponse> templates = [];
+    private int? editId;
+    private string key = string.Empty;
+    private string nameAr = string.Empty;
+    private string subject = string.Empty;
+    private string body = string.Empty;
+    private MessageChannel channel = MessageChannel.Internal;
+    private bool isActive = true;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => templates = await Messaging.GetTemplatesAsync();
+
+    private async Task SaveAsync()
+    {
+        var result = await Messaging.SaveTemplateAsync(editId, new UpsertMessageTemplateRequest(key, nameAr, subject, body, channel, isActive));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetForm();
+        await LoadAsync();
+    }
+
+    private void Edit(MessageTemplateResponse template)
+    {
+        editId = template.Id;
+        key = template.Key;
+        nameAr = template.NameAr;
+        subject = template.Subject;
+        body = template.Body;
+        channel = Enum.Parse<MessageChannel>(template.Channel);
+        isActive = template.IsActive;
+    }
+
+    private void ResetForm()
+    {
+        editId = null;
+        key = string.Empty;
+        nameAr = string.Empty;
+        subject = string.Empty;
+        body = string.Empty;
+        channel = MessageChannel.Internal;
+        isActive = true;
+    }
+}

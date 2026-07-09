@@ -1,0 +1,51 @@
+@page "/pr-media/design"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject PublicRelationsMediaUiService PrMedia
+
+<h1 class="page-title">تصميم الموقع والتنقل</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="form-grid compact">
+        <label>الثيم<input @bind="themeName" /></label>
+        <label>اللون<input @bind="primaryColor" /></label>
+        <label>الخط<input @bind="fontFamily" /></label>
+        <label>القالب<input @bind="templateName" /></label>
+        <label>عنوان القائمة<input @bind="label" /></label>
+        <label>الرابط<input @bind="url" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveDesignAsync">حفظ تصميم</button><button class="secondary" @onclick="SaveNavAsync">حفظ تنقل</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-palette"></i> التصميم والتنقل</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>العنوان</th><th>التفاصيل</th><th>فعال</th></tr></thead>
+        <tbody>
+            @foreach (var item in designs){<tr><td>تصميم</td><td>@item.ThemeName</td><td>@item.PrimaryColor / @item.FontFamily / @item.TemplateName</td><td>@item.IsActive</td></tr>}
+            @foreach (var item in navItems){<tr><td>تنقل</td><td>@item.Label</td><td>@item.Url / @item.Placement</td><td>@item.IsActive</td></tr>}
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<WebsiteDesignSettingResponse> designs = [];
+    private List<WebsiteNavigationItemResponse> navItems = [];
+    private string themeName = string.Empty;
+    private string primaryColor = "#0f766e";
+    private string fontFamily = "Tajawal";
+    private string templateName = "Default";
+    private string label = string.Empty;
+    private string url = "/";
+    private bool success;
+    private string? message;
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync(){ designs = await PrMedia.GetDesignSettingsAsync(); navItems = await PrMedia.GetNavigationItemsAsync(); }
+    private async Task SaveDesignAsync(){ var r = await PrMedia.SaveDesignSettingAsync(null, new SaveWebsiteDesignSettingRequest(themeName, primaryColor, fontFamily, templateName, null, true)); success = r.Success; message = r.Message; await LoadAsync(); }
+    private async Task SaveNavAsync(){ var r = await PrMedia.SaveNavigationItemAsync(null, new SaveWebsiteNavigationItemRequest(label, url, "Menu", navItems.Count + 1, true)); success = r.Success; message = r.Message; await LoadAsync(); }
+}

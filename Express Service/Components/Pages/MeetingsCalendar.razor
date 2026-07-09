@@ -1,0 +1,25 @@
+@page "/meetings/calendar"
+@attribute [Authorize(Roles = "Admin,BoardChairman,BoardSecretary")]
+@rendermode InteractiveServer
+@inject MeetingUiService UiService
+
+<h1 class="page-title">تقويم الاجتماعات</h1>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-calendar"></i> التقويم</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>العنوان</th><th>البداية</th><th>النهاية</th><th>النوع</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var item in calendar)
+            {
+                <tr><td>@item.Title</td><td>@item.StartsAt.ToString("yyyy-MM-dd HH:mm")</td><td>@item.EndsAt?.ToString("yyyy-MM-dd HH:mm")</td><td>@item.Type</td><td><span class="status">@item.Status</span></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<MeetingCalendarItemResponse> calendar = [];
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => calendar = await UiService.GetMeetingCalendarAsync();
+}

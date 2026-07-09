@@ -1,0 +1,47 @@
+@page "/tasks/redirect"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject TaskUiService Tasks
+
+<h1 class="page-title">تحويل مهمة متعثرة</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-share"></i><div><h2>تحويل المهمة</h2><p>تحويل مهمة لمستخدم آخر مع تسجيل سبب التحويل.</p></div></div>
+    <div class="form-grid">
+        <label>المهمة<select @bind="taskId">@foreach (var task in tasks){<option value="@task.Id">@task.Title - @task.AssigneeName</option>}</select></label>
+        <label>المكلف الجديد<select @bind="newAssigneeUserId">@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
+        <label class="span-2">سبب التحويل<textarea @bind="reason"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="RedirectAsync">تحويل المهمة</button></div>
+</section>
+
+@code {
+    private List<ManagementTaskResponse> tasks = [];
+    private List<UserPickerResponse> users = [];
+    private int taskId;
+    private string newAssigneeUserId = string.Empty;
+    private string reason = string.Empty;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        tasks = await Tasks.SearchTasksAsync(includeDeleted: false);
+        users = await Tasks.GetUsersAsync();
+        taskId = tasks.FirstOrDefault()?.Id ?? 0;
+        newAssigneeUserId = users.FirstOrDefault()?.Id ?? string.Empty;
+    }
+
+    private async Task RedirectAsync()
+    {
+        var result = await Tasks.RedirectTaskAsync(taskId, new RedirectTaskRequest(newAssigneeUserId, reason));
+        success = result.Success;
+        message = result.Message;
+        tasks = await Tasks.SearchTasksAsync(includeDeleted: false);
+    }
+}

@@ -1,0 +1,23 @@
+@page "/executive-supervision"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ExecutiveSupervisionUiService Executive
+
+<h1 class="page-title">الإدارة الإشرافية و التنفيذية</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-folder-tree"></i></span><span>ملفات التأسيس</span><strong class="tile-number">@(dashboard?.FoundationDocumentsCount ?? 0)</strong><span class="tile-footer">مستند</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-wallet"></i></span><span>رصيد اللجنة</span><strong class="tile-number">@(dashboard?.AidCommitteeBalance.ToString("0.##") ?? "0")</strong><span class="tile-footer">ريال</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-check-to-slot"></i></span><span>اعتمادات معلقة</span><strong class="tile-number">@(dashboard?.PendingApprovalsCount ?? 0)</strong><span class="tile-footer">طلب</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-file-invoice-dollar"></i></span><span>تعميدات معلقة</span><strong class="tile-number">@(dashboard?.PendingPaymentAuthorizationsCount ?? 0)</strong><span class="tile-footer">تعميد</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-user-tie"></i><div><h2>مسارات الإدارة التنفيذية</h2><p>التأسيس، لجنة المساعدات، الاعتمادات، تعميدات الصرف، الإشعارات والمهام، والقرارات الإدارية.</p></div></div>
+    <div class="actions-row"><a class="primary" href="/executive-supervision/foundation">التأسيس</a><a class="secondary" href="/executive-supervision/aid-committee">لجنة المساعدات</a><a class="secondary" href="/executive-supervision/approvals">الاعتمادات</a><a class="secondary" href="/executive-supervision/payment-authorizations">تعميدات الصرف</a><a class="secondary" href="/executive-supervision/decisions">القرارات</a></div>
+</section>
+
+@code {
+    private ExecutiveSupervisionDashboardResponse? dashboard;
+    protected override async Task OnInitializedAsync() => dashboard = await Executive.GetDashboardAsync();
+}

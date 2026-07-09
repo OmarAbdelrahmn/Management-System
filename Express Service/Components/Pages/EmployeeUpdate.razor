@@ -1,0 +1,98 @@
+@page "/hr/employees/update/{Id:int}"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">تحديث بيانات موظف</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+@if (loaded)
+{
+    <section class="panel">
+        <div class="panel-heading"><i class="fa-solid fa-user-pen"></i><div><h2>@fullName</h2><p>تحديث بيانات الملف الوظيفي أو إنهاء الخدمة.</p></div></div>
+        <div class="form-grid">
+            <label>الاسم الكامل<input @bind="fullName" /></label>
+            <label>الحالة<select @bind="status"><option value="@EmployeeStatus.Active">نشط</option><option value="@EmployeeStatus.OnLeave">إجازة</option><option value="@EmployeeStatus.Suspended">موقوف</option><option value="@EmployeeStatus.Terminated">منتهي الخدمة</option></select></label>
+            <label>نوع الحساب<select @bind="accountType"><option value="@EmployeeAccountType.Employee">موظف</option><option value="@EmployeeAccountType.Volunteer">متطوع</option></select></label>
+            <label>القسم<select @bind="departmentId">@foreach (var department in departments){<option value="@department.Id">@department.NameAr</option>}</select></label>
+            <label>المسمى الوظيفي<select @bind="jobTitleId">@foreach (var title in jobTitles){<option value="@title.Id">@title.NameAr</option>}</select></label>
+            <label>رقم الهوية<input @bind="nationalId" /></label>
+            <label>البريد<input @bind="email" /></label>
+            <label>الجوال<input @bind="mobile" /></label>
+            <label>تاريخ المباشرة<input type="date" @bind="hireDate" /></label>
+            <label>الراتب الأساسي<input type="number" step="0.01" @bind="basicSalary" /></label>
+            <label>البدلات<input type="number" step="0.01" @bind="allowances" /></label>
+            <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
+            <label class="span-2">سبب إنهاء الخدمة<textarea @bind="terminationReason"></textarea></label>
+        </div>
+        <div class="actions-row">
+            <button class="primary" @onclick="SaveAsync">حفظ التعديلات</button>
+            <button class="secondary" @onclick="TerminateAsync">إنهاء الخدمة</button>
+            <a class="secondary" href="/hr/employees">رجوع</a>
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private List<EmployeeDepartmentResponse> departments = [];
+    private List<JobTitleResponse> jobTitles = [];
+    private bool loaded;
+    private string fullName = string.Empty;
+    private string? nationalId;
+    private string? email;
+    private string? mobile;
+    private int departmentId;
+    private int jobTitleId;
+    private DateTime hireDate;
+    private EmployeeStatus status;
+    private EmployeeAccountType accountType;
+    private decimal basicSalary;
+    private decimal allowances;
+    private string? notes;
+    private string? terminationReason;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        departments = await HR.GetDepartmentsAsync();
+        jobTitles = await HR.GetJobTitlesAsync();
+        var employee = await HR.GetEmployeeAsync(Id);
+        if (employee is null)
+            return;
+
+        fullName = employee.FullName;
+        nationalId = employee.NationalId;
+        email = employee.Email;
+        mobile = employee.Mobile;
+        departmentId = employee.DepartmentId;
+        jobTitleId = employee.JobTitleId;
+        hireDate = employee.HireDate;
+        status = Enum.TryParse<EmployeeStatus>(employee.Status, out var parsedStatus) ? parsedStatus : EmployeeStatus.Active;
+        accountType = Enum.TryParse<EmployeeAccountType>(employee.AccountType, out var parsedAccountType) ? parsedAccountType : EmployeeAccountType.Employee;
+        basicSalary = employee.BasicSalary;
+        allowances = employee.Allowances;
+        notes = employee.Notes;
+        terminationReason = employee.TerminationReason;
+        loaded = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        var result = await HR.UpdateEmployeeAsync(Id, new UpdateEmployeeRequest(fullName, departmentId, jobTitleId, nationalId, email, mobile, hireDate, status, basicSalary, allowances, notes, accountType));
+        success = result.Success;
+        message = result.Message;
+    }
+
+    private async Task TerminateAsync()
+    {
+        var result = await HR.TerminateEmployeeAsync(Id, terminationReason ?? string.Empty);
+        success = result.Success;
+        message = result.Message;
+    }
+}

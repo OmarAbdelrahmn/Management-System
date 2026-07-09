@@ -1,0 +1,66 @@
+@page "/channels/push"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MessagingUiService Messaging
+
+<h1 class="page-title">تنبيه لحظي</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-bolt"></i><div><h2>إرسال Push داخلي</h2><p>يسجل تنبيه Push في سجل القنوات ويجهز لاحقاً للربط مع SignalR أو تطبيق الجوال.</p></div></div>
+    <div class="form-grid">
+        <label>العنوان<input @bind="title" /></label>
+        <label class="span-2">المستلمون<select multiple @bind="selectedRecipients">@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
+        <label class="span-2">النص<textarea @bind="body"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SendAsync">إرسال التنبيه</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-bolt"></i> سجل Push</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>المستلم</th><th>الموضوع</th><th>الحالة</th><th>التاريخ</th></tr></thead>
+        <tbody>
+            @foreach (var item in logs)
+            {
+                <tr><td>@item.Recipient</td><td>@item.Subject</td><td>@item.Status</td><td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<UserPickerResponse> users = [];
+    private List<ChannelDeliveryLogResponse> logs = [];
+    private string title = string.Empty;
+    private string body = string.Empty;
+    private string[] selectedRecipients = [];
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await Messaging.GetUsersAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => logs = await Messaging.GetChannelLogsAsync(MessageChannel.Push);
+
+    private async Task SendAsync()
+    {
+        var result = await Messaging.CreateNotificationAsync(new CreateNotificationRequest(title, body, MessageChannel.Push, selectedRecipients, null));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            title = string.Empty;
+            body = string.Empty;
+            selectedRecipients = [];
+        }
+        await LoadAsync();
+    }
+}

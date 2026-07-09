@@ -7,7 +7,10 @@ public interface ISystemCatalogService
 {
     Task<Result<SeedSystemCatalogResponse>> SeedFirstPagesAsync(CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<SystemModuleResponse>>> GetModulesAsync(CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<SystemPageGroupResponse>>> GetGroupsAsync(string? moduleKey = null, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<SystemPageResponse>>> GetPagesAsync(string? moduleKey = null, string? status = null, CancellationToken cancellationToken = default);
     Task<Result<SystemPageResponse>> GetPageAsync(int id, CancellationToken cancellationToken = default);
+    Task<Result<SystemPageResponse>> GetPageByKeyAsync(string key, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<SystemNavigationModuleResponse>>> GetNavigationAsync(CancellationToken cancellationToken = default);
     Task<Result> UpdatePageStatusAsync(int id, UpdateSystemPageStatusRequest request, CancellationToken cancellationToken = default);
 }

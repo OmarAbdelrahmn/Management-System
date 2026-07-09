@@ -1,7 +1,7 @@
 @page "/system/modules"
 @attribute [Authorize(Roles = "Admin")]
 @rendermode InteractiveServer
-@inject MeetingUiService UiService
+@inject SystemCatalogUiService Catalog
 
 <h1 class="page-title">خطة خدمات النظام</h1>
 
@@ -15,15 +15,16 @@
         <i class="fa-solid fa-layer-group"></i>
         <div>
             <h2>أول 50 صفحة للنظام</h2>
-            <p>هذه ليست نسخة صفحات رافد، بل خطة خدماتنا نحن، مقسمة إلى وحدات قابلة للتنفيذ واحدة تلو الأخرى.</p>
+            <p>خريطة رافد الكاملة: 18 إدارة، 84 مجموعة، و688 صفحة مع تمييز المنفذ والمخطط.</p>
         </div>
-        <button class="primary" @onclick="SeedAsync" disabled="@busy">تجهيز أول 50 صفحة</button>
+        <button class="primary" @onclick="SeedAsync" disabled="@busy">تجهيز خريطة رافد</button>
     </div>
 </section>
 
 <section class="circle-tiles" style="margin-top:14px">
     <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-boxes-stacked"></i></span><span>الوحدات</span><strong class="tile-number">@modules.Count</strong><span class="tile-footer">خدمات رئيسية</span></article>
-    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-file-lines"></i></span><span>الصفحات</span><strong class="tile-number">@modules.Sum(x => x.TotalPages)</strong><span class="tile-footer">أول دفعة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-layer-group"></i></span><span>المجموعات</span><strong class="tile-number">@modules.Sum(x => x.TotalGroups)</strong><span class="tile-footer">تقسيم رافد</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-file-lines"></i></span><span>الصفحات</span><strong class="tile-number">@modules.Sum(x => x.TotalPages)</strong><span class="tile-footer">روابط رافد</span></article>
     <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-list-check"></i></span><span>مخططة</span><strong class="tile-number">@modules.Sum(x => x.PlannedPages)</strong><span class="tile-footer">جاهزة للتحليل</span></article>
     <article class="circle-tile-content"><span class="circle-icon bg-navy"><i class="fa-solid fa-spinner"></i></span><span>قيد التنفيذ</span><strong class="tile-number">@modules.Sum(x => x.InProgressPages)</strong><span class="tile-footer">نشتغل عليها</span></article>
     <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-circle-check"></i></span><span>منفذة</span><strong class="tile-number">@modules.Sum(x => x.ImplementedPages)</strong><span class="tile-footer">جاهزة</span></article>
@@ -41,13 +42,14 @@
     else
     {
         <table>
-            <thead><tr><th>الوحدة</th><th>الوصف</th><th>الإجمالي</th><th>مخطط</th><th>قيد التنفيذ</th><th>منفذ</th><th>إجراء</th></tr></thead>
+            <thead><tr><th>الوحدة</th><th>الوصف</th><th>المجموعات</th><th>الصفحات</th><th>مخطط</th><th>قيد التنفيذ</th><th>منفذ</th><th>إجراء</th></tr></thead>
             <tbody>
                 @foreach (var module in modules)
                 {
                     <tr>
                         <td>@module.NameAr</td>
                         <td>@module.Description</td>
+                        <td>@module.TotalGroups</td>
                         <td>@module.TotalPages</td>
                         <td><span class="status warn">@module.PlannedPages</span></td>
                         <td><span class="status">@module.InProgressPages</span></td>
@@ -65,13 +67,15 @@
     <section class="table-section">
         <div class="table-title"><span><i class="fa-solid fa-file-lines"></i> صفحات @selectedModuleKey</span></div>
         <table>
-            <thead><tr><th>الصفحة</th><th>المسار</th><th>الخدمة</th><th>الحالة</th><th>إجراء</th></tr></thead>
+            <thead><tr><th>المجموعة</th><th>الصفحة</th><th>المسار</th><th>الأصل</th><th>الخدمة</th><th>الحالة</th><th>إجراء</th></tr></thead>
             <tbody>
                 @foreach (var systemPage in pages)
                 {
                     <tr>
+                        <td>@systemPage.GroupName</td>
                         <td>@systemPage.NameAr</td>
                         <td>@systemPage.Route</td>
+                        <td>@systemPage.OriginalHref</td>
                         <td>@systemPage.ServiceName</td>
                         <td><span class="status">@systemPage.Status</span></td>
                         <td><a class="secondary" href="@($"/system/page/{systemPage.Id}")">فتح الخطة</a></td>
@@ -94,15 +98,15 @@
 
     private async Task LoadAsync()
     {
-        modules = await UiService.GetSystemModulesAsync();
+        modules = await Catalog.GetModulesAsync();
         if (!string.IsNullOrWhiteSpace(selectedModuleKey))
-            pages = await UiService.GetSystemPagesAsync(selectedModuleKey);
+            pages = await Catalog.GetPagesAsync(selectedModuleKey);
     }
 
     private async Task SeedAsync()
     {
         busy = true;
-        var result = await UiService.SeedSystemCatalogAsync();
+        var result = await Catalog.SeedSystemCatalogAsync();
         success = result.Success;
         message = result.Message;
         await LoadAsync();
@@ -112,6 +116,6 @@
     private async Task SelectModuleAsync(string key)
     {
         selectedModuleKey = key;
-        pages = await UiService.GetSystemPagesAsync(key);
+        pages = await Catalog.GetPagesAsync(key);
     }
 }

@@ -1,0 +1,59 @@
+@page "/tasks/create"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject TaskUiService Tasks
+
+<h1 class="page-title">إنشاء مهمة</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-square-plus"></i><div><h2>مهمة جديدة</h2><p>إنشاء مهمة وربطها بمستخدم ومسار زمني وحالة متابعة.</p></div></div>
+    <div class="form-grid">
+        <label>عنوان المهمة<input @bind="title" /></label>
+        <label>المكلف<select @bind="assigneeUserId">@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
+        <label>الأولوية<select @bind="priority"><option value="@ManagementTaskPriority.Low">منخفضة</option><option value="@ManagementTaskPriority.Normal">عادية</option><option value="@ManagementTaskPriority.High">عالية</option><option value="@ManagementTaskPriority.Urgent">عاجلة</option></select></label>
+        <label>تاريخ الاستحقاق<input type="datetime-local" @bind="dueAt" /></label>
+        <label>نوع الربط<input @bind="relatedType" placeholder="Meeting / Member / General" /></label>
+        <label>رقم المرجع<input type="number" @bind="relatedId" /></label>
+        <label class="span-2">الوصف<textarea @bind="description"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">إنشاء المهمة</button><a class="secondary" href="/tasks/database">قاعدة بيانات المهام</a></div>
+</section>
+
+@code {
+    private List<UserPickerResponse> users = [];
+    private string title = string.Empty;
+    private string? description;
+    private string assigneeUserId = string.Empty;
+    private DateTime? dueAt;
+    private ManagementTaskPriority priority = ManagementTaskPriority.Normal;
+    private string? relatedType;
+    private int? relatedId;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await Tasks.GetUsersAsync();
+        assigneeUserId = users.FirstOrDefault()?.Id ?? string.Empty;
+    }
+
+    private async Task SaveAsync()
+    {
+        var result = await Tasks.CreateTaskAsync(new CreateManagementTaskRequest(title, description, assigneeUserId, dueAt, priority, relatedType, relatedId));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            title = string.Empty;
+            description = null;
+            relatedType = null;
+            relatedId = null;
+            dueAt = null;
+        }
+    }
+}

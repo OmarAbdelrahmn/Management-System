@@ -1,0 +1,33 @@
+@page "/beneficiary-services"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject BeneficiaryServicesUiService Services
+
+<h1 class="page-title">إدارة خدمات المستفيدين</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-hand-holding-heart"></i></span><span>طلبات الإعانة</span><strong class="tile-number">@(dashboard?.AidRequestsCount ?? 0)</strong><span class="tile-footer">إجمالي</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-clock"></i></span><span>بانتظار إجراء</span><strong class="tile-number">@(dashboard?.PendingAidRequestsCount ?? 0)</strong><span class="tile-footer">طلبات</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-money-check"></i></span><span>أوامر الصرف</span><strong class="tile-number">@(dashboard?.PaymentOrdersCount ?? 0)</strong><span class="tile-footer">أوامر</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-ticket"></i></span><span>القسائم</span><strong class="tile-number">@(dashboard?.CouponRequestsCount ?? 0)</strong><span class="tile-footer">سجلات</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-gear"></i><div><h2>عمليات خدمات المستفيدين</h2><p>طلبات الإعانة، أوامر الصرف، الكفالات، طلبات الجهات، والقسائم الشرائية.</p></div></div>
+    <div class="actions-row">
+        <a class="primary" href="/beneficiary-services/aid-requests">طلبات الإعانة</a>
+        <a class="secondary" href="/beneficiary-services/payment-orders">أوامر الصرف</a>
+        <a class="secondary" href="/beneficiary-services/sponsorships">الكفالات</a>
+        <a class="secondary" href="/beneficiary-services/entity-supports">طلبات الجهات</a>
+        <a class="secondary" href="/beneficiary-services/coupons">القسائم الشرائية</a>
+    </div>
+</section>
+
+@code {
+    private BeneficiaryServicesDashboardResponse? dashboard;
+
+    protected override async Task OnInitializedAsync()
+    {
+        dashboard = await Services.GetDashboardAsync();
+    }
+}

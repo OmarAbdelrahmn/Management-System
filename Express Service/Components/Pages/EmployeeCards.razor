@@ -1,0 +1,71 @@
+@page "/hr/cards"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">إصدار بطاقات الموظفين</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-id-card"></i><div><h2>بطاقة موظف</h2><p>إصدار بطاقة موظف أو بطاقة تستاهل.</p></div></div>
+    <div class="form-grid compact">
+        <label>الموظف<select @bind="employeeId">@foreach (var employee in employees){<option value="@employee.Id">@employee.FullName</option>}</select></label>
+        <label>نوع البطاقة<select @bind="cardType"><option>بطاقة موظف</option><option>بطاقة تستاهل</option></select></label>
+        <label>رقم البطاقة<input @bind="cardNumber" placeholder="يولد تلقائياً عند تركه فارغاً" /></label>
+        <label>تاريخ الإصدار<input type="date" @bind="issuedAt" /></label>
+        <label>تاريخ الانتهاء<input type="date" @bind="expiresAt" /></label>
+        <label class="span-2">ملاحظات<input @bind="notes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">إصدار البطاقة</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-address-card"></i> البطاقات الصادرة</span></div>
+    <table>
+        <thead><tr><th>الموظف</th><th>النوع</th><th>الرقم</th><th>الإصدار</th><th>الانتهاء</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var item in cards)
+            {
+                <tr><td>@item.EmployeeName</td><td>@item.CardType</td><td>@item.CardNumber</td><td>@item.IssuedAt.ToString("yyyy-MM-dd")</td><td>@item.ExpiresAt?.ToString("yyyy-MM-dd")</td><td><span class="status">@item.Status</span></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EmployeeResponse> employees = [];
+    private List<EmployeeCardIssueResponse> cards = [];
+    private int employeeId;
+    private string cardType = "بطاقة موظف";
+    private string? cardNumber;
+    private DateTime? issuedAt = DateTime.UtcNow.AddHours(3).Date;
+    private DateTime? expiresAt = DateTime.UtcNow.AddHours(3).Date.AddYears(1);
+    private string? notes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        employees = await HR.SearchEmployeesAsync(null, null, null, null);
+        employeeId = employees.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => cards = await HR.GetCardIssuesAsync(null, null);
+
+    private async Task SaveAsync()
+    {
+        var result = await HR.IssueCardAsync(new IssueEmployeeCardRequest(employeeId, cardType, cardNumber, issuedAt, expiresAt, notes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            cardNumber = null;
+            await LoadAsync();
+        }
+    }
+}

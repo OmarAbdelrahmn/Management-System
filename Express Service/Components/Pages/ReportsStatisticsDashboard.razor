@@ -1,0 +1,23 @@
+@page "/reports-statistics"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ReportsStatisticsUiService Reports
+
+<h1 class="page-title">إدارة التقارير و الإحصائيات</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-file-lines"></i></span><span>التقارير</span><strong class="tile-number">@(dashboard?.ReportDefinitionsCount ?? 0)</strong><span class="tile-footer">تعريف</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-chart-pie"></i></span><span>الإحصائيات</span><strong class="tile-number">@(dashboard?.StatisticDefinitionsCount ?? 0)</strong><span class="tile-footer">لوحة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-clock-rotate-left"></i></span><span>التشغيلات</span><strong class="tile-number">@(dashboard?.RunsCount ?? 0)</strong><span class="tile-footer">سجل</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-calendar-check"></i></span><span>آخر توليد</span><strong class="tile-number">@(dashboard?.LastGeneratedAt?.ToString("MM-dd") ?? "-")</strong><span class="tile-footer">تاريخ</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-chart-column"></i><div><h2>كتالوج التقارير</h2><p>تقارير النظام وإحصائياته عبر المستفيدين، الموارد البشرية، البرامج، المالية، الإعلام، المتابعة، والتسويق.</p></div></div>
+    <div class="actions-row"><a class="primary" href="/reports-statistics/catalog">تقارير النظام</a><a class="secondary" href="/reports-statistics/statistics">إحصائيات النظام</a></div>
+</section>
+
+@code {
+    private ReportsStatisticsDashboardResponse? dashboard;
+    protected override async Task OnInitializedAsync() => dashboard = await Reports.GetDashboardAsync();
+}

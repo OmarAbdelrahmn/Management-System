@@ -1,0 +1,30 @@
+@page "/electronic-office/services"
+@page "/electronic-office/mail-preferences"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ElectronicOfficeUiService Office
+
+<h1 class="page-title">الخدمات المكتبية</h1>
+@if (!string.IsNullOrWhiteSpace(message)){<section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>}
+<section class="panel"><div class="panel-heading"><i class="fa-solid fa-clock"></i><div><h2>حضور ومذكرات</h2><p>الحضور والانصراف، المذكرات الشخصية، نتيجة الأعمال، المسائلات والإنذارات، تغيير كلمة المرور، وتفضيلات البريد.</p></div></div><div class="form-grid compact"><label>الموظف<input @bind="employeeName" /></label><label>نوع الحضور<select @bind="attendanceType"><option value="@OfficeAttendanceType.CheckIn">حضور</option><option value="@OfficeAttendanceType.CheckOut">انصراف</option></select></label><label>وقت الحضور<input type="datetime-local" @bind="attendanceAt" /></label><label>حالة السجل<select @bind="recordStatus"><option value="@OfficeRecordStatus.Approved">معتمد</option><option value="@OfficeRecordStatus.Pending">معلق</option><option value="@OfficeRecordStatus.RejectedWithNote">مرفوض بملاحظة</option></select></label><label>مالك المذكرة<input @bind="ownerName" /></label><label>عنوان المذكرة<input @bind="reminderTitle" /></label><label>استحقاق المذكرة<input type="datetime-local" @bind="dueAt" /></label><label class="span-2">ملاحظات<input @bind="notes" /></label></div><div class="actions-row"><button class="primary" @onclick="SaveAttendanceAsync">حفظ حضور</button><button class="secondary" @onclick="SaveReminderAsync">حفظ مذكرة</button><button class="secondary" @onclick="LoadPendingRemindersAsync">المذكرات المفتوحة</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div></section>
+<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-clock"></i> سجلات الحضور</span></div><table><thead><tr><th>الموظف</th><th>النوع</th><th>الوقت</th><th>الحالة</th></tr></thead><tbody>@foreach (var item in attendance){<tr><td>@item.EmployeeName</td><td>@item.AttendanceType</td><td>@item.AttendanceAt.ToString("yyyy-MM-dd HH:mm")</td><td>@item.Status<br />@item.Notes</td></tr>}</tbody></table></section>
+<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-bell"></i> المذكرات</span></div><table><thead><tr><th>المالك</th><th>العنوان</th><th>الاستحقاق</th><th>الحالة</th></tr></thead><tbody>@foreach (var item in reminders){<tr><td>@item.OwnerName</td><td>@item.Title</td><td>@item.DueAt.ToString("yyyy-MM-dd HH:mm")</td><td>@item.Status<br />@item.Notes</td></tr>}</tbody></table></section>
+@code {
+    private List<OfficeAttendanceResponse> attendance = [];
+    private List<OfficeReminderResponse> reminders = [];
+    private string employeeName = string.Empty;
+    private OfficeAttendanceType attendanceType = OfficeAttendanceType.CheckIn;
+    private DateTime attendanceAt = DateTime.UtcNow.AddHours(3);
+    private OfficeRecordStatus recordStatus = OfficeRecordStatus.Approved;
+    private string ownerName = string.Empty;
+    private string reminderTitle = string.Empty;
+    private DateTime dueAt = DateTime.UtcNow.AddHours(3).AddDays(1);
+    private string? notes;
+    private bool success;
+    private string? message;
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync(){ attendance = await Office.GetAttendanceAsync(); reminders = await Office.GetRemindersAsync(); }
+    private async Task LoadPendingRemindersAsync() => reminders = await Office.GetRemindersAsync(OfficeRecordStatus.Pending);
+    private async Task SaveAttendanceAsync(){ var result = await Office.SaveAttendanceAsync(new SaveOfficeAttendanceRequest(employeeName, attendanceType, attendanceAt, recordStatus, notes)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task SaveReminderAsync(){ var result = await Office.SaveReminderAsync(null, new SaveOfficeReminderRequest(ownerName, reminderTitle, dueAt, OfficeRecordStatus.Pending, notes)); success = result.Success; message = result.Message; await LoadAsync(); }
+}

@@ -1,0 +1,81 @@
+@page "/beneficiary-services/entity-supports"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject BeneficiaryServicesUiService Services
+@inject BeneficiaryUiService Beneficiaries
+
+<h1 class="page-title">إدارة طلبات الجهات</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-building-user"></i><div><h2>طلب جهة</h2><p>طلبات دعم الجهات الداخلية والخارجية.</p></div></div>
+    <div class="form-grid compact">
+        <label>الجهة<select @bind="entityIdText"><option value="">بدون جهة</option>@foreach (var entity in entities){<option value="@entity.Id">@entity.NameAr</option>}</select></label>
+        <label>اسم مقدم الطلب<input @bind="requesterName" /></label>
+        <label>نوع الدعم<input @bind="supportType" /></label>
+        <label>المبلغ<input type="number" step="0.01" @bind="amount" /></label>
+        <label><input type="checkbox" @bind="isExternal" /> من الموقع</label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الطلب</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> طلبات الجهات</span></div>
+    <table>
+        <thead><tr><th>الجهة</th><th>مقدم الطلب</th><th>نوع الدعم</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var item in supports)
+            {
+                <tr>
+                    <td>@item.EntityName</td>
+                    <td>@item.RequesterName</td>
+                    <td>@item.SupportType</td>
+                    <td>@item.Amount</td>
+                    <td>@item.Status</td>
+                    <td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, EntitySupportStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, EntitySupportStatus.Rejected))">رفض</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<BeneficiaryEntityResponse> entities = [];
+    private List<EntitySupportResponse> supports = [];
+    private string entityIdText = string.Empty;
+    private string requesterName = string.Empty;
+    private string supportType = string.Empty;
+    private decimal amount;
+    private bool isExternal;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        entities = await Beneficiaries.GetEntitiesAsync(status: BeneficiaryEntityStatus.Active);
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => supports = await Services.GetEntitySupportsAsync();
+
+    private async Task SaveAsync()
+    {
+        var entityId = int.TryParse(entityIdText, out var value) ? value : (int?)null;
+        var result = await Services.SaveEntitySupportAsync(null, new SaveEntitySupportRequest(entityId, requesterName, supportType, amount, isExternal));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task DecideAsync(int id, EntitySupportStatus status)
+    {
+        var result = await Services.DecideEntitySupportAsync(id, status, null);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

@@ -1,0 +1,26 @@
+@page "/movement-maintenance"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MovementMaintenanceUiService Movement
+
+<h1 class="page-title">إدارة الحركة و الصيانة</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-car"></i></span><span>السيارات</span><strong class="tile-number">@(dashboard?.VehiclesCount ?? 0)</strong><span class="tile-footer">إجمالي</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-circle-check"></i></span><span>متاحة</span><strong class="tile-number">@(dashboard?.AvailableVehiclesCount ?? 0)</strong><span class="tile-footer">سيارة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-right-left"></i></span><span>حركة نشطة</span><strong class="tile-number">@(dashboard?.ActiveAssignmentsCount ?? 0)</strong><span class="tile-footer">تسليم</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-screwdriver-wrench"></i></span><span>صيانة مفتوحة</span><strong class="tile-number">@(dashboard?.OpenMaintenanceRequestsCount ?? 0)</strong><span class="tile-footer">طلب</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-screwdriver-wrench"></i><div><h2>عمليات الحركة والصيانة</h2><p>إدارة السيارات، طلبات توفير السيارات، التسليم والاستلام، وسجلات الصيانة.</p></div></div>
+    <div class="actions-row">
+        <a class="primary" href="/movement-maintenance/fleet">إدارة الحركة</a>
+        <a class="secondary" href="/movement-maintenance/maintenance">إدارة الصيانة</a>
+    </div>
+</section>
+
+@code {
+    private MovementMaintenanceDashboardResponse? dashboard;
+    protected override async Task OnInitializedAsync() => dashboard = await Movement.GetDashboardAsync();
+}

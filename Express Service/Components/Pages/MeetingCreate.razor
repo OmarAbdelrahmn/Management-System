@@ -1,0 +1,66 @@
+@page "/meetings/create"
+@attribute [Authorize(Roles = "Admin,BoardSecretary")]
+@rendermode InteractiveServer
+@inject MeetingUiService UiService
+
+<h1 class="page-title">إنشاء اجتماع</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-calendar-plus"></i><div><h2>بيانات الاجتماع</h2><p>إنشاء اجتماع حقيقي مرتبط بدورة مجلس فعالة.</p></div></div>
+    @if (cycles.Count == 0)
+    {
+        <div class="panel-body">لا توجد دورة مجلس فعالة.</div>
+    }
+    else
+    {
+        <div class="form-grid">
+            <label>دورة المجلس<select @bind="boardCycleId">@foreach (var cycle in cycles){<option value="@cycle.Id">@cycle.BoardName - الدورة @cycle.CycleNumber</option>}</select></label>
+            <label>العنوان<input @bind="title" /></label>
+            <label>موعد الاجتماع<input type="datetime-local" @bind="scheduledAt" /></label>
+            <label>مهلة القبول<input type="number" @bind="deadlineDays" /></label>
+            <label>النوع<select @bind="type"><option value="@MeetingType.General">عام</option><option value="@MeetingType.Board">مجلس إدارة</option><option value="@MeetingType.Assembly">جمعية عمومية</option></select></label>
+            <label>المكان<input @bind="location" /></label>
+            <label>المنصة<input @bind="platform" /></label>
+            <label>المدة بالدقائق<input type="number" @bind="durationMinutes" /></label>
+            <label class="check-row"><input type="checkbox" @bind="isOnline" /> إلكتروني</label>
+            <label class="check-row"><input type="checkbox" @bind="hasVoting" /> التصويت مفعل</label>
+        </div>
+        <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الاجتماع</button><a class="secondary" href="/meetings/secretary">تجهيز كامل</a></div>
+    }
+</section>
+
+@code {
+    private List<BoardCycleOption> cycles = [];
+    private int boardCycleId;
+    private string title = string.Empty;
+    private DateTime scheduledAt = DateTime.Now.AddDays(7);
+    private int deadlineDays = 15;
+    private MeetingType type = MeetingType.Board;
+    private bool isOnline;
+    private bool hasVoting = true;
+    private string? location;
+    private string? platform;
+    private int? durationMinutes = 90;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cycles = await UiService.GetBoardCyclesAsync();
+        boardCycleId = cycles.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private async Task SaveAsync()
+    {
+        var result = await UiService.CreateMeetingAsync(new CreateMeetingRequest(boardCycleId, title, scheduledAt, deadlineDays, 0, type, null, MeetingImportance.Normal, hasVoting, isOnline, platform, location, false, null, durationMinutes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            title = string.Empty;
+    }
+}

@@ -1,0 +1,40 @@
+@page "/channels/email-log"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject MessagingUiService Messaging
+
+<h1 class="page-title">سجل البريد</h1>
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-envelope-circle-check"></i><div><h2>Email Outbox</h2><p>يعرض رسائل البريد الخارجي المحفوظة للإرسال عبر Hangfire/SMTP.</p></div></div>
+    <div class="form-grid compact">
+        <label>الحالة<select @bind="sentText"><option value="">الكل</option><option value="false">بانتظار الإرسال</option><option value="true">مرسلة</option></select></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-at"></i> سجل البريد الخارجي</span></div>
+    <table>
+        <thead><tr><th>إلى</th><th>الموضوع</th><th>الحالة</th><th>الخطأ</th><th>أنشئت</th><th>أرسلت</th></tr></thead>
+        <tbody>
+            @foreach (var item in emails)
+            {
+                <tr><td>@item.ToEmail</td><td>@item.Subject</td><td><span class="status @(item.Sent ? "ok" : "warn")">@(item.Sent ? "مرسلة" : "معلقة")</span></td><td>@item.Error</td><td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td><td>@item.SentAt?.ToString("yyyy-MM-dd HH:mm")</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EmailOutboxResponse> emails = [];
+    private string sentText = string.Empty;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var sent = bool.TryParse(sentText, out var parsed) ? parsed : (bool?)null;
+        emails = await Messaging.GetEmailOutboxAsync(sent);
+    }
+}

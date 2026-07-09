@@ -1,0 +1,29 @@
+@page "/accounting"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject AccountingUiService Accounting
+
+<h1 class="page-title">إدارة المحاسبة</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-list"></i></span><span>الحسابات</span><strong class="tile-number">@(dashboard?.AccountsCount ?? 0)</strong><span class="tile-footer">الدليل</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-arrow-trend-up"></i></span><span>المقبوضات</span><strong class="tile-number">@(dashboard?.PostedIncome ?? 0)</strong><span class="tile-footer">مرحلة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-arrow-trend-down"></i></span><span>المصروفات</span><strong class="tile-number">@(dashboard?.PostedExpenses ?? 0)</strong><span class="tile-footer">مرحلة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-calendar"></i></span><span>آجل</span><strong class="tile-number">@(dashboard?.DeferredDue ?? 0)</strong><span class="tile-footer">متبقي</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-vault"></i><div><h2>عمليات المحاسبة</h2><p>النظام المحاسبي، المقبوضات، المصروفات، الرواتب، المراجعة، التقارير والموازنة.</p></div></div>
+    <div class="actions-row">
+        <a class="primary" href="/accounting/setup">النظام المحاسبي</a>
+        <a class="secondary" href="/accounting/receipts">المقبوضات والمطالبات</a>
+        <a class="secondary" href="/accounting/expenses">المصروفات والرواتب</a>
+        <a class="secondary" href="/accounting/revision">المراجعة والأرشيف</a>
+        <a class="secondary" href="/accounting/reports">التقارير والموازنة</a>
+    </div>
+</section>
+
+@code {
+    private AccountingDashboardResponse? dashboard;
+    protected override async Task OnInitializedAsync() => dashboard = await Accounting.GetDashboardAsync();
+}

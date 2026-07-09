@@ -1,0 +1,45 @@
+@page "/tasks/complete"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject TaskUiService Tasks
+
+<h1 class="page-title">إنجاز مهمة</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-circle-check"></i><div><h2>تسجيل إنجاز</h2><p>اختر المهمة وسجل ملاحظة الإنجاز ونسبة الإنجاز.</p></div></div>
+    <div class="form-grid">
+        <label>المهمة<select @bind="taskId">@foreach (var task in tasks){<option value="@task.Id">@task.Title - @task.AssigneeName</option>}</select></label>
+        <label>نسبة الإنجاز<input type="number" min="0" max="100" @bind="progress" /></label>
+        <label class="span-2">ملاحظة الإنجاز<textarea @bind="note"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="CompleteAsync">تسجيل الإنجاز</button></div>
+</section>
+
+@code {
+    private List<ManagementTaskResponse> tasks = [];
+    private int taskId;
+    private int progress = 100;
+    private string? note;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        tasks = await Tasks.SearchTasksAsync(includeDeleted: false);
+        taskId = tasks.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private async Task CompleteAsync()
+    {
+        var result = await Tasks.CompleteTaskAsync(taskId, new CompleteTaskRequest(progress, note));
+        success = result.Success;
+        message = result.Message;
+        tasks = await Tasks.SearchTasksAsync(includeDeleted: false);
+        taskId = tasks.FirstOrDefault()?.Id ?? 0;
+    }
+}

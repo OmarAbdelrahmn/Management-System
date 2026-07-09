@@ -17,12 +17,30 @@ public class SystemModule : IAuditable
     public string NameAr { get; set; } = string.Empty;
     public string NameEn { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string? IconCss { get; set; }
     public int Priority { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
     public string? CreatedByUserId { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string? UpdatedByUserId { get; set; }
 
+    public ICollection<SystemPageGroup> Groups { get; set; } = new List<SystemPageGroup>();
+    public ICollection<SystemPage> Pages { get; set; } = new List<SystemPage>();
+}
+
+public class SystemPageGroup : IAuditable
+{
+    public int Id { get; set; }
+    public int SystemModuleId { get; set; }
+    public string Key { get; set; } = string.Empty;
+    public string NameAr { get; set; } = string.Empty;
+    public int SortOrder { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
+    public string? CreatedByUserId { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedByUserId { get; set; }
+
+    public SystemModule? SystemModule { get; set; }
     public ICollection<SystemPage> Pages { get; set; } = new List<SystemPage>();
 }
 
@@ -30,6 +48,7 @@ public class SystemPage : IAuditable
 {
     public int Id { get; set; }
     public int SystemModuleId { get; set; }
+    public int? SystemPageGroupId { get; set; }
     public string Key { get; set; } = string.Empty;
     public string NameAr { get; set; } = string.Empty;
     public string Route { get; set; } = string.Empty;
@@ -37,6 +56,8 @@ public class SystemPage : IAuditable
     public string ServiceName { get; set; } = string.Empty;
     public string ServicePlan { get; set; } = string.Empty;
     public string UiPlan { get; set; } = string.Empty;
+    public string? OriginalHref { get; set; }
+    public string? OriginalIcon { get; set; }
     public SystemPageStatus Status { get; set; } = SystemPageStatus.Planned;
     public int SortOrder { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
@@ -45,4 +66,5 @@ public class SystemPage : IAuditable
     public string? UpdatedByUserId { get; set; }
 
     public SystemModule? SystemModule { get; set; }
+    public SystemPageGroup? SystemPageGroup { get; set; }
 }

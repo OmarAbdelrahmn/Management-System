@@ -1,0 +1,25 @@
+@page "/admin/audit-log"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+@inject AdminUiService Admin
+
+<h1 class="page-title">سجل التدقيق</h1>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-clipboard-list"></i> آخر عمليات النظام</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>المستخدم</th><th>الإجراء</th><th>الكيان</th><th>المعرف</th><th>التفاصيل</th><th>التاريخ</th></tr></thead>
+        <tbody>
+            @foreach (var item in logs)
+            {
+                <tr><td>@item.ActorUserId</td><td>@item.Action</td><td>@item.EntityName</td><td>@item.EntityId</td><td>@item.Details</td><td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<AuditLogResponse> logs = [];
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => logs = await Admin.GetAuditLogsAsync();
+}

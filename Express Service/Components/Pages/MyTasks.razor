@@ -1,0 +1,38 @@
+@page "/tasks/mine"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inject TaskUiService Tasks
+
+<h1 class="page-title">مهامي</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-list-check"></i></span><span>مهامي</span><strong class="tile-number">@items.Count</strong><span class="tile-footer">مفتوحة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-triangle-exclamation"></i></span><span>متعثرة</span><strong class="tile-number">@items.Count(x => x.Status == "Blocked")</strong><span class="tile-footer">تحتاج متابعة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-check"></i></span><span>قيد العمل</span><strong class="tile-number">@items.Count(x => x.Status == "InProgress" || x.Status == "New")</strong><span class="tile-footer">نشطة</span></article>
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-user-check"></i> قائمة مهامي</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>المهمة</th><th>الأولوية</th><th>الحالة</th><th>الاستحقاق</th><th>الإنجاز</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var item in items)
+            {
+                <tr>
+                    <td>@item.Title</td>
+                    <td>@item.Priority</td>
+                    <td><span class="status">@item.Status</span></td>
+                    <td>@item.DueAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@item.ProgressPercentage%</td>
+                    <td><a class="primary" href="/tasks/complete">إنجاز</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ManagementTaskResponse> items = [];
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => items = await Tasks.GetMyTasksAsync();
+}

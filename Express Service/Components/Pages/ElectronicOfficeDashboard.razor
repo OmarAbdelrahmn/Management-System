@@ -1,0 +1,23 @@
+@page "/electronic-office"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ElectronicOfficeUiService Office
+
+<h1 class="page-title">المكتب الإلكتروني</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-clock"></i></span><span>الحضور</span><strong class="tile-number">@(dashboard?.AttendanceCount ?? 0)</strong><span class="tile-footer">سجل</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-bell"></i></span><span>مذكرات مفتوحة</span><strong class="tile-number">@(dashboard?.OpenRemindersCount ?? 0)</strong><span class="tile-footer">مذكرة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-file-signature"></i></span><span>طلبات معلقة</span><strong class="tile-number">@(dashboard?.PendingRequestsCount ?? 0)</strong><span class="tile-footer">طلب</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-diagram-project"></i></span><span>معاملات جارية</span><strong class="tile-number">@(dashboard?.ActiveTransactionsCount ?? 0)</strong><span class="tile-footer">معاملة</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-computer"></i><div><h2>خدمات المكتب</h2><p>الخدمات المكتبية، المكتب الإداري، تفضيلات البريد، الطلبات الإدارية، المعاملات الداخلية، والتقارير والسجلات.</p></div></div>
+    <div class="actions-row"><a class="primary" href="/electronic-office/services">الخدمات المكتبية</a><a class="secondary" href="/electronic-office/admin-office">المكتب الإداري</a><a class="secondary" href="/electronic-office/requests">الطلبات الإدارية</a><a class="secondary" href="/electronic-office/transactions">المعاملات الداخلية</a><a class="secondary" href="/electronic-office/reports">التقارير والسجلات</a></div>
+</section>
+
+@code {
+    private ElectronicOfficeDashboardResponse? dashboard;
+    protected override async Task OnInitializedAsync() => dashboard = await Office.GetDashboardAsync();
+}

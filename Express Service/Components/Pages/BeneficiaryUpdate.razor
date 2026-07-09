@@ -1,0 +1,173 @@
+@page "/beneficiaries/update"
+@page "/beneficiaries/update/{Id:int}"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject BeneficiaryUiService Beneficiaries
+
+<h1 class="page-title">تحديث ملف مستفيد</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-user-pen"></i><div><h2>اختيار ملف</h2><p>ابحث عن الملف ثم افتح شاشة التحديث أو الأرشفة.</p></div></div>
+    <div class="form-grid compact">
+        <label>بحث<input @bind="search" placeholder="اسم، رقم ملف، هوية، جوال" /></label>
+        <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="Active">نشط</option><option value="Suspended">موقوف</option><option value="Archived">مؤرشف</option><option value="Deleted">محذوف</option></select></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SearchAsync">بحث</button><a class="secondary" href="/beneficiaries/create">إضافة ملف</a></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-folder-tree"></i> نتائج البحث</span></div>
+    <table>
+        <thead><tr><th>رقم الملف</th><th>الاسم</th><th>الجوال</th><th>الفئة</th><th>الحالة</th><th>فتح</th></tr></thead>
+        <tbody>
+            @foreach (var profile in profiles)
+            {
+                <tr>
+                    <td>@profile.BeneficiaryNumber</td>
+                    <td>@profile.FullName</td>
+                    <td>@profile.Mobile</td>
+                    <td>@profile.Category @profile.Grade</td>
+                    <td><span class="status">@profile.Status</span></td>
+                    <td><a class="secondary" href="@($"/beneficiaries/update/{profile.Id}")">تعديل</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@if (loaded)
+{
+    <section class="panel" style="margin-top:14px">
+        <div class="panel-heading"><i class="fa-solid fa-pen-to-square"></i><div><h2>@fullName</h2><p>@beneficiaryNumber - تحديث بيانات الملف وحالته.</p></div></div>
+        <div class="form-grid">
+            <label>الاسم الكامل<input @bind="fullName" /></label>
+            <label>الحالة<select @bind="status"><option value="@BeneficiaryStatus.Active">نشط</option><option value="@BeneficiaryStatus.Suspended">موقوف</option><option value="@BeneficiaryStatus.Archived">مؤرشف</option><option value="@BeneficiaryStatus.Deleted">محذوف</option></select></label>
+            <label>رقم الهوية<input @bind="nationalId" /></label>
+            <label>الجنس<input @bind="gender" /></label>
+            <label>تاريخ الميلاد<input type="date" @bind="birthDate" /></label>
+            <label>الجوال<input @bind="mobile" /></label>
+            <label>البريد<input @bind="email" /></label>
+            <label>المدينة<input @bind="city" /></label>
+            <label class="span-2">العنوان<input @bind="address" /></label>
+            <label>الفئة<input @bind="category" /></label>
+            <label>الدرجة<input @bind="grade" /></label>
+            <label>الدخل الشهري<input type="number" step="0.01" @bind="monthlyIncome" /></label>
+            <label>عدد أفراد الأسرة<input type="number" @bind="familyMembersCount" /></label>
+            <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
+            <label class="span-2">سبب الأرشفة<textarea @bind="archiveReason"></textarea></label>
+        </div>
+        <div class="actions-row">
+            <button class="primary" @onclick="SaveAsync">حفظ التحديث</button>
+            <button class="secondary" @onclick="ArchiveAsync">أرشفة الملف</button>
+            <button class="secondary" @onclick="RestoreAsync">استعادة الملف</button>
+            <a class="secondary" href="/beneficiaries">رجوع</a>
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private List<BeneficiaryResponse> profiles = [];
+    private string? search;
+    private string statusText = string.Empty;
+    private bool loaded;
+    private string beneficiaryNumber = string.Empty;
+    private string fullName = string.Empty;
+    private string? nationalId;
+    private string? gender;
+    private DateTime? birthDate;
+    private string? mobile;
+    private string? email;
+    private string? city;
+    private string? address;
+    private string? category;
+    private string? grade;
+    private BeneficiaryStatus status = BeneficiaryStatus.Active;
+    private decimal monthlyIncome;
+    private int familyMembersCount;
+    private string? notes;
+    private string? archiveReason;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await SearchAsync();
+        if (Id.HasValue)
+            await LoadAsync(Id.Value);
+    }
+
+    private async Task SearchAsync()
+    {
+        var parsedStatus = Enum.TryParse<BeneficiaryStatus>(statusText, out var value) ? value : (BeneficiaryStatus?)null;
+        profiles = await Beneficiaries.SearchAsync(search, parsedStatus);
+    }
+
+    private async Task LoadAsync(int id)
+    {
+        var profile = await Beneficiaries.GetAsync(id);
+        if (profile is null)
+            return;
+
+        beneficiaryNumber = profile.BeneficiaryNumber;
+        fullName = profile.FullName;
+        nationalId = profile.NationalId;
+        gender = profile.Gender;
+        birthDate = profile.BirthDate;
+        mobile = profile.Mobile;
+        email = profile.Email;
+        city = profile.City;
+        address = profile.Address;
+        category = profile.Category;
+        grade = profile.Grade;
+        status = Enum.TryParse<BeneficiaryStatus>(profile.Status, out var parsedStatus) ? parsedStatus : BeneficiaryStatus.Active;
+        monthlyIncome = profile.MonthlyIncome;
+        familyMembersCount = profile.FamilyMembersCount;
+        notes = profile.Notes;
+        archiveReason = profile.ArchiveReason;
+        loaded = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!Id.HasValue)
+            return;
+
+        var result = await Beneficiaries.UpdateAsync(Id.Value, new UpdateBeneficiaryRequest(fullName, nationalId, gender, birthDate, mobile, email, city, address, category, grade, status, monthlyIncome, familyMembersCount, notes));
+        success = result.Success;
+        message = result.Message;
+        await SearchAsync();
+    }
+
+    private async Task ArchiveAsync()
+    {
+        if (!Id.HasValue)
+            return;
+
+        var result = await Beneficiaries.ArchiveAsync(Id.Value, archiveReason ?? string.Empty);
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            await LoadAsync(Id.Value);
+        await SearchAsync();
+    }
+
+    private async Task RestoreAsync()
+    {
+        if (!Id.HasValue)
+            return;
+
+        var result = await Beneficiaries.RestoreAsync(Id.Value);
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            await LoadAsync(Id.Value);
+        await SearchAsync();
+    }
+}

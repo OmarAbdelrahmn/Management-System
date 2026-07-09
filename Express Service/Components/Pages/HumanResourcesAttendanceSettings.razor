@@ -1,0 +1,134 @@
+@page "/hr/attendance-settings"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">إعدادات الحضور والانصراف</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-clock-rotate-left"></i><div><h2>سياسة الحضور</h2><p>أوقات الدوام وسماحية التأخير وأيام العمل.</p></div></div>
+    <div class="form-grid compact">
+        <label>اسم السياسة<input @bind="policyName" /></label>
+        <label>بداية الدوام<input type="time" @bind="workStart" /></label>
+        <label>نهاية الدوام<input type="time" @bind="workEnd" /></label>
+        <label>سماحية بالدقائق<input type="number" @bind="graceMinutes" /></label>
+        <label class="span-2">أيام العمل<input @bind="workDays" /></label>
+        <label class="check-row"><input type="checkbox" @bind="isDefaultPolicy" /> افتراضية</label>
+        <label class="check-row"><input type="checkbox" @bind="policyActive" /> فعالة</label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SavePolicyAsync">حفظ السياسة</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-location-dot"></i><div><h2>مكان تسجيل حضور</h2><p>إدارة أماكن التسجيل ونطاق الموقع.</p></div></div>
+    <div class="form-grid compact">
+        <label>اسم الموقع<input @bind="locationName" /></label>
+        <label>خط العرض<input type="number" step="0.0000001" @bind="latitude" /></label>
+        <label>خط الطول<input type="number" step="0.0000001" @bind="longitude" /></label>
+        <label>النطاق بالمتر<input type="number" @bind="radiusMeters" /></label>
+        <label class="span-2">ملاحظات<input @bind="locationNotes" /></label>
+        <label class="check-row"><input type="checkbox" @bind="locationActive" /> فعال</label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveLocationAsync">حفظ الموقع</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-umbrella-beach"></i><div><h2>إجازة رسمية</h2><p>تعريف أيام الإجازات الرسمية.</p></div></div>
+    <div class="form-grid compact">
+        <label>اسم الإجازة<input @bind="vacationName" /></label>
+        <label>من<input type="date" @bind="vacationStart" /></label>
+        <label>إلى<input type="date" @bind="vacationEnd" /></label>
+        <label class="check-row"><input type="checkbox" @bind="vacationRecurring" /> تتكرر سنوياً</label>
+        <label class="span-2">ملاحظات<input @bind="vacationNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveVacationAsync">حفظ الإجازة الرسمية</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-list"></i> إعدادات الحضور</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>الاسم</th><th>تفاصيل</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var policy in policies)
+            {
+                <tr><td>سياسة</td><td>@policy.Name</td><td>@policy.WorkStart - @policy.WorkEnd / @policy.GraceMinutes دقيقة</td><td>@(policy.IsDefault ? "افتراضية" : policy.IsActive ? "فعالة" : "موقوفة")</td></tr>
+            }
+            @foreach (var location in locations)
+            {
+                <tr><td>موقع</td><td>@location.Name</td><td>@location.Latitude, @location.Longitude / @location.RadiusMeters م</td><td>@(location.IsActive ? "فعال" : "موقوف")</td></tr>
+            }
+            @foreach (var vacation in vacations)
+            {
+                <tr><td>إجازة رسمية</td><td>@vacation.Name</td><td>@vacation.StartsAt.ToString("yyyy-MM-dd") - @vacation.EndsAt.ToString("yyyy-MM-dd")</td><td>@(vacation.IsRecurring ? "متكررة" : "مرة واحدة")</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<AttendancePolicyResponse> policies = [];
+    private List<AttendanceLocationResponse> locations = [];
+    private List<OfficialVacationResponse> vacations = [];
+    private string policyName = "الدوام الرسمي";
+    private TimeOnly workStart = new(8, 0);
+    private TimeOnly workEnd = new(16, 0);
+    private int graceMinutes = 15;
+    private string workDays = "Sunday,Monday,Tuesday,Wednesday,Thursday";
+    private bool isDefaultPolicy = true;
+    private bool policyActive = true;
+    private string locationName = string.Empty;
+    private decimal? latitude;
+    private decimal? longitude;
+    private int radiusMeters = 100;
+    private bool locationActive = true;
+    private string? locationNotes;
+    private string vacationName = string.Empty;
+    private DateTime vacationStart = DateTime.UtcNow.AddHours(3).Date;
+    private DateTime vacationEnd = DateTime.UtcNow.AddHours(3).Date;
+    private bool vacationRecurring;
+    private string? vacationNotes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        policies = await HR.GetAttendancePoliciesAsync();
+        locations = await HR.GetAttendanceLocationsAsync();
+        vacations = await HR.GetOfficialVacationsAsync(DateTime.UtcNow.AddHours(3).Year);
+    }
+
+    private async Task SavePolicyAsync()
+    {
+        var result = await HR.SaveAttendancePolicyAsync(null, new SaveAttendancePolicyRequest(policyName, workStart.ToTimeSpan(), workEnd.ToTimeSpan(), graceMinutes, workDays, isDefaultPolicy, policyActive));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveLocationAsync()
+    {
+        var result = await HR.SaveAttendanceLocationAsync(null, new SaveAttendanceLocationRequest(locationName, latitude, longitude, radiusMeters, locationActive, locationNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            locationName = string.Empty;
+        await LoadAsync();
+    }
+
+    private async Task SaveVacationAsync()
+    {
+        var result = await HR.SaveOfficialVacationAsync(null, new SaveOfficialVacationRequest(vacationName, vacationStart, vacationEnd, vacationRecurring, vacationNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            vacationName = string.Empty;
+        await LoadAsync();
+    }
+}

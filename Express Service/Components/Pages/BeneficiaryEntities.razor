@@ -1,0 +1,126 @@
+@page "/beneficiaries/entities"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject BeneficiaryUiService Beneficiaries
+
+<h1 class="page-title">إدارة الجهات المستفيدة</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-building-user"></i><div><h2>@(selectedId.HasValue ? "تحديث جهة" : "إضافة جهة مستفيدة")</h2><p>إدارة حسابات الجهات وطلبات التسجيل الأولية.</p></div></div>
+    <div class="form-grid">
+        <label>اسم الجهة عربي<input @bind="nameAr" /></label>
+        <label>اسم الجهة إنجليزي<input @bind="nameEn" /></label>
+        <label>ممثل الجهة<input @bind="contactPerson" /></label>
+        <label>الجوال<input @bind="mobile" /></label>
+        <label>البريد<input @bind="email" /></label>
+        <label>المدينة<input @bind="city" /></label>
+        <label>الحالة<select @bind="entityStatus"><option value="@BeneficiaryEntityStatus.Pending">قيد التسجيل</option><option value="@BeneficiaryEntityStatus.Active">نشطة</option><option value="@BeneficiaryEntityStatus.Inactive">غير نشطة</option><option value="@BeneficiaryEntityStatus.Archived">مؤرشفة</option></select></label>
+        <label class="span-2">العنوان<input @bind="address" /></label>
+        <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
+    </div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">حفظ الجهة</button>
+        <button class="secondary" @onclick="NewAsync">جديد</button>
+    </div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-magnifying-glass"></i><div><h2>بحث الجهات</h2><p>عرض الجهات حسب الاسم أو الممثل أو الحالة.</p></div></div>
+    <div class="form-grid compact">
+        <label>بحث<input @bind="search" /></label>
+        <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="Pending">قيد التسجيل</option><option value="Active">نشطة</option><option value="Inactive">غير نشطة</option><option value="Archived">مؤرشفة</option></select></label>
+    </div>
+    <div class="actions-row"><button class="secondary" @onclick="LoadEntitiesAsync">بحث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-building"></i> الجهات</span></div>
+    <table>
+        <thead><tr><th>الجهة</th><th>الممثل</th><th>الجوال</th><th>المدينة</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var entity in entities)
+            {
+                <tr>
+                    <td>@entity.NameAr</td>
+                    <td>@entity.ContactPerson</td>
+                    <td>@entity.Mobile</td>
+                    <td>@entity.City</td>
+                    <td><span class="status">@entity.Status</span></td>
+                    <td><button class="secondary" @onclick="@(() => Edit(entity))">تعديل</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<BeneficiaryEntityResponse> entities = [];
+    private int? selectedId;
+    private string nameAr = string.Empty;
+    private string? nameEn;
+    private string? contactPerson;
+    private string? mobile;
+    private string? email;
+    private string? city;
+    private string? address;
+    private BeneficiaryEntityStatus entityStatus = BeneficiaryEntityStatus.Active;
+    private string? notes;
+    private string? search;
+    private string statusText = string.Empty;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadEntitiesAsync();
+
+    private async Task LoadEntitiesAsync()
+    {
+        var status = Enum.TryParse<BeneficiaryEntityStatus>(statusText, out var parsedStatus) ? parsedStatus : (BeneficiaryEntityStatus?)null;
+        entities = await Beneficiaries.GetEntitiesAsync(search, status);
+    }
+
+    private async Task SaveAsync()
+    {
+        var result = await Beneficiaries.SaveEntityAsync(selectedId, new UpsertBeneficiaryEntityRequest(nameAr, nameEn, contactPerson, mobile, email, city, address, entityStatus, notes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            await NewAsync();
+            await LoadEntitiesAsync();
+        }
+    }
+
+    private Task NewAsync()
+    {
+        selectedId = null;
+        nameAr = string.Empty;
+        nameEn = null;
+        contactPerson = null;
+        mobile = null;
+        email = null;
+        city = null;
+        address = null;
+        entityStatus = BeneficiaryEntityStatus.Active;
+        notes = null;
+        return Task.CompletedTask;
+    }
+
+    private void Edit(BeneficiaryEntityResponse entity)
+    {
+        selectedId = entity.Id;
+        nameAr = entity.NameAr;
+        nameEn = entity.NameEn;
+        contactPerson = entity.ContactPerson;
+        mobile = entity.Mobile;
+        email = entity.Email;
+        city = entity.City;
+        address = entity.Address;
+        entityStatus = Enum.TryParse<BeneficiaryEntityStatus>(entity.Status, out var parsedStatus) ? parsedStatus : BeneficiaryEntityStatus.Active;
+        notes = entity.Notes;
+    }
+}

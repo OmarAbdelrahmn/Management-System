@@ -1,0 +1,28 @@
+@page "/tech-enablement"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject TechEnablementUiService Tech
+
+<h1 class="page-title">إدارة التمكين التقني</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-sliders"></i></span><span>الإعدادات</span><strong class="tile-number">@(dashboard?.SettingsCount ?? 0)</strong><span class="tile-footer">سجل</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-sitemap"></i></span><span>الهيكل</span><strong class="tile-number">@(dashboard?.OrganizationAssignmentsCount ?? 0)</strong><span class="tile-footer">تعيين</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-palette"></i></span><span>التصميمات</span><strong class="tile-number">@(dashboard?.VisualAssetsCount ?? 0)</strong><span class="tile-footer">قالب</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-shield-halved"></i></span><span>مراجعات الأمن</span><strong class="tile-number">@(dashboard?.OpenSecurityReviewsCount ?? 0)</strong><span class="tile-footer">مفتوحة</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-laptop"></i><div><h2>نطاقات التمكين التقني</h2><p>معلومات النظام، إعدادات الموقع والتواصل، الهيكل التنظيمي، التصميمات البصرية، الأمن السيبراني، وتجهيز بيانات المركز الوطني.</p></div></div>
+    <div class="actions-row"><a class="primary" href="/tech-enablement/system">النظام والموقع والتواصل</a><a class="secondary" href="/tech-enablement/organization">الهيكل التنظيمي</a><a class="secondary" href="/tech-enablement/visual-assets">التصميمات</a><a class="secondary" href="/tech-enablement/cybersecurity">الأمن السيبراني</a><a class="secondary" href="/tech-enablement/ncnp">بيانات المركز الوطني</a></div>
+</section>
+
+<section class="circle-tiles" style="margin-top:14px">
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-triangle-exclamation"></i></span><span>تحتاج تحديث</span><strong class="tile-number">@(dashboard?.NcnpNeedsUpdateCount ?? 0)</strong><span class="tile-footer">مساعدة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-cloud-arrow-up"></i></span><span>جاهزة للإرسال</span><strong class="tile-number">@(dashboard?.NcnpReadyCount ?? 0)</strong><span class="tile-footer">سجل</span></article>
+</section>
+
+@code {
+    private TechEnablementDashboardResponse? dashboard;
+    protected override async Task OnInitializedAsync() => dashboard = await Tech.GetDashboardAsync();
+}

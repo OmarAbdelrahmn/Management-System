@@ -1,0 +1,35 @@
+@page "/meetings/finish"
+@attribute [Authorize(Roles = "Admin,BoardChairman,BoardSecretary")]
+@rendermode InteractiveServer
+@inject MeetingUiService UiService
+
+<h1 class="page-title">إنهاء اجتماع</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-flag-checkered"></i> الاجتماعات النشطة/المجدولة</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>العنوان</th><th>التاريخ</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var meeting in meetings)
+            {
+                <tr><td>@meeting.Title</td><td>@meeting.ScheduledAt.ToString("yyyy-MM-dd HH:mm")</td><td>@meeting.Status</td><td><button class="secondary" @onclick="() => StartAsync(meeting.Id)">بدء</button> <button class="primary" @onclick="() => FinishAsync(meeting.Id)">إنهاء</button></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<MeetingListItemResponse> meetings = [];
+    private bool success;
+    private string? message;
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => meetings = await UiService.GetScheduledMeetingsAsync();
+    private async Task RunAsync(Func<Task<(bool Success, string Message)>> action){ var result = await action(); success = result.Success; message = result.Message; await LoadAsync(); }
+    private Task StartAsync(int id) => RunAsync(() => UiService.StartMeetingAsync(id));
+    private Task FinishAsync(int id) => RunAsync(() => UiService.FinishMeetingAsync(id));
+}

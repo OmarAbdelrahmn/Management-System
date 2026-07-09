@@ -17,6 +17,19 @@ public enum MemberPaymentStatus
     Cancelled = 2
 }
 
+public enum MemberParticipationRole
+{
+    BoardMember = 0,
+    GeneralAssembly = 1
+}
+
+public enum MemberParticipationStatus
+{
+    Active = 0,
+    Ended = 1,
+    Suspended = 2
+}
+
 public class MembershipType : IAuditable
 {
     public int Id { get; set; }
@@ -63,6 +76,7 @@ public class MemberProfile : IAuditable
     public ApplicationUser? ApplicationUser { get; set; }
     public ICollection<MemberPayment> Payments { get; set; } = new List<MemberPayment>();
     public ICollection<MemberCard> Cards { get; set; } = new List<MemberCard>();
+    public ICollection<MemberParticipationAssignment> ParticipationAssignments { get; set; } = new List<MemberParticipationAssignment>();
 }
 
 public class MemberPayment : IAuditable
@@ -111,4 +125,24 @@ public class MemberReportShare : IAuditable
     public string? CreatedByUserId { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string? UpdatedByUserId { get; set; }
+}
+
+public class MemberParticipationAssignment : IAuditable
+{
+    public int Id { get; set; }
+    public int MemberProfileId { get; set; }
+    public MemberParticipationRole Role { get; set; }
+    public string? PositionTitle { get; set; }
+    public string? CycleName { get; set; }
+    public DateTime StartsAt { get; set; } = DateTime.UtcNow.AddHours(3).Date;
+    public DateTime? EndsAt { get; set; }
+    public MemberParticipationStatus Status { get; set; } = MemberParticipationStatus.Active;
+    public decimal VotingWeight { get; set; } = 1;
+    public string? Notes { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
+    public string? CreatedByUserId { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedByUserId { get; set; }
+
+    public MemberProfile? MemberProfile { get; set; }
 }

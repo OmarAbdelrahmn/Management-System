@@ -1,0 +1,36 @@
+@page "/hr/presence"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">سجل الحضور الحالي</h1>
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-user-clock"></i><div><h2>الموظفون المتواجدون</h2><p>يعرض سجلات اليوم التي لم تسجل خروجاً بعد.</p></div></div>
+    <div class="form-grid compact">
+        <label>اليوم<input type="date" @bind="workDate" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="LoadAsync">عرض الحضور الحالي</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-users-viewfinder"></i> الحضور الحالي</span></div>
+    <table>
+        <thead><tr><th>الموظف</th><th>اليوم</th><th>الدخول</th><th>الحالة</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+            @foreach (var item in presence)
+            {
+                <tr><td>@item.EmployeeName</td><td>@item.WorkDate.ToString("yyyy-MM-dd")</td><td>@item.CheckIn</td><td><span class="status">@item.Status</span></td><td>@item.Notes</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<CurrentPresenceResponse> presence = [];
+    private DateTime workDate = DateTime.UtcNow.AddHours(3).Date;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync() => presence = await HR.GetCurrentPresenceAsync(workDate);
+}

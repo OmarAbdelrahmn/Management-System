@@ -1,0 +1,67 @@
+@page "/hr/attendance"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">الحضور والانصراف</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-clock"></i><div><h2>تسجيل حضور</h2><p>تسجيل حالة يومية للموظف.</p></div></div>
+    <div class="form-grid">
+        <label>الموظف<select @bind="employeeId">@foreach (var employee in employees){<option value="@employee.Id">@employee.FullName</option>}</select></label>
+        <label>اليوم<input type="date" @bind="workDate" /></label>
+        <label>الدخول<input type="time" @bind="checkIn" /></label>
+        <label>الخروج<input type="time" @bind="checkOut" /></label>
+        <label>الحالة<select @bind="attendanceStatus"><option value="@AttendanceStatus.Present">حاضر</option><option value="@AttendanceStatus.Late">متأخر</option><option value="@AttendanceStatus.Absent">غائب</option><option value="@AttendanceStatus.Remote">عن بعد</option></select></label>
+        <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">تسجيل</button><button class="secondary" @onclick="LoadAsync">تحديث القائمة</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-list"></i> سجلات الحضور</span></div>
+    <table>
+        <thead><tr><th>الموظف</th><th>اليوم</th><th>الدخول</th><th>الخروج</th><th>الحالة</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+            @foreach (var item in records)
+            {
+                <tr><td>@item.EmployeeName</td><td>@item.WorkDate.ToString("yyyy-MM-dd")</td><td>@item.CheckIn</td><td>@item.CheckOut</td><td><span class="status">@item.Status</span></td><td>@item.Notes</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EmployeeResponse> employees = [];
+    private List<EmployeeAttendanceResponse> records = [];
+    private int employeeId;
+    private DateTime workDate = DateTime.UtcNow.AddHours(3).Date;
+    private TimeOnly? checkIn = new(8, 0);
+    private TimeOnly? checkOut;
+    private AttendanceStatus attendanceStatus = AttendanceStatus.Present;
+    private string? notes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        employees = await HR.SearchEmployeesAsync(null, EmployeeStatus.Active, null, null);
+        employeeId = employees.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => records = await HR.GetAttendanceAsync(null, DateTime.UtcNow.AddHours(3).Date.AddDays(-14), null);
+
+    private async Task SaveAsync()
+    {
+        var result = await HR.RecordAttendanceAsync(new RecordEmployeeAttendanceRequest(employeeId, workDate, checkIn?.ToTimeSpan(), checkOut?.ToTimeSpan(), attendanceStatus, notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

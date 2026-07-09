@@ -1,0 +1,114 @@
+@page "/tasks/database"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject TaskUiService Tasks
+
+<h1 class="page-title">قاعدة بيانات المهام</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-database"></i><div><h2>بحث المهام</h2><p>عرض كل المهام مع فلاتر الحالة والمكلف.</p></div><a class="primary" href="/tasks/create">إنشاء مهمة</a></div>
+    <div class="form-grid compact">
+        <label>بحث<input @bind="search" /></label>
+        <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="New">جديدة</option><option value="InProgress">قيد العمل</option><option value="Blocked">متعثرة</option><option value="Completed">منجزة</option><option value="Deleted">محذوفة</option></select></label>
+        <label>المكلف<select @bind="assigneeUserId"><option value="">الكل</option>@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
+        <label class="check-row"><input type="checkbox" @bind="includeDeleted" /> إظهار المحذوف</label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="LoadAsync">بحث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-list"></i> المهام</span></div>
+    <table>
+        <thead><tr><th>العنوان</th><th>المكلف</th><th>الأولوية</th><th>الحالة</th><th>الاستحقاق</th><th>الإنجاز</th><th>السجل</th></tr></thead>
+        <tbody>
+            @foreach (var item in items)
+            {
+                <tr><td>@item.Title</td><td>@item.AssigneeName</td><td>@item.Priority</td><td><span class="status">@item.Status</span></td><td>@item.DueAt?.ToString("yyyy-MM-dd")</td><td>@item.ProgressPercentage%</td><td><button class="secondary" @onclick="@(() => LoadActivitiesAsync(item))">عرض السجل</button></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@if (selectedTask is not null)
+{
+    <section class="panel" style="margin-top:14px">
+        <div class="panel-heading"><i class="fa-solid fa-clock-rotate-left"></i><div><h2>سجل المهمة: @selectedTask.Title</h2><p>تعليقات وحركات الإنشاء، التحديث، الإنجاز، التحويل، الحذف، والاستعادة.</p></div></div>
+        <div class="form-grid compact">
+            <label class="span-2">تعليق جديد<input @bind="comment" /></label>
+        </div>
+        <div class="actions-row"><button class="primary" @onclick="AddCommentAsync">إضافة تعليق</button></div>
+    </section>
+
+    <section class="table-section">
+        <div class="table-title"><span><i class="fa-solid fa-timeline"></i> الحركات</span></div>
+        <table>
+            <thead><tr><th>الوقت</th><th>النوع</th><th>المنفذ</th><th>الحالة</th><th>المكلف</th><th>التقدم</th><th>ملاحظة</th></tr></thead>
+            <tbody>
+                @foreach (var activity in activities)
+                {
+                    <tr>
+                        <td>@activity.ActionAt.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>@activity.Type</td>
+                        <td>@activity.ActorName</td>
+                        <td>@activity.FromStatus -> @activity.ToStatus</td>
+                        <td>@activity.FromAssigneeName -> @activity.ToAssigneeName</td>
+                        <td>@activity.ProgressPercentage%</td>
+                        <td>@activity.Note</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+@code {
+    private List<ManagementTaskResponse> items = [];
+    private List<UserPickerResponse> users = [];
+    private List<ManagementTaskActivityResponse> activities = [];
+    private ManagementTaskResponse? selectedTask;
+    private string? search;
+    private string statusText = string.Empty;
+    private string? assigneeUserId;
+    private bool includeDeleted;
+    private string? comment;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await Tasks.GetUsersAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var status = Enum.TryParse<ManagementTaskStatus>(statusText, out var parsed) ? parsed : (ManagementTaskStatus?)null;
+        items = await Tasks.SearchTasksAsync(search, status, assigneeUserId, includeDeleted);
+    }
+
+    private async Task LoadActivitiesAsync(ManagementTaskResponse task)
+    {
+        selectedTask = task;
+        activities = await Tasks.GetTaskActivitiesAsync(task.Id);
+    }
+
+    private async Task AddCommentAsync()
+    {
+        if (selectedTask is null)
+            return;
+
+        var result = await Tasks.AddTaskCommentAsync(selectedTask.Id, comment ?? string.Empty);
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            comment = null;
+            await LoadActivitiesAsync(selectedTask);
+        }
+    }
+}

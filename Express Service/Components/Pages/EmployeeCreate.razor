@@ -1,0 +1,73 @@
+@page "/hr/employees/create"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">إضافة موظف</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-user-plus"></i><div><h2>بيانات الموظف</h2><p>إنشاء ملف موظف مرتبط بقسم ومسمى وظيفي.</p></div></div>
+    <div class="form-grid">
+        <label>الاسم الكامل<input @bind="fullName" /></label>
+        <label>الرقم الوظيفي<input @bind="employeeNumber" placeholder="يولد تلقائياً عند تركه فارغاً" /></label>
+        <label>القسم<select @bind="departmentId">@foreach (var department in departments){<option value="@department.Id">@department.NameAr</option>}</select></label>
+        <label>المسمى الوظيفي<select @bind="jobTitleId">@foreach (var title in jobTitles){<option value="@title.Id">@title.NameAr</option>}</select></label>
+        <label>رقم الهوية<input @bind="nationalId" /></label>
+        <label>البريد<input @bind="email" /></label>
+        <label>الجوال<input @bind="mobile" /></label>
+        <label>تاريخ المباشرة<input type="date" @bind="hireDate" /></label>
+        <label>الراتب الأساسي<input type="number" step="0.01" @bind="basicSalary" /></label>
+        <label>البدلات<input type="number" step="0.01" @bind="allowances" /></label>
+        <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الموظف</button><a class="secondary" href="/hr/employees">قاعدة الموظفين</a></div>
+</section>
+
+@code {
+    private List<EmployeeDepartmentResponse> departments = [];
+    private List<JobTitleResponse> jobTitles = [];
+    private string fullName = string.Empty;
+    private string? employeeNumber;
+    private string? nationalId;
+    private string? email;
+    private string? mobile;
+    private int departmentId;
+    private int jobTitleId;
+    private DateTime? hireDate = DateTime.UtcNow.AddHours(3).Date;
+    private decimal basicSalary;
+    private decimal allowances;
+    private string? notes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        departments = await HR.GetDepartmentsAsync();
+        jobTitles = await HR.GetJobTitlesAsync();
+        departmentId = departments.FirstOrDefault()?.Id ?? 0;
+        jobTitleId = jobTitles.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private async Task SaveAsync()
+    {
+        var result = await HR.CreateEmployeeAsync(new CreateEmployeeRequest(fullName, departmentId, jobTitleId, employeeNumber, nationalId, email, mobile, hireDate, basicSalary, allowances, notes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            fullName = string.Empty;
+            employeeNumber = null;
+            nationalId = null;
+            email = null;
+            mobile = null;
+            basicSalary = 0;
+            allowances = 0;
+            notes = null;
+        }
+    }
+}

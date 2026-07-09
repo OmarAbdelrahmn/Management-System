@@ -1,0 +1,85 @@
+@page "/hr/volunteers"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">قاعدة بيانات المتطوعين</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-hand-holding-heart"></i><div><h2>إضافة موظف متطوع</h2><p>إنشاء حساب متطوع ضمن سجلات الموارد البشرية.</p></div></div>
+    <div class="form-grid">
+        <label>الاسم الكامل<input @bind="fullName" /></label>
+        <label>رقم الحساب<input @bind="employeeNumber" placeholder="يولد تلقائياً عند تركه فارغاً" /></label>
+        <label>القسم<select @bind="departmentId">@foreach (var department in departments){<option value="@department.Id">@department.NameAr</option>}</select></label>
+        <label>المسمى<select @bind="jobTitleId">@foreach (var title in jobTitles){<option value="@title.Id">@title.NameAr</option>}</select></label>
+        <label>الهوية<input @bind="nationalId" /></label>
+        <label>الجوال<input @bind="mobile" /></label>
+        <label>البريد<input @bind="email" /></label>
+        <label>تاريخ البداية<input type="date" @bind="hireDate" /></label>
+        <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المتطوع</button><button class="secondary" @onclick="LoadAsync">تحديث القائمة</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-users"></i> المتطوعون</span></div>
+    <table>
+        <thead><tr><th>الرقم</th><th>الاسم</th><th>القسم</th><th>المسمى</th><th>الجوال</th><th>الحالة</th><th>تحديث</th></tr></thead>
+        <tbody>
+            @foreach (var volunteer in volunteers)
+            {
+                <tr><td>@volunteer.EmployeeNumber</td><td>@volunteer.FullName</td><td>@volunteer.DepartmentName</td><td>@volunteer.JobTitleName</td><td>@volunteer.Mobile</td><td><span class="status">@volunteer.Status</span></td><td><a class="secondary" href="@($"/hr/employees/update/{volunteer.Id}")">تحديث</a></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EmployeeDepartmentResponse> departments = [];
+    private List<JobTitleResponse> jobTitles = [];
+    private List<EmployeeResponse> volunteers = [];
+    private string fullName = string.Empty;
+    private string? employeeNumber;
+    private string? nationalId;
+    private string? email;
+    private string? mobile;
+    private int departmentId;
+    private int jobTitleId;
+    private DateTime? hireDate = DateTime.UtcNow.AddHours(3).Date;
+    private string? notes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        departments = await HR.GetDepartmentsAsync();
+        jobTitles = await HR.GetJobTitlesAsync();
+        departmentId = departments.FirstOrDefault()?.Id ?? 0;
+        jobTitleId = jobTitles.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => volunteers = await HR.SearchEmployeesAsync(null, null, null, null, EmployeeAccountType.Volunteer);
+
+    private async Task SaveAsync()
+    {
+        var result = await HR.CreateEmployeeAsync(new CreateEmployeeRequest(fullName, departmentId, jobTitleId, employeeNumber, nationalId, email, mobile, hireDate, 0, 0, notes, EmployeeAccountType.Volunteer));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            fullName = string.Empty;
+            employeeNumber = null;
+            nationalId = null;
+            email = null;
+            mobile = null;
+            notes = null;
+            await LoadAsync();
+        }
+    }
+}

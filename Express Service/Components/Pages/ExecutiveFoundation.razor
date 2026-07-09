@@ -1,0 +1,40 @@
+@page "/executive-supervision/foundation"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ExecutiveSupervisionUiService Executive
+
+<h1 class="page-title">إدارة التأسيس</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-folder-tree"></i><div><h2>خارطة الملفات المؤسسية</h2><p>مستندات التأسيس وملاحظات مساعد التأسيس الذكي.</p></div></div>
+    <div class="form-grid compact">
+        <label>الكود<input @bind="documentCode" /></label><label>العنوان<input @bind="title" /></label>
+        <label>الإدارة<input @bind="ownerDepartment" /></label><label>رابط الملف<input @bind="fileUrl" /></label>
+        <label>الحالة<select @bind="status"><option value="@EstablishmentDocumentStatus.Draft">مسودة</option><option value="@EstablishmentDocumentStatus.Active">نشط</option><option value="@EstablishmentDocumentStatus.NeedsReview">بحاجة مراجعة</option><option value="@EstablishmentDocumentStatus.Archived">مؤرشف</option></select></label>
+        <label class="span-2">ملاحظات المساعد<input @bind="helperNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المستند</button><button class="secondary" @onclick="LoadActiveAsync">النشطة</button><button class="secondary" @onclick="LoadAsync">كل الملفات</button></div>
+</section>
+
+<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> ملفات التأسيس</span></div><table><thead><tr><th>الكود</th><th>العنوان</th><th>الإدارة</th><th>الحالة</th><th>ملاحظات</th></tr></thead><tbody>@foreach (var item in documents){<tr><td>@item.DocumentCode</td><td>@item.Title<br />@item.FileUrl</td><td>@item.OwnerDepartment</td><td>@item.Status</td><td>@item.HelperNotes</td></tr>}</tbody></table></section>
+
+@code {
+    private List<EstablishmentDocumentResponse> documents = [];
+    private string documentCode = $"FD-{DateTime.UtcNow:yyyyMMddHHmm}";
+    private string title = string.Empty;
+    private string? ownerDepartment;
+    private string? fileUrl;
+    private EstablishmentDocumentStatus status = EstablishmentDocumentStatus.Active;
+    private string? helperNotes;
+    private bool success;
+    private string? message;
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => documents = await Executive.GetFoundationDocumentsAsync();
+    private async Task LoadActiveAsync() => documents = await Executive.GetFoundationDocumentsAsync(EstablishmentDocumentStatus.Active);
+    private async Task SaveAsync(){ var result = await Executive.SaveFoundationDocumentAsync(null, new SaveEstablishmentDocumentRequest(documentCode, title, ownerDepartment, fileUrl, status, helperNotes)); success = result.Success; message = result.Message; if (success) documentCode = $"FD-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+}

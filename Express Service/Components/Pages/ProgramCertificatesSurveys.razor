@@ -1,0 +1,129 @@
+@page "/programs-projects/certificates-surveys"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ProgramsProjectsUiService ProgramsProjects
+
+<h1 class="page-title">الشهادات والاستبيانات</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-award"></i><div><h2>قالب شهادة وإصدار</h2><p>إدارة قوالب الشهادات وإصدار شهادات البرامج.</p></div></div>
+    <div class="form-grid compact">
+        <label>البرنامج<select @bind="projectId">@foreach (var project in projects){<option value="@project.Id">@project.Name</option>}</select></label>
+        <label>اسم القالب<input @bind="templateName" /></label>
+        <label class="span-2">نص القالب<input @bind="bodyTemplate" /></label>
+        <label>المستلم<input @bind="recipientName" /></label>
+        <label>القالب<select @bind="templateIdText"><option value="">بدون قالب</option>@foreach (var template in templates){<option value="@template.Id">@template.Name</option>}</select></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveTemplateAsync">حفظ القالب</button><button class="secondary" @onclick="IssueCertificateAsync">إصدار شهادة</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-square-poll-vertical"></i><div><h2>استبيان برنامج</h2><p>إدارة الاستبيانات وسجلات الإجابات.</p></div></div>
+    <div class="form-grid compact">
+        <label>عنوان الاستبيان<input @bind="surveyTitle" /></label>
+        <label>الحالة<select @bind="surveyStatus"><option value="@ProgramSurveyStatus.Draft">مسودة</option><option value="@ProgramSurveyStatus.Active">نشط</option><option value="@ProgramSurveyStatus.Closed">مغلق</option></select></label>
+        <label class="span-2">الأسئلة JSON<input @bind="questionsJson" /></label>
+        <label>الاستبيان<select @bind="surveyId">@foreach (var survey in surveys){<option value="@survey.Id">@survey.Title</option>}</select></label>
+        <label>المجيب<input @bind="respondentName" /></label>
+        <label class="span-2">الإجابات JSON<input @bind="answersJson" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveSurveyAsync">حفظ الاستبيان</button><button class="secondary" @onclick="SaveSurveySubmissionAsync">حفظ إجابة</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-table"></i> السجلات</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>البرنامج</th><th>العنوان/المستلم</th><th>الحالة/العدد</th></tr></thead>
+        <tbody>
+            @foreach (var issue in certificateIssues)
+            {
+                <tr><td>شهادة</td><td>@issue.ProjectName</td><td>@issue.RecipientName<br />@issue.CertificateNumber</td><td>@issue.Status</td></tr>
+            }
+            @foreach (var survey in surveys)
+            {
+                <tr><td>استبيان</td><td>@survey.ProjectName</td><td>@survey.Title</td><td>@survey.Status / @survey.SubmissionsCount إجابات</td></tr>
+            }
+            @foreach (var submission in submissions)
+            {
+                <tr><td>إجابة</td><td>@submission.SurveyTitle</td><td>@submission.RespondentName</td><td>@submission.SubmittedAt.ToString("yyyy-MM-dd")</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ProgramProjectResponse> projects = [];
+    private List<ProgramCertificateTemplateResponse> templates = [];
+    private List<ProgramCertificateIssueResponse> certificateIssues = [];
+    private List<ProgramSurveyResponse> surveys = [];
+    private List<ProgramSurveySubmissionResponse> submissions = [];
+    private int projectId;
+    private string templateName = string.Empty;
+    private string bodyTemplate = "تشهد الجمعية بأن {name} أكمل البرنامج بنجاح.";
+    private string recipientName = string.Empty;
+    private string templateIdText = string.Empty;
+    private string surveyTitle = string.Empty;
+    private string questionsJson = "[\"ما تقييمك للبرنامج؟\"]";
+    private ProgramSurveyStatus surveyStatus = ProgramSurveyStatus.Draft;
+    private int surveyId;
+    private string respondentName = string.Empty;
+    private string answersJson = "{\"rating\":5}";
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        projects = await ProgramsProjects.SearchProjectsAsync(projectType: "Program");
+        if (projects.Count == 0)
+            projects = await ProgramsProjects.SearchProjectsAsync();
+        projectId = projects.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        templates = await ProgramsProjects.GetCertificateTemplatesAsync();
+        certificateIssues = await ProgramsProjects.GetCertificateIssuesAsync();
+        surveys = await ProgramsProjects.GetSurveysAsync();
+        surveyId = surveys.FirstOrDefault()?.Id ?? surveyId;
+        submissions = await ProgramsProjects.GetSurveySubmissionsAsync();
+    }
+
+    private async Task SaveTemplateAsync()
+    {
+        var result = await ProgramsProjects.SaveCertificateTemplateAsync(null, new SaveProgramCertificateTemplateRequest(projectId, templateName, bodyTemplate, true));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task IssueCertificateAsync()
+    {
+        var templateId = int.TryParse(templateIdText, out var value) ? value : (int?)null;
+        var result = await ProgramsProjects.IssueCertificateAsync(new IssueProgramCertificateRequest(projectId, templateId, null, recipientName, DateTime.UtcNow.AddHours(3), null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveSurveyAsync()
+    {
+        var result = await ProgramsProjects.SaveSurveyAsync(null, new SaveProgramSurveyRequest(projectId, surveyTitle, questionsJson, surveyStatus, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveSurveySubmissionAsync()
+    {
+        var result = await ProgramsProjects.AddSurveySubmissionAsync(new AddProgramSurveySubmissionRequest(surveyId, respondentName, answersJson, DateTime.UtcNow.AddHours(3)));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

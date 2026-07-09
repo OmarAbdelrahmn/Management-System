@@ -1,0 +1,80 @@
+@page "/programs-projects/program-publishing"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ProgramsProjectsUiService ProgramsProjects
+
+<h1 class="page-title">نشر البرامج ونماذج التسجيل</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-bullhorn"></i><div><h2>إعداد النشر والنموذج</h2><p>إدارة البرامج الخاصة ونشرها وتجهيز حقول نموذج التسجيل.</p></div></div>
+    <div class="form-grid">
+        <label>البرنامج<select @bind="projectId">@foreach (var project in projects){<option value="@project.Id">@project.Name</option>}</select></label>
+        <label>تصنيف البرنامج الخاص<input @bind="specialProgramCategory" /></label>
+        <label class="span-2">نموذج التسجيل JSON<textarea @bind="registrationFormJson"></textarea></label>
+        <label class="span-2">ملاحظات النشر<input @bind="publishNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveFormAsync">حفظ النموذج</button><button class="secondary" @onclick="@(() => PublishAsync(true))">نشر البرنامج</button><button class="secondary" @onclick="@(() => PublishAsync(false))">إلغاء النشر</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> برامج النشر</span></div>
+    <table>
+        <thead><tr><th>الكود</th><th>البرنامج</th><th>التصنيف</th><th>النشر</th><th>النموذج</th></tr></thead>
+        <tbody>
+            @foreach (var project in projects)
+            {
+                <tr>
+                    <td>@project.ProjectCode</td>
+                    <td>@project.Name</td>
+                    <td>@project.SpecialProgramCategory</td>
+                    <td><span class="status">@(project.IsPublished ? "Published" : "Draft")</span><br />@project.PublishedAt?.ToString("yyyy-MM-dd")</td>
+                    <td>@(string.IsNullOrWhiteSpace(project.RegistrationFormJson) ? "غير محدد" : "محدد")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<ProgramProjectResponse> projects = [];
+    private int projectId;
+    private string? specialProgramCategory;
+    private string registrationFormJson = "[{\"name\":\"fullName\",\"label\":\"الاسم\",\"type\":\"text\"}]";
+    private string? publishNotes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        projects = await ProgramsProjects.SearchProjectsAsync(projectType: "Program");
+        if (projects.Count == 0)
+            projects = await ProgramsProjects.SearchProjectsAsync();
+        projectId = projects.FirstOrDefault()?.Id ?? projectId;
+    }
+
+    private async Task SaveFormAsync()
+    {
+        var result = await ProgramsProjects.SaveRegistrationFormAsync(projectId, new SaveProgramRegistrationFormRequest(specialProgramCategory, registrationFormJson));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task PublishAsync(bool publish)
+    {
+        var result = await ProgramsProjects.PublishProjectAsync(projectId, publish, publishNotes);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

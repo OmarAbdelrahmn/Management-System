@@ -1,0 +1,147 @@
+@page "/financial-development/endowments"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject FinancialDevelopmentUiService FinancialDevelopment
+
+<h1 class="page-title">إدارة الأوقاف</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-building-columns"></i><div><h2>إضافة وقف</h2><p>قاعدة بيانات الأوقاف والقيمة التقديرية والعائد السنوي.</p></div></div>
+    <div class="form-grid compact">
+        <label>اسم الوقف<input @bind="endowmentName" /></label>
+        <label>رقم الوقف<input @bind="endowmentNumber" /></label>
+        <label>نوع الأصل<input @bind="assetType" /></label>
+        <label>القيمة التقديرية<input type="number" step="0.01" @bind="estimatedValue" /></label>
+        <label>العائد السنوي<input type="number" step="0.01" @bind="annualReturnEstimate" /></label>
+        <label>المدير<input @bind="managerName" /></label>
+        <label>الحالة<select @bind="assetStatus"><option value="@EndowmentAssetStatus.Draft">مسودة</option><option value="@EndowmentAssetStatus.Active">نشط</option><option value="@EndowmentAssetStatus.Suspended">معلق</option><option value="@EndowmentAssetStatus.Closed">مغلق</option></select></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveEndowmentAsync">حفظ الوقف</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-file-contract"></i><div><h2>عقود الأوقاف</h2><p>إدارة العقود وربطها بالوقف.</p></div></div>
+    <div class="form-grid compact">
+        <label>الوقف<select @bind="contractEndowmentId"><option value="0">اختر الوقف</option>@foreach (var asset in endowments){<option value="@asset.Id">@asset.Name</option>}</select></label>
+        <label>رقم العقد<input @bind="contractNumber" /></label>
+        <label>المستأجر<input @bind="lesseeName" /></label>
+        <label>بداية العقد<input type="date" @bind="contractStartDate" /></label>
+        <label>نهاية العقد<input type="date" @bind="contractEndDate" /></label>
+        <label>المبلغ السنوي<input type="number" step="0.01" @bind="annualAmount" /></label>
+        <label>الحالة<select @bind="contractStatus"><option value="@EndowmentContractStatus.Draft">مسودة</option><option value="@EndowmentContractStatus.Active">نشط</option><option value="@EndowmentContractStatus.Expiring">قريب الانتهاء</option><option value="@EndowmentContractStatus.Closed">مغلق</option><option value="@EndowmentContractStatus.Cancelled">ملغى</option></select></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveContractAsync">حفظ العقد</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-file-invoice-dollar"></i><div><h2>دفعات الأوقاف</h2><p>قاعدة بيانات الدفعات والدفعات المستحقة قريباً.</p></div></div>
+    <div class="form-grid compact">
+        <label>الوقف<select @bind="invoiceEndowmentId"><option value="0">اختر الوقف</option>@foreach (var asset in endowments){<option value="@asset.Id">@asset.Name</option>}</select></label>
+        <label>العقد<select @bind="invoiceContractId"><option value="">بدون</option>@foreach (var contract in contracts){<option value="@contract.Id">@contract.ContractNumber</option>}</select></label>
+        <label>رقم الدفعة<input @bind="invoiceNumber" /></label>
+        <label>تاريخ الاستحقاق<input type="date" @bind="dueDate" /></label>
+        <label>المبلغ<input type="number" step="0.01" @bind="invoiceAmount" /></label>
+        <label>المدفوع<input type="number" step="0.01" @bind="paidAmount" /></label>
+        <label>الحالة<select @bind="invoiceStatus"><option value="@EndowmentInvoiceStatus.Due">مستحقة</option><option value="@EndowmentInvoiceStatus.Paid">مدفوعة</option><option value="@EndowmentInvoiceStatus.Overdue">متأخرة</option><option value="@EndowmentInvoiceStatus.Cancelled">ملغاة</option></select></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveInvoiceAsync">حفظ الدفعة</button><button class="secondary" @onclick="LoadDueSoonAsync">المستحقة قريباً</button><button class="secondary" @onclick="LoadAsync">كل الدفعات</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> قاعدة بيانات الأوقاف</span></div>
+    <table>
+        <thead><tr><th>الوقف</th><th>النوع</th><th>القيمة</th><th>العائد</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var asset in endowments)
+            {
+                <tr><td>@asset.Name<br />@asset.EndowmentNumber</td><td>@asset.AssetType</td><td>@asset.EstimatedValue</td><td>@asset.AnnualReturnEstimate</td><td>@asset.Status</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-table"></i> العقود والدفعات</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>الوقف</th><th>الرقم</th><th>المبلغ/المدفوع</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var contract in contracts)
+            {
+                <tr><td>عقد</td><td>@contract.EndowmentName</td><td>@contract.ContractNumber<br />@contract.LesseeName</td><td>@contract.AnnualAmount</td><td>@contract.Status</td></tr>
+            }
+            @foreach (var invoice in invoices)
+            {
+                <tr><td>دفعة</td><td>@invoice.EndowmentName</td><td>@invoice.InvoiceNumber<br />@invoice.DueDate.ToString("yyyy-MM-dd")</td><td>@invoice.Amount / @invoice.PaidAmount</td><td>@invoice.Status</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EndowmentAssetResponse> endowments = [];
+    private List<EndowmentContractResponse> contracts = [];
+    private List<EndowmentInvoiceResponse> invoices = [];
+    private string endowmentName = string.Empty;
+    private string? endowmentNumber;
+    private string assetType = "RealEstate";
+    private decimal estimatedValue;
+    private decimal annualReturnEstimate;
+    private string? managerName;
+    private EndowmentAssetStatus assetStatus = EndowmentAssetStatus.Active;
+    private int contractEndowmentId;
+    private string contractNumber = string.Empty;
+    private string lesseeName = string.Empty;
+    private DateTime contractStartDate = DateTime.UtcNow.AddHours(3).Date;
+    private DateTime contractEndDate = DateTime.UtcNow.AddHours(3).Date.AddYears(1);
+    private decimal annualAmount;
+    private EndowmentContractStatus contractStatus = EndowmentContractStatus.Active;
+    private int invoiceEndowmentId;
+    private int? invoiceContractId;
+    private string invoiceNumber = string.Empty;
+    private DateTime dueDate = DateTime.UtcNow.AddHours(3).Date.AddMonths(1);
+    private decimal invoiceAmount;
+    private decimal paidAmount;
+    private EndowmentInvoiceStatus invoiceStatus = EndowmentInvoiceStatus.Due;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        endowments = await FinancialDevelopment.GetEndowmentsAsync();
+        contracts = await FinancialDevelopment.GetEndowmentContractsAsync();
+        invoices = await FinancialDevelopment.GetEndowmentInvoicesAsync();
+    }
+
+    private async Task LoadDueSoonAsync() => invoices = await FinancialDevelopment.GetEndowmentInvoicesAsync(null, true);
+
+    private async Task SaveEndowmentAsync()
+    {
+        var result = await FinancialDevelopment.SaveEndowmentAsync(null, new SaveEndowmentAssetRequest(endowmentName, endowmentNumber, assetType, estimatedValue, annualReturnEstimate, assetStatus, managerName, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveContractAsync()
+    {
+        var result = await FinancialDevelopment.SaveEndowmentContractAsync(null, new SaveEndowmentContractRequest(contractEndowmentId, contractNumber, lesseeName, contractStartDate, contractEndDate, annualAmount, contractStatus, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveInvoiceAsync()
+    {
+        var result = await FinancialDevelopment.SaveEndowmentInvoiceAsync(null, new SaveEndowmentInvoiceRequest(invoiceEndowmentId, invoiceContractId, invoiceNumber, dueDate, invoiceAmount, paidAmount, invoiceStatus, null));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

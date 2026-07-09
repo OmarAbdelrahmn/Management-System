@@ -1,0 +1,49 @@
+@page "/accounting/reports"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject AccountingUiService Accounting
+
+<h1 class="page-title">التقارير المحاسبية والموازنة</h1>
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-chart-pie"></i><div><h2>موازنة</h2><p>عرض التقارير العامة وإدخال الموازنة والانحراف.</p></div></div>
+    <div class="form-grid compact">
+        <label>السنة<input type="number" @bind="fiscalYear" /></label>
+        <label>اسم الموازنة<input @bind="budgetName" /></label>
+        <label>الإيرادات المخططة<input type="number" step="0.01" @bind="plannedIncome" /></label>
+        <label>المصروفات المخططة<input type="number" step="0.01" @bind="plannedExpenses" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveBudgetAsync">حفظ الموازنة</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="circle-tiles" style="margin-top:14px">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-receipt"></i></span><span>الإيرادات</span><strong class="tile-number">@(dashboard?.PostedIncome ?? 0)</strong><span class="tile-footer">فعلي</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-money-bill"></i></span><span>المصروفات</span><strong class="tile-number">@(dashboard?.PostedExpenses ?? 0)</strong><span class="tile-footer">فعلي</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-chart-line"></i></span><span>الانحراف</span><strong class="tile-number">@(dashboard?.BudgetDeviation ?? 0)</strong><span class="tile-footer">موازنة</span></article>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-table"></i> الموازنات</span></div>
+    <table>
+        <thead><tr><th>السنة</th><th>الاسم</th><th>المخطط</th><th>الفعلي</th><th>الانحراف</th></tr></thead>
+        <tbody>
+            @foreach (var budget in budgets)
+            {
+                <tr><td>@budget.FiscalYear</td><td>@budget.Name</td><td>@budget.PlannedIncome / @budget.PlannedExpenses</td><td>@budget.ActualIncome / @budget.ActualExpenses</td><td>@budget.Deviation</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private AccountingDashboardResponse? dashboard;
+    private List<FinanceBudgetResponse> budgets = [];
+    private int fiscalYear = DateTime.UtcNow.AddHours(3).Year;
+    private string budgetName = "الموازنة السنوية";
+    private decimal plannedIncome;
+    private decimal plannedExpenses;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync(){ dashboard = await Accounting.GetDashboardAsync(); budgets = await Accounting.GetBudgetsAsync(); }
+    private async Task SaveBudgetAsync(){ await Accounting.SaveBudgetAsync(null, new SaveFinanceBudgetRequest(fiscalYear, budgetName, plannedIncome, plannedExpenses, BudgetStatus.Approved)); await LoadAsync(); }
+}

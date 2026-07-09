@@ -1,0 +1,56 @@
+@page "/programs-projects"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject ProgramsProjectsUiService ProgramsProjects
+
+<h1 class="page-title">إدارة البرامج والمشاريع والتصاميم</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-diagram-project"></i></span><span>المشاريع</span><strong class="tile-number">@(dashboard?.ProjectsCount ?? 0)</strong><span class="tile-footer">إجمالي السجلات</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-play"></i></span><span>النشطة</span><strong class="tile-number">@(dashboard?.ActiveProjectsCount ?? 0)</strong><span class="tile-footer">قيد التنفيذ</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-lightbulb"></i></span><span>المقترحات</span><strong class="tile-number">@(dashboard?.PendingIdeasCount ?? 0)</strong><span class="tile-footer">بانتظار الاعتماد</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-money-bill-trend-up"></i></span><span>الرصيد</span><strong class="tile-number">@((dashboard?.TotalIncome ?? 0) - (dashboard?.TotalExpenses ?? 0))</strong><span class="tile-footer">إيرادات - مصروفات</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-gear"></i><div><h2>عمليات البرامج والمشاريع</h2><p>تشغيل دورة المشروع من الإنشاء إلى التخطيط والتنفيذ والمتابعة والإغلاق.</p></div></div>
+    <div class="actions-row">
+        <a class="primary" href="/programs-projects/create">إضافة مشروع جديد</a>
+        <a class="secondary" href="/programs-projects/projects">قواعد بيانات المشاريع</a>
+        <a class="secondary" href="/programs-projects/planning">الإعداد والتخطيط</a>
+        <a class="secondary" href="/programs-projects/execution">التنفيذ والتقارير</a>
+        <a class="secondary" href="/programs-projects/suppliers">الموردون</a>
+        <a class="secondary" href="/programs-projects/ideas">مقترحات البرامج</a>
+        <a class="secondary" href="/programs-projects/approvals">اعتمادات البرامج</a>
+        <a class="secondary" href="/programs-projects/registration">تسجيلات البرامج</a>
+        <a class="secondary" href="/programs-projects/attendance">الجداول والحضور</a>
+        <a class="secondary" href="/programs-projects/certificates-surveys">الشهادات والاستبيانات</a>
+        <a class="secondary" href="/programs-projects/qualification">المشاريع التأهيلية</a>
+        <a class="secondary" href="/programs-projects/monitoring">المخطط وكانبان والمؤشرات</a>
+        <a class="secondary" href="/programs-projects/program-publishing">النشر ونماذج التسجيل</a>
+    </div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-database"></i> أحدث المشاريع والبرامج</span></div>
+    <table>
+        <thead><tr><th>الكود</th><th>الاسم</th><th>النوع</th><th>المدير</th><th>الحالة</th><th>الميزانية</th><th>الرصيد</th></tr></thead>
+        <tbody>
+            @foreach (var project in projects)
+            {
+                <tr><td>@project.ProjectCode</td><td>@project.Name</td><td>@project.ProjectType</td><td>@project.ManagerName</td><td><span class="status">@project.Status</span></td><td>@project.Budget</td><td>@project.Balance</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private ProgramsProjectsDashboardResponse? dashboard;
+    private List<ProgramProjectResponse> projects = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        dashboard = await ProgramsProjects.GetDashboardAsync();
+        projects = await ProgramsProjects.SearchProjectsAsync();
+    }
+}

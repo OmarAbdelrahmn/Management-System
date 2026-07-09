@@ -8,7 +8,21 @@ public record SystemModuleResponse(
     string NameAr,
     string NameEn,
     string Description,
+    string? IconCss,
     int Priority,
+    int TotalGroups,
+    int TotalPages,
+    int PlannedPages,
+    int InProgressPages,
+    int ImplementedPages);
+
+public record SystemPageGroupResponse(
+    int Id,
+    int ModuleId,
+    string ModuleKey,
+    string Key,
+    string NameAr,
+    int SortOrder,
     int TotalPages,
     int PlannedPages,
     int InProgressPages,
@@ -19,6 +33,9 @@ public record SystemPageResponse(
     int ModuleId,
     string ModuleKey,
     string ModuleName,
+    int? GroupId,
+    string? GroupKey,
+    string? GroupName,
     string Key,
     string NameAr,
     string Route,
@@ -26,9 +43,41 @@ public record SystemPageResponse(
     string ServiceName,
     string ServicePlan,
     string UiPlan,
+    string? OriginalHref,
+    string? OriginalIcon,
     string Status,
     int SortOrder);
 
-public record SeedSystemCatalogResponse(int ModulesCreated, int PagesCreated, int PagesUpdated, int TotalPages);
+public record SystemNavigationModuleResponse(
+    string Key,
+    string NameAr,
+    string Description,
+    string? IconCss,
+    int SortOrder,
+    IReadOnlyList<SystemNavigationGroupResponse> Groups);
+
+public record SystemNavigationGroupResponse(
+    string Key,
+    string NameAr,
+    int SortOrder,
+    IReadOnlyList<SystemNavigationPageResponse> Pages);
+
+public record SystemNavigationPageResponse(
+    string Key,
+    string NameAr,
+    string Route,
+    string Status,
+    string? OriginalHref,
+    string? OriginalIcon,
+    int SortOrder);
+
+public record SeedSystemCatalogResponse(
+    int ModulesCreated,
+    int GroupsCreated,
+    int PagesCreated,
+    int PagesUpdated,
+    int TotalModules,
+    int TotalGroups,
+    int TotalPages);
 
 public record UpdateSystemPageStatusRequest(SystemPageStatus Status);

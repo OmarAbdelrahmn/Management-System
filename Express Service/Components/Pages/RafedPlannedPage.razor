@@ -1,0 +1,46 @@
+@page "/rafed/{PageKey}"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject SystemCatalogUiService Catalog
+
+@if (systemPage is null)
+{
+    <h1 class="page-title">صفحة غير موجودة في كتالوج رافد</h1>
+    <section class="panel"><div class="panel-body">لم يتم العثور على الصفحة المطلوبة ضمن خريطة رافد المحلية.</div></section>
+}
+else
+{
+    <h1 class="page-title">@systemPage.NameAr</h1>
+
+    <section class="panel">
+        <div class="panel-heading">
+            <i class="fa-solid fa-map-location-dot"></i>
+            <div>
+                <h2>@systemPage.ModuleName</h2>
+                <p>@systemPage.GroupName</p>
+            </div>
+            <span class="status @(systemPage.Status == "Implemented" ? "ok" : "warn")">@systemPage.Status</span>
+        </div>
+        <div class="panel-body">
+            <p>هذه صفحة مطابقة لخريطة رافد، لكنها لم تتحول بعد إلى خدمة تشغيلية كاملة في النظام المحلي.</p>
+            <p><strong>الصفحة الأصلية:</strong> @systemPage.OriginalHref</p>
+            <p><strong>الخدمة المقترحة:</strong> @systemPage.ServiceName</p>
+            <p><strong>خطة الخدمة:</strong> @systemPage.ServicePlan</p>
+            <p><strong>خطة الواجهة:</strong> @systemPage.UiPlan</p>
+        </div>
+        <div class="actions-row">
+            <a class="primary" href="/system/modules">فتح خطة الخدمات</a>
+            <a class="secondary" href="/">العودة للوحة الرئيسية</a>
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter] public string PageKey { get; set; } = string.Empty;
+    private SystemPageResponse? systemPage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        systemPage = await Catalog.GetPageByKeyAsync(PageKey);
+    }
+}

@@ -1,0 +1,65 @@
+@page "/institutional-excellence/performance"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject InstitutionalExcellenceUiService Excellence
+
+<h1 class="page-title">تقرير مقياس الأداء</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-gauge-high"></i><div><h2>مقياس أداء</h2><p>تسجيل قيم مقياس الأداء وعرض الإحصائيات ونسبة الإنجاز.</p></div></div>
+    <div class="form-grid compact">
+        <label>الكود<input @bind="code" /></label>
+        <label>العنوان<input @bind="title" /></label>
+        <label>النوع<select @bind="measureType"><option value="@PerformanceMeasureType.Quantitative">كمي</option><option value="@PerformanceMeasureType.Qualitative">نوعي</option><option value="@PerformanceMeasureType.Financial">مالي</option><option value="@PerformanceMeasureType.Operational">تشغيلي</option></select></label>
+        <label>المستهدف<input type="number" step="0.01" @bind="targetValue" /></label>
+        <label>المتحقق<input type="number" step="0.01" @bind="actualValue" /></label>
+        <label>الوحدة<input @bind="unit" /></label>
+        <label>الفترة<input @bind="reportingPeriod" /></label>
+        <label>الحالة<select @bind="status"><option value="@ExcellenceRecordStatus.Draft">مسودة</option><option value="@ExcellenceRecordStatus.Active">نشط</option><option value="@ExcellenceRecordStatus.Completed">مكتمل</option><option value="@ExcellenceRecordStatus.Archived">مؤرشف</option></select></label>
+        <label class="span-2">ملاحظات<input @bind="notes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المقياس</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-chart-column"></i> إحصائيات مقياس الأداء</span></div>
+    <table>
+        <thead><tr><th>الكود</th><th>المقياس</th><th>النوع</th><th>المستهدف/المتحقق</th><th>الإنجاز</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var item in measures)
+            {
+                <tr><td>@item.Code</td><td>@item.Title<br />@item.ReportingPeriod</td><td>@item.MeasureType</td><td>@item.TargetValue / @item.ActualValue @item.Unit</td><td>@item.AchievementPercent%</td><td>@item.Status</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<PerformanceMeasureResponse> measures = [];
+    private string code = string.Empty;
+    private string title = string.Empty;
+    private PerformanceMeasureType measureType = PerformanceMeasureType.Quantitative;
+    private decimal targetValue;
+    private decimal actualValue;
+    private string unit = "%";
+    private string reportingPeriod = DateTime.UtcNow.AddHours(3).Year.ToString();
+    private ExcellenceRecordStatus status = ExcellenceRecordStatus.Active;
+    private string? notes;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => measures = await Excellence.GetPerformanceMeasuresAsync();
+    private async Task SaveAsync()
+    {
+        var result = await Excellence.SavePerformanceMeasureAsync(null, new SavePerformanceMeasureRequest(code, title, measureType, targetValue, actualValue, unit, reportingPeriod, status, notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

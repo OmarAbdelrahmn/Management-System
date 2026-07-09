@@ -1,0 +1,95 @@
+@page "/hr/settings"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">إعدادات الموارد البشرية</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-building"></i><div><h2>الأقسام</h2><p>إضافة وتفعيل أقسام الموظفين.</p></div></div>
+    <div class="form-grid compact">
+        <label>اسم القسم<input @bind="departmentNameAr" /></label>
+        <label>الاسم الإنجليزي<input @bind="departmentNameEn" /></label>
+        <label class="check-row"><input type="checkbox" @bind="departmentActive" /> فعال</label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveDepartmentAsync">حفظ القسم</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-briefcase"></i><div><h2>المسميات الوظيفية</h2><p>إضافة وتفعيل المسميات الوظيفية.</p></div></div>
+    <div class="form-grid compact">
+        <label>المسمى<input @bind="jobTitleNameAr" /></label>
+        <label>الاسم الإنجليزي<input @bind="jobTitleNameEn" /></label>
+        <label class="check-row"><input type="checkbox" @bind="jobTitleActive" /> فعال</label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveJobTitleAsync">حفظ المسمى</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-list"></i> الإعدادات الحالية</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>الاسم</th><th>الحالة</th></tr></thead>
+        <tbody>
+            @foreach (var department in departments)
+            {
+                <tr><td>قسم</td><td>@department.NameAr</td><td><span class="status @(department.IsActive ? "ok" : "warn")">@(department.IsActive ? "فعال" : "موقوف")</span></td></tr>
+            }
+            @foreach (var title in jobTitles)
+            {
+                <tr><td>مسمى وظيفي</td><td>@title.NameAr</td><td><span class="status @(title.IsActive ? "ok" : "warn")">@(title.IsActive ? "فعال" : "موقوف")</span></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EmployeeDepartmentResponse> departments = [];
+    private List<JobTitleResponse> jobTitles = [];
+    private string departmentNameAr = string.Empty;
+    private string? departmentNameEn;
+    private bool departmentActive = true;
+    private string jobTitleNameAr = string.Empty;
+    private string? jobTitleNameEn;
+    private bool jobTitleActive = true;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        departments = await HR.GetDepartmentsAsync();
+        jobTitles = await HR.GetJobTitlesAsync();
+    }
+
+    private async Task SaveDepartmentAsync()
+    {
+        var result = await HR.SaveDepartmentAsync(null, new UpsertLookupRequest(departmentNameAr, departmentNameEn, departmentActive));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            departmentNameAr = string.Empty;
+            departmentNameEn = null;
+        }
+        await LoadAsync();
+    }
+
+    private async Task SaveJobTitleAsync()
+    {
+        var result = await HR.SaveJobTitleAsync(null, new UpsertLookupRequest(jobTitleNameAr, jobTitleNameEn, jobTitleActive));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            jobTitleNameAr = string.Empty;
+            jobTitleNameEn = null;
+        }
+        await LoadAsync();
+    }
+}

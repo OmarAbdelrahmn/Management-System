@@ -1,0 +1,87 @@
+@page "/hr/letters"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">خطابات الموارد البشرية</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-envelope-open-text"></i><div><h2>إصدار خطاب</h2><p>خطاب شخصي مرتبط بموظف أو خطاب عام.</p></div></div>
+    <div class="form-grid">
+        <label>نوع الخطاب<select @bind="letterType"><option>خطاب شخصي</option><option>خطاب عام</option></select></label>
+        <label>الموظف<select @bind="employeeIdText"><option value="">خطاب عام</option>@foreach (var employee in employees){<option value="@employee.Id">@employee.FullName</option>}</select></label>
+        <label class="span-2">الموضوع<input @bind="subject" /></label>
+        <label class="span-2">الغرض<input @bind="purpose" /></label>
+        <label class="span-2">النص<textarea @bind="body"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الخطاب</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-file-lines"></i> الخطابات</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>الموظف</th><th>الموضوع</th><th>الحالة</th><th>الإصدار</th><th>قرار</th></tr></thead>
+        <tbody>
+            @foreach (var item in letters)
+            {
+                <tr>
+                    <td>@item.LetterType</td>
+                    <td>@item.EmployeeName</td>
+                    <td>@item.Subject</td>
+                    <td><span class="status">@item.Status</span></td>
+                    <td>@item.IssuedAt?.ToString("yyyy-MM-dd")</td>
+                    <td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved))">إصدار</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Rejected))">رفض</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EmployeeResponse> employees = [];
+    private List<EmployeeLetterRequestResponse> letters = [];
+    private string letterType = "خطاب شخصي";
+    private string employeeIdText = string.Empty;
+    private string subject = string.Empty;
+    private string? purpose;
+    private string body = string.Empty;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        employees = await HR.SearchEmployeesAsync(null, null, null, null);
+        employeeIdText = employees.FirstOrDefault()?.Id.ToString() ?? string.Empty;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => letters = await HR.GetLetterRequestsAsync();
+
+    private async Task SaveAsync()
+    {
+        var employeeId = int.TryParse(employeeIdText, out var value) ? value : (int?)null;
+        var result = await HR.SaveLetterRequestAsync(null, new SaveEmployeeLetterRequest(employeeId, letterType, subject, purpose, body));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            subject = string.Empty;
+            purpose = null;
+            body = string.Empty;
+            await LoadAsync();
+        }
+    }
+
+    private async Task DecideAsync(int id, HumanResourceRequestStatus status)
+    {
+        var result = await HR.DecideLetterRequestAsync(id, status, null);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

@@ -1,0 +1,29 @@
+@page "/pr-media"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject PublicRelationsMediaUiService PrMedia
+
+<h1 class="page-title">إدارة العلاقات العامة و الإعلام</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-handshake"></i></span><span>الشركاء</span><strong class="tile-number">@(dashboard?.PartnersCount ?? 0)</strong><span class="tile-footer">إعلاميون</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-calendar-days"></i></span><span>الفعاليات</span><strong class="tile-number">@(dashboard?.EventsCount ?? 0)</strong><span class="tile-footer">وسجلات الزيارة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-bullhorn"></i></span><span>الحملات</span><strong class="tile-number">@(dashboard?.CampaignsCount ?? 0)</strong><span class="tile-footer">قنوات</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-globe"></i></span><span>المحتوى</span><strong class="tile-number">@(dashboard?.PublishedContentCount ?? 0)</strong><span class="tile-footer">منشور</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-gear"></i><div><h2>عمليات الإعلام والموقع</h2><p>العلاقات العامة، حسابات الموقع، قنوات التواصل، تصميم الموقع، ومحتواه.</p></div></div>
+    <div class="actions-row">
+        <a class="primary" href="/pr-media/relations">العلاقات والفعاليات</a>
+        <a class="secondary" href="/pr-media/website-users">حسابات الموقع</a>
+        <a class="secondary" href="/pr-media/channels">قنوات التواصل</a>
+        <a class="secondary" href="/pr-media/design">تصميم الموقع</a>
+        <a class="secondary" href="/pr-media/content">محتوى الموقع</a>
+    </div>
+</section>
+
+@code {
+    private PublicRelationsMediaDashboardResponse? dashboard;
+    protected override async Task OnInitializedAsync() => dashboard = await PrMedia.GetDashboardAsync();
+}

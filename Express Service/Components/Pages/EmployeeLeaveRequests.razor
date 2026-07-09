@@ -1,0 +1,80 @@
+@page "/hr/leaves"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject HumanResourceUiService HR
+
+<h1 class="page-title">إجازات الموظفين</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-plane-departure"></i><div><h2>طلب إجازة</h2><p>إنشاء طلب إجازة ومتابعة الاعتماد.</p></div></div>
+    <div class="form-grid">
+        <label>الموظف<select @bind="employeeId">@foreach (var employee in employees){<option value="@employee.Id">@employee.FullName</option>}</select></label>
+        <label>نوع الإجازة<input @bind="leaveType" /></label>
+        <label>من<input type="date" @bind="startsAt" /></label>
+        <label>إلى<input type="date" @bind="endsAt" /></label>
+        <label class="span-2">السبب<textarea @bind="reason"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">إنشاء الطلب</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-list-check"></i> طلبات الإجازة</span></div>
+    <table>
+        <thead><tr><th>الموظف</th><th>النوع</th><th>المدة</th><th>الأيام</th><th>الحالة</th><th>قرار</th></tr></thead>
+        <tbody>
+            @foreach (var item in leaves)
+            {
+                <tr>
+                    <td>@item.EmployeeName</td>
+                    <td>@item.LeaveType</td>
+                    <td>@item.StartsAt.ToString("yyyy-MM-dd") - @item.EndsAt.ToString("yyyy-MM-dd")</td>
+                    <td>@item.Days</td>
+                    <td><span class="status">@item.Status</span></td>
+                    <td><button class="secondary" @onclick="() => DecideAsync(item.Id, true)">اعتماد</button><button class="secondary" @onclick="() => DecideAsync(item.Id, false)">رفض</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<EmployeeResponse> employees = [];
+    private List<EmployeeLeaveRequestResponse> leaves = [];
+    private int employeeId;
+    private string leaveType = "سنوية";
+    private DateTime startsAt = DateTime.UtcNow.AddHours(3).Date;
+    private DateTime endsAt = DateTime.UtcNow.AddHours(3).Date;
+    private string? reason;
+    private bool success;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        employees = await HR.SearchEmployeesAsync(null, null, null, null);
+        employeeId = employees.FirstOrDefault()?.Id ?? 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() => leaves = await HR.GetLeaveRequestsAsync();
+
+    private async Task SaveAsync()
+    {
+        var result = await HR.CreateLeaveRequestAsync(new CreateEmployeeLeaveRequest(employeeId, leaveType, startsAt, endsAt, reason));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task DecideAsync(int id, bool approved)
+    {
+        var result = await HR.DecideLeaveRequestAsync(id, approved, null);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+}

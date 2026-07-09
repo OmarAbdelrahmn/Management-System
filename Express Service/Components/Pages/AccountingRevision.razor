@@ -1,0 +1,48 @@
+@page "/accounting/revision"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject AccountingUiService Accounting
+
+<h1 class="page-title">المراجعة المالية والأرشيف</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="form-grid compact">
+        <label>نوع المراجعة<select @bind="kind"><option value="@FinancialReviewKind.IncomeDonation">تبرعات</option><option value="@FinancialReviewKind.Income">إيرادات</option><option value="@FinancialReviewKind.Expense">مصروفات</option><option value="@FinancialReviewKind.MarketingOnline">تسويق إلكتروني</option><option value="@FinancialReviewKind.MarketingBank">بنكي</option></select></label>
+        <label>المرجع<input @bind="referenceNumber" /></label>
+        <label>المبلغ<input type="number" step="0.01" @bind="amount" /></label>
+        <label>ملاحظة<input @bind="notes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ مراجعة</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-check-double"></i> سجلات المراجعة</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>المرجع</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var item in items)
+            {
+                <tr><td>@item.Kind</td><td>@item.ReferenceNumber</td><td>@item.Amount</td><td>@item.Status</td><td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, AccountingRecordStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, AccountingRecordStatus.Rejected))">رفض</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, AccountingRecordStatus.Archived))">أرشفة</button></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@code {
+    private List<FinancialReviewItemResponse> items = [];
+    private FinancialReviewKind kind = FinancialReviewKind.Income;
+    private string referenceNumber = string.Empty;
+    private decimal amount;
+    private string? notes;
+    private bool success;
+    private string? message;
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private async Task LoadAsync() => items = await Accounting.GetReviewItemsAsync();
+    private async Task SaveAsync(){ var r = await Accounting.SaveReviewItemAsync(null, new SaveFinancialReviewItemRequest(kind, referenceNumber, amount, AccountingRecordStatus.Draft, notes)); success = r.Success; message = r.Message; await LoadAsync(); }
+    private async Task DecideAsync(int id, AccountingRecordStatus status){ var r = await Accounting.DecideReviewItemAsync(id, status, notes); success = r.Success; message = r.Message; await LoadAsync(); }
+}

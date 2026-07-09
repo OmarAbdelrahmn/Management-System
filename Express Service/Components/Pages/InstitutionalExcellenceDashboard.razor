@@ -1,0 +1,27 @@
+@page "/institutional-excellence"
+@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@rendermode InteractiveServer
+@inject InstitutionalExcellenceUiService Excellence
+
+<h1 class="page-title">إدارة التميز المؤسسي</h1>
+
+<section class="circle-tiles">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-chart-simple"></i></span><span>مقاييس الأداء</span><strong class="tile-number">@(dashboard?.PerformanceMeasuresCount ?? 0)</strong><span class="tile-footer">مقياس</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-scale-balanced"></i></span><span>درجة الحوكمة</span><strong class="tile-number">@(dashboard?.GovernanceScore ?? 0)</strong><span class="tile-footer">%</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-list-check"></i></span><span>مهام مفتوحة</span><strong class="tile-number">@(dashboard?.OpenGovernanceTasksCount ?? 0)</strong><span class="tile-footer">حوكمة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-route"></i></span><span>إنجاز الخطة</span><strong class="tile-number">@(dashboard?.StrategicAchievement ?? 0)</strong><span class="tile-footer">%</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-stars"></i><div><h2>عمليات التميز المؤسسي</h2><p>مقياس الأداء، الحوكمة، ومكونات الخطة الإستراتيجية ومؤشراتها.</p></div></div>
+    <div class="actions-row">
+        <a class="primary" href="/institutional-excellence/performance">مقياس الأداء</a>
+        <a class="secondary" href="/institutional-excellence/governance">الحوكمة</a>
+        <a class="secondary" href="/institutional-excellence/strategy">الخطة الإستراتيجية</a>
+    </div>
+</section>
+
+@code {
+    private InstitutionalExcellenceDashboardResponse? dashboard;
+    protected override async Task OnInitializedAsync() => dashboard = await Excellence.GetDashboardAsync();
+}

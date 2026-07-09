@@ -128,4 +128,36 @@ public class MembersController(IMemberService memberService) : ControllerBase
         var result = await memberService.ShareReportAsync(request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
+
+    [HttpGet("participation")]
+    public async Task<IActionResult> Participation(
+        [FromQuery] MemberParticipationRole? role,
+        [FromQuery] MemberParticipationStatus? status,
+        [FromQuery] int? memberProfileId,
+        CancellationToken cancellationToken)
+    {
+        var result = await memberService.GetParticipationAssignmentsAsync(new MemberParticipationSearchRequest(role, status, memberProfileId), cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("participation")]
+    public async Task<IActionResult> CreateParticipation([FromBody] SaveMemberParticipationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await memberService.SaveParticipationAssignmentAsync(null, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("participation/{id:int}")]
+    public async Task<IActionResult> UpdateParticipation(int id, [FromBody] SaveMemberParticipationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await memberService.SaveParticipationAssignmentAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("participation/{id:int}/end")]
+    public async Task<IActionResult> EndParticipation(int id, [FromBody] EndMemberParticipationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await memberService.EndParticipationAssignmentAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
 }
