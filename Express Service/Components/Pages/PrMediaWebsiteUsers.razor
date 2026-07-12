@@ -11,23 +11,39 @@
 }
 
 <section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-users"></i><div><h2>@(editingUserId.HasValue ? "تعديل حساب موقع" : "إضافة حساب موقع")</h2><p>إدارة حسابات مسؤولي الموقع وحالات التفعيل والتعليق والأرشفة.</p></div></div>
     <div class="form-grid compact">
         <label>الاسم<input @bind="fullName" /></label>
         <label>اسم المستخدم<input @bind="username" /></label>
         <label>البريد<input type="email" @bind="email" /></label>
         <label>الدور<input @bind="roleName" /></label>
+        <label>الحالة<select @bind="status">@foreach (var value in Enum.GetValues<WebsiteUserStatus>()){<option value="@value">@value</option>}</select></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ حساب</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingUserId.HasValue ? "تحديث حساب" : "حفظ حساب")</button>
+        @if (editingUserId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-users"></i> حسابات الموقع</span></div>
     <table>
-        <thead><tr><th>المستخدم</th><th>الاسم</th><th>الدور</th><th>آخر دخول</th><th>إجراء</th></tr></thead>
+        <thead><tr><th>المستخدم</th><th>الاسم</th><th>الدور</th><th>الحالة</th><th>آخر دخول</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var user in users)
             {
-                <tr><td>@user.Username</td><td>@user.FullName</td><td>@user.RoleName</td><td>@user.LastLoginAt?.ToString("yyyy-MM-dd HH:mm")</td><td><button class="secondary" @onclick="@(() => LoginAsync(user.Id))">تسجيل دخول</button></td></tr>
+                <tr>
+                    <td>@user.Username</td>
+                    <td>@user.FullName</td>
+                    <td>@user.RoleName</td>
+                    <td>@user.Status</td>
+                    <td>@user.LastLoginAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td><button class="secondary" @onclick="@(() => EditUser(user))">تعديل</button><button class="secondary" @onclick="@(() => LoginAsync(user.Id))">تسجيل دخول</button><button class="secondary" @onclick="@(() => ChangeStatusAsync(user, WebsiteUserStatus.Suspended))">تعليق</button><button class="secondary" @onclick="@(() => ChangeStatusAsync(user, WebsiteUserStatus.Archived))">أرشفة</button></td>
+                </tr>
             }
         </tbody>
     </table>
@@ -35,13 +51,63 @@
 
 @code {
     private List<WebsiteUserAccountResponse> users = [];
+    private int? editingUserId;
     private string fullName = string.Empty;
     private string username = string.Empty;
     private string? email;
     private string roleName = "WebsiteEditor";
+    private WebsiteUserStatus status = WebsiteUserStatus.Active;
     private bool success;
     private string? message;
-    protected override async Task OnInitializedAsync() => users = await PrMedia.GetWebsiteUsersAsync();
-    private async Task SaveAsync(){ var r = await PrMedia.SaveWebsiteUserAsync(null, new SaveWebsiteUserAccountRequest(fullName, username, email, roleName, WebsiteUserStatus.Active)); success = r.Success; message = r.Message; users = await PrMedia.GetWebsiteUsersAsync(); }
-    private async Task LoginAsync(int id){ var r = await PrMedia.RecordWebsiteLoginAsync(id); success = r.Success; message = r.Message; users = await PrMedia.GetWebsiteUsersAsync(); }
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync() => users = await PrMedia.GetWebsiteUsersAsync();
+
+    private async Task SaveAsync()
+    {
+        var result = await PrMedia.SaveWebsiteUserAsync(editingUserId, new SaveWebsiteUserAccountRequest(fullName, username, email, roleName, status));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetForm();
+        await LoadAsync();
+    }
+
+    private void EditUser(WebsiteUserAccountResponse user)
+    {
+        editingUserId = user.Id;
+        fullName = user.FullName;
+        username = user.Username;
+        email = user.Email;
+        roleName = user.RoleName;
+        status = Enum.TryParse<WebsiteUserStatus>(user.Status, out var parsedStatus) ? parsedStatus : WebsiteUserStatus.Active;
+        message = null;
+    }
+
+    private async Task LoginAsync(int id)
+    {
+        var result = await PrMedia.RecordWebsiteLoginAsync(id);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task ChangeStatusAsync(WebsiteUserAccountResponse user, WebsiteUserStatus nextStatus)
+    {
+        var result = await PrMedia.SaveWebsiteUserAsync(user.Id, new SaveWebsiteUserAccountRequest(user.FullName, user.Username, user.Email, user.RoleName, nextStatus));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void ResetForm()
+    {
+        editingUserId = null;
+        fullName = string.Empty;
+        username = string.Empty;
+        email = null;
+        roleName = "WebsiteEditor";
+        status = WebsiteUserStatus.Active;
+    }
 }

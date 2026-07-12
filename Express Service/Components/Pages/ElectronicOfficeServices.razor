@@ -6,12 +6,13 @@
 
 <h1 class="page-title">الخدمات المكتبية</h1>
 @if (!string.IsNullOrWhiteSpace(message)){<section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>}
-<section class="panel"><div class="panel-heading"><i class="fa-solid fa-clock"></i><div><h2>حضور ومذكرات</h2><p>الحضور والانصراف، المذكرات الشخصية، نتيجة الأعمال، المسائلات والإنذارات، تغيير كلمة المرور، وتفضيلات البريد.</p></div></div><div class="form-grid compact"><label>الموظف<input @bind="employeeName" /></label><label>نوع الحضور<select @bind="attendanceType"><option value="@OfficeAttendanceType.CheckIn">حضور</option><option value="@OfficeAttendanceType.CheckOut">انصراف</option></select></label><label>وقت الحضور<input type="datetime-local" @bind="attendanceAt" /></label><label>حالة السجل<select @bind="recordStatus"><option value="@OfficeRecordStatus.Approved">معتمد</option><option value="@OfficeRecordStatus.Pending">معلق</option><option value="@OfficeRecordStatus.RejectedWithNote">مرفوض بملاحظة</option></select></label><label>مالك المذكرة<input @bind="ownerName" /></label><label>عنوان المذكرة<input @bind="reminderTitle" /></label><label>استحقاق المذكرة<input type="datetime-local" @bind="dueAt" /></label><label class="span-2">ملاحظات<input @bind="notes" /></label></div><div class="actions-row"><button class="primary" @onclick="SaveAttendanceAsync">حفظ حضور</button><button class="secondary" @onclick="SaveReminderAsync">حفظ مذكرة</button><button class="secondary" @onclick="LoadPendingRemindersAsync">المذكرات المفتوحة</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div></section>
+<section class="panel"><div class="panel-heading"><i class="fa-solid fa-clock"></i><div><h2>@(editingReminderId.HasValue ? "تعديل مذكرة" : "حضور ومذكرات")</h2><p>الحضور والانصراف، المذكرات الشخصية، نتيجة الأعمال، المسائلات والإنذارات، تغيير كلمة المرور، وتفضيلات البريد.</p></div></div><div class="form-grid compact"><label>الموظف<input @bind="employeeName" /></label><label>نوع الحضور<select @bind="attendanceType"><option value="@OfficeAttendanceType.CheckIn">حضور</option><option value="@OfficeAttendanceType.CheckOut">انصراف</option></select></label><label>وقت الحضور<input type="datetime-local" @bind="attendanceAt" /></label><label>حالة السجل<select @bind="recordStatus"><option value="@OfficeRecordStatus.Approved">معتمد</option><option value="@OfficeRecordStatus.Pending">معلق</option><option value="@OfficeRecordStatus.RejectedWithNote">مرفوض بملاحظة</option><option value="@OfficeRecordStatus.Completed">مكتمل</option><option value="@OfficeRecordStatus.Canceled">ملغى</option></select></label><label>مالك المذكرة<input @bind="ownerName" /></label><label>عنوان المذكرة<input @bind="reminderTitle" /></label><label>استحقاق المذكرة<input type="datetime-local" @bind="dueAt" /></label><label class="span-2">ملاحظات<input @bind="notes" /></label></div><div class="actions-row"><button class="primary" @onclick="SaveAttendanceAsync">حفظ حضور</button><button class="secondary" @onclick="SaveReminderAsync">@(editingReminderId.HasValue ? "حفظ تعديل المذكرة" : "حفظ مذكرة")</button>@if (editingReminderId.HasValue){<button class="secondary" @onclick="ResetReminderForm">إلغاء التعديل</button>}<button class="secondary" @onclick="LoadPendingRemindersAsync">المذكرات المفتوحة</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div></section>
 <section class="table-section"><div class="table-title"><span><i class="fa-solid fa-clock"></i> سجلات الحضور</span></div><table><thead><tr><th>الموظف</th><th>النوع</th><th>الوقت</th><th>الحالة</th></tr></thead><tbody>@foreach (var item in attendance){<tr><td>@item.EmployeeName</td><td>@item.AttendanceType</td><td>@item.AttendanceAt.ToString("yyyy-MM-dd HH:mm")</td><td>@item.Status<br />@item.Notes</td></tr>}</tbody></table></section>
-<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-bell"></i> المذكرات</span></div><table><thead><tr><th>المالك</th><th>العنوان</th><th>الاستحقاق</th><th>الحالة</th></tr></thead><tbody>@foreach (var item in reminders){<tr><td>@item.OwnerName</td><td>@item.Title</td><td>@item.DueAt.ToString("yyyy-MM-dd HH:mm")</td><td>@item.Status<br />@item.Notes</td></tr>}</tbody></table></section>
+<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-bell"></i> المذكرات</span></div><table><thead><tr><th>المالك</th><th>العنوان</th><th>الاستحقاق</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>@foreach (var item in reminders){<tr><td>@item.OwnerName</td><td>@item.Title</td><td>@item.DueAt.ToString("yyyy-MM-dd HH:mm")</td><td>@item.Status<br />@item.Notes</td><td><button class="secondary" @onclick="@(() => EditReminder(item))">تعديل</button><button class="secondary" @onclick="@(() => ChangeReminderStatusAsync(item, OfficeRecordStatus.Completed))">إكمال</button><button class="secondary" @onclick="@(() => ChangeReminderStatusAsync(item, OfficeRecordStatus.Canceled))">إلغاء</button></td></tr>}</tbody></table></section>
 @code {
     private List<OfficeAttendanceResponse> attendance = [];
     private List<OfficeReminderResponse> reminders = [];
+    private int? editingReminderId;
     private string employeeName = string.Empty;
     private OfficeAttendanceType attendanceType = OfficeAttendanceType.CheckIn;
     private DateTime attendanceAt = DateTime.UtcNow.AddHours(3);
@@ -26,5 +27,24 @@
     private async Task LoadAsync(){ attendance = await Office.GetAttendanceAsync(); reminders = await Office.GetRemindersAsync(); }
     private async Task LoadPendingRemindersAsync() => reminders = await Office.GetRemindersAsync(OfficeRecordStatus.Pending);
     private async Task SaveAttendanceAsync(){ var result = await Office.SaveAttendanceAsync(new SaveOfficeAttendanceRequest(employeeName, attendanceType, attendanceAt, recordStatus, notes)); success = result.Success; message = result.Message; await LoadAsync(); }
-    private async Task SaveReminderAsync(){ var result = await Office.SaveReminderAsync(null, new SaveOfficeReminderRequest(ownerName, reminderTitle, dueAt, OfficeRecordStatus.Pending, notes)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task SaveReminderAsync(){ var result = await Office.SaveReminderAsync(editingReminderId, new SaveOfficeReminderRequest(ownerName, reminderTitle, dueAt, recordStatus, notes)); success = result.Success; message = result.Message; if (success) ResetReminderForm(); await LoadAsync(); }
+    private async Task ChangeReminderStatusAsync(OfficeReminderResponse item, OfficeRecordStatus status){ var result = await Office.SaveReminderAsync(item.Id, new SaveOfficeReminderRequest(item.OwnerName, item.Title, item.DueAt, status, item.Notes)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private void EditReminder(OfficeReminderResponse item)
+    {
+        editingReminderId = item.Id;
+        ownerName = item.OwnerName;
+        reminderTitle = item.Title;
+        dueAt = item.DueAt;
+        recordStatus = Enum.TryParse<OfficeRecordStatus>(item.Status, out var parsedStatus) ? parsedStatus : OfficeRecordStatus.Pending;
+        notes = item.Notes;
+    }
+    private void ResetReminderForm()
+    {
+        editingReminderId = null;
+        ownerName = string.Empty;
+        reminderTitle = string.Empty;
+        dueAt = DateTime.UtcNow.AddHours(3).AddDays(1);
+        recordStatus = OfficeRecordStatus.Approved;
+        notes = null;
+    }
 }

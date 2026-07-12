@@ -12,6 +12,30 @@
     <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-money-bill-trend-up"></i></span><span>الرصيد</span><strong class="tile-number">@((dashboard?.TotalIncome ?? 0) - (dashboard?.TotalExpenses ?? 0))</strong><span class="tile-footer">إيرادات - مصروفات</span></article>
 </section>
 
+<section class="circle-tiles" style="margin-top:14px">
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-list-check"></i></span><span>مهام متأخرة</span><strong class="tile-number">@(dashboard?.OverdueTasksCount ?? 0)</strong><span class="tile-footer">تحتاج متابعة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-clipboard-check"></i></span><span>اعتمادات</span><strong class="tile-number">@(dashboard?.PendingApprovalsCount ?? 0)</strong><span class="tile-footer">بانتظار القرار</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-user-plus"></i></span><span>تسجيلات</span><strong class="tile-number">@(dashboard?.PendingRegistrationsCount ?? 0)</strong><span class="tile-footer">بانتظار القرار</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-calendar-days"></i></span><span>جلسات قادمة</span><strong class="tile-number">@(dashboard?.UpcomingSessionsCount ?? 0)</strong><span class="tile-footer">خلال 30 يوم</span></article>
+</section>
+
+<section class="circle-tiles" style="margin-top:14px">
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-square-poll-vertical"></i></span><span>استبيانات نشطة</span><strong class="tile-number">@(dashboard?.ActiveSurveysCount ?? 0)</strong><span class="tile-footer">متاحة للتعبئة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-certificate"></i></span><span>شهادات</span><strong class="tile-number">@(dashboard?.IssuedCertificatesCount ?? 0)</strong><span class="tile-footer">تم إصدارها</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-truck-field"></i></span><span>عروض موردين</span><strong class="tile-number">@(dashboard?.PendingSupplierProposalsCount ?? 0)</strong><span class="tile-footer">مقدمة للمراجعة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-hand-holding-heart"></i></span><span>تأهيل مفتوح</span><strong class="tile-number">@(dashboard?.OpenQualificationCasesCount ?? 0)</strong><span class="tile-footer">قيد المعالجة</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-chart-simple"></i><div><h2>مؤشرات مختصرة</h2><p>حضور البرنامج والأنشطة الأخيرة وحجم التنفيذ المالي.</p></div></div>
+    <div class="circle-tiles">
+        <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-user-check"></i></span><span>حضور مستفيدين</span><strong class="tile-number">@(dashboard?.AttendedRegistrationsCount ?? 0)</strong><span class="tile-footer">تسجيلات حضرت</span></article>
+        <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-clock-rotate-left"></i></span><span>أنشطة حديثة</span><strong class="tile-number">@(dashboard?.RecentActivityCount ?? 0)</strong><span class="tile-footer">آخر 30 يوم</span></article>
+        <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-wallet"></i></span><span>الميزانية</span><strong class="tile-number">@(dashboard?.TotalBudget ?? 0)</strong><span class="tile-footer">إجمالي معتمد</span></article>
+        <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-check-double"></i></span><span>مكتملة</span><strong class="tile-number">@(dashboard?.CompletedProjectsCount ?? 0)</strong><span class="tile-footer">مشاريع وبرامج</span></article>
+    </div>
+</section>
+
 <section class="panel" style="margin-top:14px">
     <div class="panel-heading"><i class="fa-solid fa-gear"></i><div><h2>عمليات البرامج والمشاريع</h2><p>تشغيل دورة المشروع من الإنشاء إلى التخطيط والتنفيذ والمتابعة والإغلاق.</p></div></div>
     <div class="actions-row">

@@ -25,6 +25,8 @@ public class EvaluationFollowUpController(IEvaluationFollowUpService service) : 
     public async Task<IActionResult> Activities([FromQuery] int? caseId, [FromQuery] FollowUpSubjectType? subjectType, [FromQuery] bool nextActionsOnly, CancellationToken ct) => ToAction(await service.GetActivitiesAsync(caseId, subjectType, nextActionsOnly, ct));
     [HttpPost("activities")]
     public async Task<IActionResult> SaveActivity([FromBody] SaveFollowUpActivityRequest request, CancellationToken ct) => ToAction(await service.SaveActivityAsync(null, request, ct));
+    [HttpPut("activities/{id:int}")]
+    public async Task<IActionResult> UpdateActivity(int id, [FromBody] SaveFollowUpActivityRequest request, CancellationToken ct) => ToAction(await service.SaveActivityAsync(id, request, ct));
 
     private IActionResult ToAction<T>(Application.Abstraction.Result<T> result) => result.IsSuccess ? Ok(result.Value) : result.ToProblem();
 }

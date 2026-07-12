@@ -20,14 +20,58 @@
     <div class="actions-row"><button class="primary" @onclick="GenerateAsync">توليد المعاينة</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
 </section>
 
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-file-signature"></i><div><h2>ملاحظات الاعتماد والدفع</h2><p>تستخدم عند مراجعة أو اعتماد أو صرف سجل راتب.</p></div></div>
+    <div class="form-grid compact">
+        <label class="span-2">ملاحظات القرار<input @bind="decisionNotes" /></label>
+    </div>
+</section>
+
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-table-list"></i> سجلات الرواتب</span></div>
     <table>
-        <thead><tr><th>الشهر</th><th>الموظف</th><th>الأساسي</th><th>البدلات</th><th>الاستقطاعات</th><th>الصافي</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الشهر</th><th>الموظف</th><th>الأساسي</th><th>البدلات</th><th>الاستقطاعات</th><th>الصافي</th><th>الحالة</th><th>التواريخ</th><th>ملاحظات القرار</th><th>إجراءات</th></tr></thead>
         <tbody>
             @foreach (var item in records)
             {
-                <tr><td>@item.PayrollMonth.ToString("yyyy-MM")</td><td>@item.EmployeeName</td><td>@item.BasicSalary</td><td>@item.Allowances</td><td>@item.Deductions</td><td>@item.NetSalary</td><td><span class="status">@item.Status</span></td></tr>
+                <tr>
+                    <td>@item.PayrollMonth.ToString("yyyy-MM")</td>
+                    <td>@item.EmployeeName</td>
+                    <td>@item.BasicSalary</td>
+                    <td>@item.Allowances</td>
+                    <td>@item.Deductions</td>
+                    <td>@item.NetSalary</td>
+                    <td><span class="status">@item.Status</span></td>
+                    <td class="small-cell">
+                        @if (item.ReviewedAt.HasValue)
+                        {
+                            <div>مراجعة: @item.ReviewedAt.Value.ToString("yyyy-MM-dd")</div>
+                        }
+                        @if (item.ApprovedAt.HasValue)
+                        {
+                            <div>اعتماد: @item.ApprovedAt.Value.ToString("yyyy-MM-dd")</div>
+                        }
+                        @if (item.PaidAt.HasValue)
+                        {
+                            <div>صرف: @item.PaidAt.Value.ToString("yyyy-MM-dd")</div>
+                        }
+                    </td>
+                    <td>@item.DecisionNotes</td>
+                    <td>
+                        @if (item.Status == PayrollRecordStatus.Draft.ToString())
+                        {
+                            <button class="secondary small" @onclick="() => DecideAsync(item.Id, PayrollRecordStatus.Reviewed)">مراجعة</button>
+                        }
+                        else if (item.Status == PayrollRecordStatus.Reviewed.ToString())
+                        {
+                            <button class="secondary small" @onclick="() => DecideAsync(item.Id, PayrollRecordStatus.Approved)">اعتماد</button>
+                        }
+                        else if (item.Status == PayrollRecordStatus.Approved.ToString())
+                        {
+                            <button class="primary small" @onclick="() => DecideAsync(item.Id, PayrollRecordStatus.Paid)">صرف</button>
+                        }
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
@@ -38,6 +82,7 @@
     private DateTime payrollMonth = new(DateTime.UtcNow.AddHours(3).Year, DateTime.UtcNow.AddHours(3).Month, 1);
     private decimal defaultDeductions;
     private string? notes;
+    private string? decisionNotes;
     private bool success;
     private string? message;
 
@@ -48,6 +93,14 @@
     private async Task GenerateAsync()
     {
         var result = await HR.GeneratePayrollPreviewAsync(new GeneratePayrollPreviewRequest(payrollMonth, defaultDeductions, notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task DecideAsync(int id, PayrollRecordStatus status)
+    {
+        var result = await HR.DecidePayrollRecordAsync(id, status, decisionNotes);
         success = result.Success;
         message = result.Message;
         await LoadAsync();

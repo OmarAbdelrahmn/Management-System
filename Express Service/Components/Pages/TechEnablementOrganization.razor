@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-sitemap"></i><div><h2>تعيين تنظيمي</h2><p>الهيكل الإداري، المناصب الاعتبارية، اللجان، التواقيع، ودورات الهيكل الإداري.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-sitemap"></i><div><h2>@(editingId.HasValue ? "تعديل تعيين تنظيمي" : "تعيين تنظيمي")</h2><p>الهيكل الإداري، المناصب الاعتبارية، اللجان، التواقيع، ودورات الهيكل الإداري.</p></div></div>
     <div class="form-grid compact">
         <label>الوحدة<input @bind="unitName" /></label>
         <label>المكلف<input @bind="assigneeName" /></label>
@@ -22,17 +22,37 @@
         <label>نشط<input type="checkbox" @bind="isActive" /></label>
         <label class="span-2">ملاحظات<input @bind="notes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ التعيين</button><button class="secondary" @onclick="LoadActiveAsync">النشطة</button><button class="secondary" @onclick="LoadCommitteesAsync">اللجان</button><button class="secondary" @onclick="LoadAsync">كل التعيينات</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingId.HasValue ? "حفظ التعديل" : "حفظ التعيين")</button>
+        @if (editingId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadActiveAsync">النشطة</button>
+        <button class="secondary" @onclick="LoadCommitteesAsync">اللجان</button>
+        <button class="secondary" @onclick="LoadAsync">كل التعيينات</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-database"></i> تعيينات الهيكل</span></div>
     <table>
-        <thead><tr><th>الوحدة</th><th>المكلف</th><th>النوع</th><th>الفترة</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الوحدة</th><th>المكلف</th><th>النوع</th><th>الفترة</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var item in assignments)
             {
-                <tr><td>@item.UnitName<br />@item.RoleTitle</td><td>@item.AssigneeName</td><td>@item.AssignmentType</td><td>@item.EffectiveFrom.ToString("yyyy-MM-dd")<br />@item.EffectiveTo?.ToString("yyyy-MM-dd")</td><td>@(item.IsActive ? "نشط" : "غير نشط")<br />@item.Notes</td></tr>
+                <tr>
+                    <td>@item.UnitName<br />@item.RoleTitle</td>
+                    <td>@item.AssigneeName</td>
+                    <td>@item.AssignmentType</td>
+                    <td>@item.EffectiveFrom.ToString("yyyy-MM-dd")<br />@item.EffectiveTo?.ToString("yyyy-MM-dd")</td>
+                    <td>@(item.IsActive ? "نشط" : "غير نشط")<br />@item.Notes</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => Edit(item))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => ToggleActiveAsync(item, true))">تفعيل</button>
+                        <button class="secondary" @onclick="@(() => ToggleActiveAsync(item, false))">إيقاف</button>
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
@@ -40,6 +60,7 @@
 
 @code {
     private List<OrganizationAssignmentResponse> assignments = [];
+    private int? editingId;
     private string unitName = string.Empty;
     private string assigneeName = string.Empty;
     private OrganizationAssignmentType assignmentType = OrganizationAssignmentType.Position;
@@ -55,5 +76,37 @@
     private async Task LoadAsync() => assignments = await Tech.GetOrganizationAssignmentsAsync();
     private async Task LoadActiveAsync() => assignments = await Tech.GetOrganizationAssignmentsAsync(isActive: true);
     private async Task LoadCommitteesAsync() => assignments = await Tech.GetOrganizationAssignmentsAsync(OrganizationAssignmentType.Committee);
-    private async Task SaveAsync(){ var result = await Tech.SaveOrganizationAssignmentAsync(null, new SaveOrganizationAssignmentRequest(unitName, assigneeName, assignmentType, roleTitle, effectiveFrom, effectiveTo, isActive, notes)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task SaveAsync(){ var result = await Tech.SaveOrganizationAssignmentAsync(editingId, new SaveOrganizationAssignmentRequest(unitName, assigneeName, assignmentType, roleTitle, effectiveFrom, effectiveTo, isActive, notes)); success = result.Success; message = result.Message; if (success) ResetForm(); await LoadAsync(); }
+    private async Task ToggleActiveAsync(OrganizationAssignmentResponse item, bool active)
+    {
+        var parsedType = Enum.TryParse<OrganizationAssignmentType>(item.AssignmentType, out var type) ? type : OrganizationAssignmentType.Position;
+        var result = await Tech.SaveOrganizationAssignmentAsync(item.Id, new SaveOrganizationAssignmentRequest(item.UnitName, item.AssigneeName, parsedType, item.RoleTitle, item.EffectiveFrom, item.EffectiveTo, active, item.Notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+    private void Edit(OrganizationAssignmentResponse item)
+    {
+        editingId = item.Id;
+        unitName = item.UnitName;
+        assigneeName = item.AssigneeName;
+        assignmentType = Enum.TryParse<OrganizationAssignmentType>(item.AssignmentType, out var parsedType) ? parsedType : OrganizationAssignmentType.Position;
+        roleTitle = item.RoleTitle;
+        effectiveFrom = item.EffectiveFrom;
+        effectiveTo = item.EffectiveTo;
+        isActive = item.IsActive;
+        notes = item.Notes;
+    }
+    private void ResetForm()
+    {
+        editingId = null;
+        unitName = string.Empty;
+        assigneeName = string.Empty;
+        assignmentType = OrganizationAssignmentType.Position;
+        roleTitle = null;
+        effectiveFrom = DateTime.UtcNow.AddHours(3).Date;
+        effectiveTo = null;
+        isActive = true;
+        notes = null;
+    }
 }

@@ -78,6 +78,12 @@ public class HumanResourceUiService(IHumanResourceService humanResources)
         return result.IsSuccess ? (true, "تم تسجيل الحضور.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> UpdateAttendanceAsync(int id, RecordEmployeeAttendanceRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await humanResources.UpdateAttendanceAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث سجل الحضور.") : (false, result.Error.Description);
+    }
+
     public async Task<List<EmployeeLeaveRequestResponse>> GetLeaveRequestsAsync(int? employeeId = null, CancellationToken cancellationToken = default)
     {
         var result = await humanResources.GetLeaveRequestsAsync(employeeId, cancellationToken);
@@ -106,6 +112,12 @@ public class HumanResourceUiService(IHumanResourceService humanResources)
     {
         var result = await humanResources.AddDocumentAsync(request, cancellationToken);
         return result.IsSuccess ? (true, "تمت إضافة المستند.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> UpdateDocumentAsync(int id, AddEmployeeDocumentRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await humanResources.UpdateDocumentAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث المستند.") : (false, result.Error.Description);
     }
 
     public async Task<List<EmployeeDisciplinaryRecordResponse>> GetDisciplinaryRecordsAsync(int? employeeId = null, EmployeeDisciplinaryRecordType? type = null, CancellationToken cancellationToken = default)
@@ -150,6 +162,12 @@ public class HumanResourceUiService(IHumanResourceService humanResources)
         return result.IsSuccess ? (true, "تم حفظ التقييم.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> DecideEvaluationAsync(int id, EmployeeEvaluationStatus status, string? notes, CancellationToken cancellationToken = default)
+    {
+        var result = await humanResources.DecideEvaluationAsync(id, new DecideEmployeeEvaluationRequest(status, notes), cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث قرار التقييم.") : (false, result.Error.Description);
+    }
+
     public async Task<List<EmployeeCardIssueResponse>> GetCardIssuesAsync(int? employeeId = null, string? cardType = null, CancellationToken cancellationToken = default)
     {
         var result = await humanResources.GetCardIssuesAsync(employeeId, cardType, cancellationToken);
@@ -160,6 +178,12 @@ public class HumanResourceUiService(IHumanResourceService humanResources)
     {
         var result = await humanResources.IssueCardAsync(request, cancellationToken);
         return result.IsSuccess ? (true, "تم إصدار البطاقة.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> DecideCardIssueAsync(int id, HumanResourceRequestStatus status, string? notes, CancellationToken cancellationToken = default)
+    {
+        var result = await humanResources.DecideCardIssueAsync(id, new DecideEmployeeCardIssueRequest(status, notes), cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث حالة البطاقة.") : (false, result.Error.Description);
     }
 
     public async Task<List<EmployeeLetterRequestResponse>> GetLetterRequestsAsync(int? employeeId = null, HumanResourceRequestStatus? status = null, CancellationToken cancellationToken = default)
@@ -190,6 +214,12 @@ public class HumanResourceUiService(IHumanResourceService humanResources)
     {
         var result = await humanResources.GeneratePayrollPreviewAsync(request, cancellationToken);
         return result.IsSuccess ? (true, "تم توليد معاينة الرواتب.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> DecidePayrollRecordAsync(int id, PayrollRecordStatus status, string? notes, CancellationToken cancellationToken = default)
+    {
+        var result = await humanResources.DecidePayrollRecordAsync(id, new DecidePayrollRecordRequest(status, notes), cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث حالة سجل الراتب.") : (false, result.Error.Description);
     }
 
     public async Task<List<AttendancePolicyResponse>> GetAttendancePoliciesAsync(CancellationToken cancellationToken = default)
@@ -306,6 +336,12 @@ public class HumanResourceUiService(IHumanResourceService humanResources)
         return result.IsSuccess ? (true, "تم تحديث حالة طلب التوظيف.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> ConvertRecruitmentToEmployeeAsync(int id, ConvertRecruitmentToEmployeeRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await humanResources.ConvertRecruitmentToEmployeeAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, $"تم إنشاء ملف الموظف برقم {result.Value.EmployeeNumber}.") : (false, result.Error.Description);
+    }
+
     public async Task<List<EmployeeAdministrativeRequestResponse>> GetAdministrativeRequestsAsync(int? employeeId = null, HumanResourceRequestStatus? status = null, CancellationToken cancellationToken = default)
     {
         var result = await humanResources.GetAdministrativeRequestsAsync(employeeId, status, cancellationToken);
@@ -322,5 +358,11 @@ public class HumanResourceUiService(IHumanResourceService humanResources)
     {
         var result = await humanResources.DecideAdministrativeRequestAsync(id, new DecideHumanResourceItemRequest(status, notes), cancellationToken);
         return result.IsSuccess ? (true, "تم تحديث حالة الطلب الإداري.") : (false, result.Error.Description);
+    }
+
+    public async Task<List<HumanResourceActivityResponse>> GetActivitiesAsync(HumanResourceActivityEntityType? entityType = null, int? entityId = null, int? employeeId = null, CancellationToken cancellationToken = default)
+    {
+        var result = await humanResources.GetActivitiesAsync(entityType, entityId, employeeId, cancellationToken);
+        return result.IsSuccess ? result.Value.ToList() : [];
     }
 }

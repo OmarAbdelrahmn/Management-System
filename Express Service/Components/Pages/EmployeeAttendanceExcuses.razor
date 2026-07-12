@@ -26,19 +26,37 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-clipboard-list"></i> الأذونات</span></div>
     <table>
-        <thead><tr><th>الموظف</th><th>اليوم</th><th>النوع</th><th>الوقت</th><th>الحالة</th><th>قرار</th></tr></thead>
+        <thead><tr><th>الموظف</th><th>اليوم</th><th>النوع</th><th>الوقت</th><th>الحالة</th><th>قرار</th><th>السجل</th></tr></thead>
         <tbody>
             @foreach (var item in excuses)
             {
-                <tr><td>@item.EmployeeName</td><td>@item.WorkDate.ToString("yyyy-MM-dd")</td><td>@item.ExcuseType</td><td>@item.FromTime - @item.ToTime</td><td><span class="status">@item.Status</span></td><td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Rejected))">رفض</button></td></tr>
+                <tr><td>@item.EmployeeName</td><td>@item.WorkDate.ToString("yyyy-MM-dd")</td><td>@item.ExcuseType</td><td>@item.FromTime - @item.ToTime</td><td><span class="status">@item.Status</span></td><td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Rejected))">رفض</button></td><td><button class="secondary" @onclick="@(() => LoadActivityAsync(item))">السجل</button></td></tr>
             }
         </tbody>
     </table>
 </section>
 
+@if (activities.Count > 0)
+{
+    <section class="table-section" style="margin-top:14px">
+        <div class="table-title"><span><i class="fa-solid fa-clock-rotate-left"></i> سجل @activityTitle</span></div>
+        <table>
+            <thead><tr><th>الوقت</th><th>الإجراء</th><th>من</th><th>إلى</th><th>ملاحظات</th></tr></thead>
+            <tbody>
+                @foreach (var item in activities)
+                {
+                    <tr><td>@item.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td><td>@item.Action</td><td>@item.FromStatus</td><td>@item.ToStatus</td><td>@item.Notes</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
 @code {
     private List<EmployeeResponse> employees = [];
     private List<AttendanceExcuseResponse> excuses = [];
+    private List<HumanResourceActivityResponse> activities = [];
+    private string? activityTitle;
     private int employeeId;
     private DateTime workDate = DateTime.UtcNow.AddHours(3).Date;
     private string excuseType = "استئذان";
@@ -71,5 +89,11 @@
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private async Task LoadActivityAsync(AttendanceExcuseResponse item)
+    {
+        activityTitle = $"{item.EmployeeName} - {item.ExcuseType}";
+        activities = await HR.GetActivitiesAsync(HumanResourceActivityEntityType.AttendanceExcuse, item.Id);
     }
 }

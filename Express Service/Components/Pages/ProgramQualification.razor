@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-hands-holding-circle"></i><div><h2>حالة تأهيل</h2><p>تسجيل المستفيدين المحتاجين للتأهيل ورأي الإدارة والمشروع المرتبط.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-hands-holding-circle"></i><div><h2>@(editingCaseId.HasValue ? "تعديل حالة تأهيل" : "حالة تأهيل")</h2><p>تسجيل وتصحيح المستفيدين المحتاجين للتأهيل ورأي الإدارة والمشروع المرتبط.</p></div></div>
     <div class="form-grid">
         <label>مشروع مرتبط<select @bind="projectIdText"><option value="">بدون مشروع</option>@foreach (var project in projects){<option value="@project.Id">@project.Name</option>}</select></label>
         <label>اسم المستفيد<input @bind="beneficiaryName" /></label>
@@ -20,20 +20,37 @@
         <label>عدد الأقساط<input type="number" step="1" @bind="installmentCount" /></label>
         <label class="span-2">ملخص الاحتياج<textarea @bind="needSummary"></textarea></label>
         <label class="span-2">رأي الإدارة<textarea @bind="managementOpinion"></textarea></label>
+        <label class="span-2">ملاحظات الحالة<input @bind="caseNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveCaseAsync">حفظ الحالة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveCaseAsync">@(editingCaseId.HasValue ? "حفظ التعديل" : "حفظ الحالة")</button>
+        @if (editingCaseId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetCaseForm">إلغاء التعديل</button>
+        }
+    </div>
 </section>
 
 <section class="panel" style="margin-top:14px">
-    <div class="panel-heading"><i class="fa-solid fa-money-check"></i><div><h2>قسط تأهيل</h2><p>إدارة الأقساط والمتأخرين والمبالغ المسددة.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-money-check"></i><div><h2>@(editingInstallmentId.HasValue ? "تعديل قسط تأهيل" : "قسط تأهيل")</h2><p>إدارة وتصحيح الأقساط والمتأخرين والمبالغ المسددة.</p></div></div>
     <div class="form-grid compact">
         <label>الحالة<select @bind="caseId">@foreach (var item in cases){<option value="@item.Id">@item.BeneficiaryName</option>}</select></label>
         <label>تاريخ الاستحقاق<input type="date" @bind="dueDate" /></label>
+        <label>الفاصل بالأشهر<input type="number" step="1" min="1" @bind="monthsBetweenInstallments" /></label>
         <label>المبلغ<input type="number" step="0.01" @bind="installmentAmount" /></label>
         <label>السداد<input type="number" step="0.01" @bind="paymentAmount" /></label>
         <label class="span-2">ملاحظات<input @bind="installmentNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveInstallmentAsync">حفظ قسط</button><button class="secondary" @onclick="PaySelectedInstallmentAsync">تسجيل سداد أول قسط ظاهر</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveInstallmentAsync">@(editingInstallmentId.HasValue ? "حفظ التعديل" : "حفظ قسط")</button>
+        @if (editingInstallmentId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetInstallmentForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="GenerateInstallmentsAsync">إنشاء جدول الأقساط</button>
+        <button class="secondary" @onclick="PaySelectedInstallmentAsync">تسجيل سداد القسط المحدد</button>
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
 </section>
 
 <section class="table-section">
@@ -49,6 +66,7 @@
                     <td>@item.ProjectName<br />@item.ManagementOpinion</td>
                     <td>@item.Status / @item.RemainingAmount</td>
                     <td>
+                        <button class="secondary" @onclick="@(() => EditCase(item))">تعديل</button>
                         <button class="secondary" @onclick="@(() => UpdateCaseStatusAsync(item.Id, ProgramQualificationCaseStatus.Approved))">اعتماد</button>
                         <button class="secondary" @onclick="@(() => UpdateCaseStatusAsync(item.Id, ProgramQualificationCaseStatus.Completed))">إكمال</button>
                     </td>
@@ -56,7 +74,7 @@
             }
             @foreach (var installment in installments)
             {
-                <tr><td>قسط</td><td>@installment.BeneficiaryName</td><td>@installment.DueDate.ToString("yyyy-MM-dd") / @installment.Amount</td><td>@installment.Status / @installment.PaidAmount</td><td></td></tr>
+                <tr><td>قسط</td><td>@installment.BeneficiaryName</td><td>@installment.DueDate.ToString("yyyy-MM-dd") / @installment.Amount</td><td>@installment.Status / @installment.PaidAmount</td><td><button class="secondary" @onclick="@(() => EditInstallment(installment))">تعديل/سداد</button></td></tr>
             }
         </tbody>
     </table>
@@ -73,11 +91,15 @@
     private ProgramQualificationCaseStatus caseStatus = ProgramQualificationCaseStatus.Required;
     private decimal approvedAmount;
     private int installmentCount;
+    private string? caseNotes;
+    private int? editingCaseId;
     private int caseId;
     private DateTime dueDate = DateTime.UtcNow.AddHours(3).Date.AddMonths(1);
+    private int monthsBetweenInstallments = 1;
     private decimal installmentAmount;
     private decimal paymentAmount;
     private string? installmentNotes;
+    private int? editingInstallmentId;
     private bool success;
     private string? message;
 
@@ -99,9 +121,11 @@
     private async Task SaveCaseAsync()
     {
         var projectId = int.TryParse(projectIdText, out var value) ? value : (int?)null;
-        var result = await ProgramsProjects.SaveQualificationCaseAsync(null, new SaveProgramQualificationCaseRequest(projectId, beneficiaryName, needSummary, managementOpinion, caseStatus, approvedAmount, installmentCount, null));
+        var result = await ProgramsProjects.SaveQualificationCaseAsync(editingCaseId, new SaveProgramQualificationCaseRequest(projectId, beneficiaryName, needSummary, managementOpinion, caseStatus, approvedAmount, installmentCount, caseNotes));
         success = result.Success;
         message = result.Message;
+        if (success)
+            ResetCaseForm();
         await LoadAsync();
     }
 
@@ -115,7 +139,17 @@
 
     private async Task SaveInstallmentAsync()
     {
-        var result = await ProgramsProjects.SaveQualificationInstallmentAsync(null, new SaveProgramQualificationInstallmentRequest(caseId, dueDate, installmentAmount, installmentNotes));
+        var result = await ProgramsProjects.SaveQualificationInstallmentAsync(editingInstallmentId, new SaveProgramQualificationInstallmentRequest(caseId, dueDate, installmentAmount, installmentNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetInstallmentForm();
+        await LoadAsync();
+    }
+
+    private async Task GenerateInstallmentsAsync()
+    {
+        var result = await ProgramsProjects.GenerateQualificationInstallmentsAsync(caseId, new GenerateQualificationInstallmentsRequest(dueDate, monthsBetweenInstallments, installmentNotes));
         success = result.Success;
         message = result.Message;
         await LoadAsync();
@@ -123,17 +157,68 @@
 
     private async Task PaySelectedInstallmentAsync()
     {
-        var installment = installments.FirstOrDefault(x => x.ProgramQualificationCaseId == caseId);
+        var installment = editingInstallmentId.HasValue
+            ? installments.FirstOrDefault(x => x.Id == editingInstallmentId.Value)
+            : installments.FirstOrDefault(x => x.ProgramQualificationCaseId == caseId);
         if (installment is null)
         {
             success = false;
-            message = "لا يوجد قسط للسداد.";
+            message = "لا يوجد قسط محدد للسداد.";
             return;
         }
 
         var result = await ProgramsProjects.RecordQualificationInstallmentPaymentAsync(installment.Id, new RecordQualificationInstallmentPaymentRequest(paymentAmount, DateTime.UtcNow.AddHours(3), installmentNotes));
         success = result.Success;
         message = result.Message;
+        if (success)
+            ResetInstallmentForm();
         await LoadAsync();
+    }
+
+    private void EditCase(ProgramQualificationCaseResponse item)
+    {
+        editingCaseId = item.Id;
+        projectIdText = item.ProgramProjectId?.ToString() ?? string.Empty;
+        beneficiaryName = item.BeneficiaryName;
+        needSummary = item.NeedSummary;
+        managementOpinion = item.ManagementOpinion;
+        caseStatus = Enum.TryParse<ProgramQualificationCaseStatus>(item.Status, out var parsedStatus) ? parsedStatus : ProgramQualificationCaseStatus.Required;
+        approvedAmount = item.ApprovedAmount;
+        installmentCount = item.InstallmentCount;
+        caseNotes = item.Notes;
+        caseId = item.Id;
+    }
+
+    private void ResetCaseForm()
+    {
+        editingCaseId = null;
+        projectIdText = string.Empty;
+        beneficiaryName = string.Empty;
+        needSummary = string.Empty;
+        managementOpinion = null;
+        caseStatus = ProgramQualificationCaseStatus.Required;
+        approvedAmount = 0;
+        installmentCount = 0;
+        caseNotes = null;
+    }
+
+    private void EditInstallment(ProgramQualificationInstallmentResponse item)
+    {
+        editingInstallmentId = item.Id;
+        caseId = item.ProgramQualificationCaseId;
+        dueDate = item.DueDate;
+        installmentAmount = item.Amount;
+        paymentAmount = item.PaidAmount > 0 ? item.PaidAmount : item.Amount;
+        installmentNotes = item.Notes;
+    }
+
+    private void ResetInstallmentForm()
+    {
+        editingInstallmentId = null;
+        caseId = cases.FirstOrDefault()?.Id ?? 0;
+        dueDate = DateTime.UtcNow.AddHours(3).Date.AddMonths(1);
+        installmentAmount = 0;
+        paymentAmount = 0;
+        installmentNotes = null;
     }
 }

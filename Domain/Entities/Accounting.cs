@@ -52,7 +52,8 @@ public enum ExpenseVoucherKind
     CustodySettlement = 5,
     ExchangeOrder = 6,
     ExchangeSponsorship = 7,
-    ExchangeSponsorshipMultiple = 8
+    ExchangeSponsorshipMultiple = 8,
+    Salary = 9
 }
 
 public enum DeferredReceivableKind

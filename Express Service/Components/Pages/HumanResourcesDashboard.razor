@@ -12,6 +12,29 @@
     <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-money-bill"></i></span><span>الرواتب</span><strong class="tile-number">@(dashboard?.MonthlyPayrollTotal ?? 0)</strong><span class="tile-footer">شهرياً</span></article>
 </section>
 
+<section class="circle-tiles" style="margin-top:14px">
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-clock"></i></span><span>استئذانات الحضور</span><strong class="tile-number">@(dashboard?.PendingAttendanceExcusesCount ?? 0)</strong><span class="tile-footer">بانتظار القرار</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-file-signature"></i></span><span>طلبات إدارية</span><strong class="tile-number">@(dashboard?.PendingAdministrativeRequestsCount ?? 0)</strong><span class="tile-footer">بانتظار القرار</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-chart-line"></i></span><span>تقييمات</span><strong class="tile-number">@(dashboard?.PendingEvaluationsCount ?? 0)</strong><span class="tile-footer">بانتظار الاعتماد</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-helmet-safety"></i></span><span>السلامة</span><strong class="tile-number">@(dashboard?.OpenSafetyInspectionsCount ?? 0)</strong><span class="tile-footer">مفتوحة أو قيد المعالجة</span></article>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading">
+        <i class="fa-solid fa-money-check-dollar"></i>
+        <div>
+            <h2>متابعة رواتب الشهر</h2>
+            <p>ملخص دورة الرواتب الحالية من المسودة حتى الاعتماد والصرف.</p>
+        </div>
+    </div>
+    <div class="circle-tiles">
+        <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-file-invoice"></i></span><span>مسودة</span><strong class="tile-number">@(dashboard?.DraftPayrollRecordsCount ?? 0)</strong><span class="tile-footer">تحتاج مراجعة</span></article>
+        <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-user-check"></i></span><span>مراجعة</span><strong class="tile-number">@(dashboard?.ReviewedPayrollRecordsCount ?? 0)</strong><span class="tile-footer">تحتاج اعتماد</span></article>
+        <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-circle-check"></i></span><span>معتمدة</span><strong class="tile-number">@(dashboard?.ApprovedPayrollRecordsCount ?? 0)</strong><span class="tile-footer">جاهزة للصرف</span></article>
+        <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-sack-dollar"></i></span><span>إجمالي معتمد/مصروف</span><strong class="tile-number">@(dashboard?.ApprovedPayrollTotal ?? 0)</strong><span class="tile-footer">للشهر الحالي</span></article>
+    </div>
+</section>
+
 <section class="panel" style="margin-top:14px">
     <div class="panel-heading">
         <i class="fa-solid fa-sitemap"></i>
@@ -38,8 +61,34 @@
     </div>
 </section>
 
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-clock-rotate-left"></i> أحدث أنشطة الموارد البشرية (@(dashboard?.RecentActivityCount ?? 0) خلال آخر 30 يوم)</span></div>
+    <table>
+        <thead><tr><th>الوقت</th><th>النوع</th><th>العنوان</th><th>الموظف</th><th>الإجراء</th><th>الحالة</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+            @foreach (var item in activities)
+            {
+                <tr>
+                    <td>@item.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@item.EntityType</td>
+                    <td>@item.Title</td>
+                    <td>@item.EmployeeName</td>
+                    <td>@item.Action</td>
+                    <td>@item.FromStatus -> @item.ToStatus</td>
+                    <td>@item.Notes</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
 @code {
     private HumanResourceDashboardResponse? dashboard;
+    private List<HumanResourceActivityResponse> activities = [];
 
-    protected override async Task OnInitializedAsync() => dashboard = await HR.GetDashboardAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        dashboard = await HR.GetDashboardAsync();
+        activities = await HR.GetActivitiesAsync();
+    }
 }

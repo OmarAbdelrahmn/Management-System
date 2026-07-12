@@ -29,4 +29,5 @@ public interface IInstitutionalExcellenceService
     Task<Result<IEnumerable<StrategicVariableResponse>>> GetStrategicVariablesAsync(int? planId = null, CancellationToken cancellationToken = default);
     Task<Result<StrategicVariableResponse>> SaveStrategicVariableAsync(int? id, SaveStrategicVariableRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<StrategicVariableResponse>>> FetchAutomatedStrategicVariablesAsync(int planId, CancellationToken cancellationToken = default);
+    Task<Result<ApplyStrategicVariablesResponse>> ApplyStrategicVariablesAsync(int planId, ApplyStrategicVariablesRequest request, CancellationToken cancellationToken = default);
 }

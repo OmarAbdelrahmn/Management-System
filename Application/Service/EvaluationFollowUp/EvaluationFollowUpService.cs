@@ -69,6 +69,22 @@ public class EvaluationFollowUpService(ApplicationDbcontext dbcontext) : IEvalua
         if (entity is null)
             return Result.Failure<FollowUpCaseResponse>(EvaluationFollowUpErrors.CaseNotFound);
 
+        if (request.Status == FollowUpCaseStatus.PendingApproval && string.IsNullOrWhiteSpace(request.Note) && string.IsNullOrWhiteSpace(entity.CompletionSummary))
+            return Result.Failure<FollowUpCaseResponse>(EvaluationFollowUpErrors.CompletionSummaryRequired);
+
+        if (request.Status == FollowUpCaseStatus.Approved)
+        {
+            if (entity.Status != FollowUpCaseStatus.PendingApproval)
+                return Result.Failure<FollowUpCaseResponse>(EvaluationFollowUpErrors.InvalidStatusTransition);
+            if (string.IsNullOrWhiteSpace(entity.CompletionSummary))
+                return Result.Failure<FollowUpCaseResponse>(EvaluationFollowUpErrors.CompletionSummaryRequired);
+            if (await HasOpenNextActionsAsync(entity.Id, cancellationToken))
+                return Result.Failure<FollowUpCaseResponse>(EvaluationFollowUpErrors.OpenNextActions);
+        }
+
+        if (request.Status == FollowUpCaseStatus.Rejected && string.IsNullOrWhiteSpace(request.Note))
+            return Result.Failure<FollowUpCaseResponse>(EvaluationFollowUpErrors.InvalidRequest);
+
         entity.Status = request.Status;
         if (request.Status == FollowUpCaseStatus.Rejected) entity.RejectionNote = request.Note?.Trim();
         if (request.Status is FollowUpCaseStatus.Completed or FollowUpCaseStatus.PendingApproval) entity.CompletionSummary = request.Note?.Trim();
@@ -93,8 +109,13 @@ public class EvaluationFollowUpService(ApplicationDbcontext dbcontext) : IEvalua
         if (string.IsNullOrWhiteSpace(request.SubjectName) || string.IsNullOrWhiteSpace(request.ActivityType) || string.IsNullOrWhiteSpace(request.Summary))
             return Result.Failure<FollowUpActivityResponse>(EvaluationFollowUpErrors.InvalidRequest);
 
-        if (request.FollowUpCaseId.HasValue && !await dbcontext.FollowUpCases.AnyAsync(x => x.Id == request.FollowUpCaseId.Value, cancellationToken))
-            return Result.Failure<FollowUpActivityResponse>(EvaluationFollowUpErrors.CaseNotFound);
+        FollowUpCase? linkedCase = null;
+        if (request.FollowUpCaseId.HasValue)
+        {
+            linkedCase = await dbcontext.FollowUpCases.Include(x => x.Activities).FirstOrDefaultAsync(x => x.Id == request.FollowUpCaseId.Value, cancellationToken);
+            if (linkedCase is null)
+                return Result.Failure<FollowUpActivityResponse>(EvaluationFollowUpErrors.CaseNotFound);
+        }
 
         FollowUpActivity? entity;
         if (id.HasValue)
@@ -119,10 +140,40 @@ public class EvaluationFollowUpService(ApplicationDbcontext dbcontext) : IEvalua
         entity.OwnerName = request.OwnerName?.Trim();
         entity.RequiresNextAction = request.RequiresNextAction;
         entity.NextActionDate = request.NextActionDate;
+        entity.FollowUpCase = linkedCase;
+
+        if (linkedCase is not null && !entity.RequiresNextAction && !string.IsNullOrWhiteSpace(entity.Result))
+            await ResolveCaseNextActionsAsync(linkedCase.Id, cancellationToken);
+
+        ApplyActivityToCase(linkedCase, entity);
 
         await dbcontext.SaveChangesAsync(cancellationToken);
         var saved = await dbcontext.FollowUpActivities.AsNoTracking().Include(x => x.FollowUpCase).FirstAsync(x => x.Id == entity.Id, cancellationToken);
         return Result.Success(MapActivity(saved));
+    }
+
+    private static void ApplyActivityToCase(FollowUpCase? followUpCase, FollowUpActivity activity)
+    {
+        if (followUpCase is null || followUpCase.Status is FollowUpCaseStatus.Rejected or FollowUpCaseStatus.Completed or FollowUpCaseStatus.Approved or FollowUpCaseStatus.Archived)
+            return;
+
+        if (activity.RequiresNextAction)
+        {
+            followUpCase.Status = FollowUpCaseStatus.Running;
+            if (activity.NextActionDate.HasValue && (!followUpCase.DueDate.HasValue || activity.NextActionDate.Value < followUpCase.DueDate.Value))
+                followUpCase.DueDate = activity.NextActionDate.Value;
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(activity.Result))
+        {
+            followUpCase.Status = FollowUpCaseStatus.PendingApproval;
+            followUpCase.CompletionSummary = activity.Result;
+            return;
+        }
+
+        if (followUpCase.Status == FollowUpCaseStatus.Requested)
+            followUpCase.Status = FollowUpCaseStatus.Running;
     }
 
     private async Task<string> GenerateCaseNumberAsync(DateTime requestDate, CancellationToken cancellationToken)
@@ -130,6 +181,19 @@ public class EvaluationFollowUpService(ApplicationDbcontext dbcontext) : IEvalua
         var prefix = $"FUP-{requestDate:yyyy}-";
         var count = await dbcontext.FollowUpCases.CountAsync(x => x.CaseNumber.StartsWith(prefix), cancellationToken) + 1;
         return $"{prefix}{count:0000}";
+    }
+
+    private Task<bool> HasOpenNextActionsAsync(int caseId, CancellationToken cancellationToken) =>
+        dbcontext.FollowUpActivities.AnyAsync(x => x.FollowUpCaseId == caseId && x.RequiresNextAction, cancellationToken);
+
+    private async Task ResolveCaseNextActionsAsync(int caseId, CancellationToken cancellationToken)
+    {
+        var openNextActions = await dbcontext.FollowUpActivities
+            .Where(x => x.FollowUpCaseId == caseId && x.RequiresNextAction)
+            .ToListAsync(cancellationToken);
+
+        foreach (var nextAction in openNextActions)
+            nextAction.RequiresNextAction = false;
     }
 
     private static FollowUpCaseResponse MapCase(FollowUpCase x) =>

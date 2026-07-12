@@ -11,4 +11,6 @@ public static class DocumentationArchiveErrors
     public static readonly Error DuplicateMailNumber = new("DocumentationArchive.DuplicateMailNumber", "Correspondence mail number is already used.", StatusCodes.Status409Conflict);
     public static readonly Error OperationNotFound = new("DocumentationArchive.OperationNotFound", "Correspondence operation was not found.", StatusCodes.Status404NotFound);
     public static readonly Error DuplicateOperationNumber = new("DocumentationArchive.DuplicateOperationNumber", "Correspondence operation number is already used.", StatusCodes.Status409Conflict);
+    public static readonly Error CorrespondenceHasOpenOperations = new("DocumentationArchive.CorrespondenceHasOpenOperations", "Correspondence has open operations and cannot be removed.", StatusCodes.Status409Conflict);
+    public static readonly Error InvalidCorrespondenceStatusTransition = new("DocumentationArchive.InvalidCorrespondenceStatusTransition", "Correspondence status transition is not allowed.", StatusCodes.Status409Conflict);
 }

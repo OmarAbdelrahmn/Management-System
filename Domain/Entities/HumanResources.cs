@@ -55,6 +55,14 @@ public enum PayrollRecordStatus
     Paid = 3
 }
 
+public enum EmployeeEvaluationStatus
+{
+    Draft = 0,
+    PendingApproval = 1,
+    Approved = 2,
+    Rejected = 3
+}
+
 public enum RecruitmentRequestStatus
 {
     Requested = 0,
@@ -71,6 +79,28 @@ public enum SafetyRecordStatus
     InProgress = 1,
     Closed = 2,
     Cancelled = 3
+}
+
+public enum HumanResourceActivityEntityType
+{
+    EmployeeProfile = 0,
+    LeaveRequest = 1,
+    DisciplinaryRecord = 2,
+    LetterRequest = 3,
+    AttendanceExcuse = 4,
+    AdministrativeRequest = 5,
+    RecruitmentRequest = 6,
+    SafetyInspection = 7,
+    PayrollRecord = 8,
+    AttendanceRecord = 9,
+    EmployeeDocument = 10
+}
+
+public enum HumanResourceActivityAction
+{
+    Created = 0,
+    Updated = 1,
+    StatusChanged = 2
 }
 
 public class EmployeeDepartment : IAuditable
@@ -242,6 +272,9 @@ public class EmployeeEvaluation : IAuditable
     public string? EvaluatorName { get; set; }
     public string? Strengths { get; set; }
     public string? ImprovementAreas { get; set; }
+    public EmployeeEvaluationStatus Status { get; set; } = EmployeeEvaluationStatus.Draft;
+    public string? DecisionNotes { get; set; }
+    public DateTime? DecidedAt { get; set; }
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
     public string? CreatedByUserId { get; set; }
@@ -299,6 +332,10 @@ public class EmployeePayrollRecord : IAuditable
     public decimal NetSalary { get; set; }
     public PayrollRecordStatus Status { get; set; } = PayrollRecordStatus.Draft;
     public string? Notes { get; set; }
+    public string? DecisionNotes { get; set; }
+    public DateTime? ReviewedAt { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    public DateTime? PaidAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
     public string? CreatedByUserId { get; set; }
     public DateTime? UpdatedAt { get; set; }
@@ -435,6 +472,7 @@ public class RecruitmentRequest : IAuditable
     public DateTime? InterviewAt { get; set; }
     public string? InterviewNotes { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public int? ConvertedEmployeeProfileId { get; set; }
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
     public string? CreatedByUserId { get; set; }
@@ -443,6 +481,7 @@ public class RecruitmentRequest : IAuditable
 
     public EmployeeDepartment? Department { get; set; }
     public JobTitle? JobTitle { get; set; }
+    public EmployeeProfile? ConvertedEmployeeProfile { get; set; }
 }
 
 public class EmployeeAdministrativeRequest : IAuditable
@@ -455,6 +494,26 @@ public class EmployeeAdministrativeRequest : IAuditable
     public HumanResourceRequestStatus Status { get; set; } = HumanResourceRequestStatus.Pending;
     public string? DecisionNotes { get; set; }
     public DateTime? DecidedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
+    public string? CreatedByUserId { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedByUserId { get; set; }
+
+    public EmployeeProfile? EmployeeProfile { get; set; }
+}
+
+public class HumanResourceActivity : IAuditable
+{
+    public int Id { get; set; }
+    public HumanResourceActivityEntityType EntityType { get; set; }
+    public int EntityId { get; set; }
+    public int? EmployeeProfileId { get; set; }
+    public HumanResourceActivityAction Action { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? FromStatus { get; set; }
+    public string? ToStatus { get; set; }
+    public string? Notes { get; set; }
+    public DateTime OccurredAt { get; set; } = DateTime.UtcNow.AddHours(3);
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
     public string? CreatedByUserId { get; set; }
     public DateTime? UpdatedAt { get; set; }

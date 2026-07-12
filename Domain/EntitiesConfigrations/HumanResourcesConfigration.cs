@@ -154,8 +154,10 @@ public class EmployeeEvaluationConfigration : IEntityTypeConfiguration<EmployeeE
         entity.Property(x => x.EvaluatorName).HasMaxLength(200);
         entity.Property(x => x.Strengths).HasMaxLength(1000);
         entity.Property(x => x.ImprovementAreas).HasMaxLength(1000);
+        entity.Property(x => x.DecisionNotes).HasMaxLength(1000);
         entity.Property(x => x.Notes).HasMaxLength(1000);
         entity.HasIndex(x => new { x.EmployeeProfileId, x.PeriodStart, x.PeriodEnd });
+        entity.HasIndex(x => x.Status);
 
         entity.HasOne(x => x.EmployeeProfile)
             .WithMany(x => x.Evaluations)
@@ -211,7 +213,9 @@ public class EmployeePayrollRecordConfigration : IEntityTypeConfiguration<Employ
         entity.Property(x => x.Deductions).HasColumnType("decimal(18,2)");
         entity.Property(x => x.NetSalary).HasColumnType("decimal(18,2)");
         entity.Property(x => x.Notes).HasMaxLength(1000);
+        entity.Property(x => x.DecisionNotes).HasMaxLength(1000);
         entity.HasIndex(x => new { x.EmployeeProfileId, x.PayrollMonth }).IsUnique();
+        entity.HasIndex(x => new { x.PayrollMonth, x.Status });
 
         entity.HasOne(x => x.EmployeeProfile)
             .WithMany(x => x.PayrollRecords)
@@ -338,6 +342,11 @@ public class RecruitmentRequestConfigration : IEntityTypeConfiguration<Recruitme
             .WithMany()
             .HasForeignKey(x => x.JobTitleId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        entity.HasOne(x => x.ConvertedEmployeeProfile)
+            .WithMany()
+            .HasForeignKey(x => x.ConvertedEmployeeProfileId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
 
@@ -354,6 +363,25 @@ public class EmployeeAdministrativeRequestConfigration : IEntityTypeConfiguratio
 
         entity.HasOne(x => x.EmployeeProfile)
             .WithMany(x => x.AdministrativeRequests)
+            .HasForeignKey(x => x.EmployeeProfileId)
+            .OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
+public class HumanResourceActivityConfigration : IEntityTypeConfiguration<HumanResourceActivity>
+{
+    public void Configure(EntityTypeBuilder<HumanResourceActivity> entity)
+    {
+        entity.HasKey(x => x.Id);
+        entity.Property(x => x.Title).IsRequired().HasMaxLength(220);
+        entity.Property(x => x.FromStatus).HasMaxLength(80);
+        entity.Property(x => x.ToStatus).HasMaxLength(80);
+        entity.Property(x => x.Notes).HasMaxLength(1000);
+        entity.HasIndex(x => new { x.EntityType, x.EntityId, x.OccurredAt });
+        entity.HasIndex(x => new { x.EmployeeProfileId, x.OccurredAt });
+
+        entity.HasOne(x => x.EmployeeProfile)
+            .WithMany()
             .HasForeignKey(x => x.EmployeeProfileId)
             .OnDelete(DeleteBehavior.SetNull);
     }

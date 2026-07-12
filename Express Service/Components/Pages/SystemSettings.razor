@@ -20,17 +20,17 @@
         <label class="span-2">القيمة<textarea @bind="value"></textarea></label>
         <label class="check-row"><input type="checkbox" @bind="isEditable" /> قابل للتعديل</label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الإعداد</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الإعداد</button><button class="secondary" @onclick="ResetForm">تفريغ</button></div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-gear"></i> الإعدادات</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
     <table>
-        <thead><tr><th>المفتاح</th><th>الاسم</th><th>التصنيف</th><th>النوع</th><th>القيمة</th></tr></thead>
+        <thead><tr><th>المفتاح</th><th>الاسم</th><th>التصنيف</th><th>النوع</th><th>القيمة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var item in settings)
             {
-                <tr><td>@item.Key</td><td>@item.NameAr</td><td>@item.Category</td><td>@item.ValueType</td><td>@item.Value</td></tr>
+                <tr><td>@item.Key</td><td>@item.NameAr</td><td>@item.Category</td><td>@item.ValueType</td><td>@item.Value</td><td><button class="secondary" @onclick="@(() => Edit(item))">تعديل</button></td></tr>
             }
         </tbody>
     </table>
@@ -55,6 +55,28 @@
         var result = await Admin.SaveSettingAsync(new SaveSystemSettingRequest(key, nameAr, value, valueType, category, isEditable));
         success = result.Success;
         message = result.Message;
+        if (success)
+            ResetForm();
         await LoadAsync();
+    }
+
+    private void Edit(SystemSettingResponse item)
+    {
+        key = item.Key;
+        nameAr = item.NameAr;
+        value = item.Value;
+        category = item.Category;
+        valueType = Enum.TryParse<SystemSettingValueType>(item.ValueType, out var parsedType) ? parsedType : SystemSettingValueType.Text;
+        isEditable = item.IsEditable;
+    }
+
+    private void ResetForm()
+    {
+        key = string.Empty;
+        nameAr = string.Empty;
+        value = null;
+        category = "General";
+        valueType = SystemSettingValueType.Text;
+        isEditable = true;
     }
 }

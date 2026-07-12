@@ -11,46 +11,81 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-award"></i><div><h2>قالب شهادة وإصدار</h2><p>إدارة قوالب الشهادات وإصدار شهادات البرامج.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-award"></i><div><h2>@(editingTemplateId.HasValue ? "تعديل قالب شهادة" : "قالب شهادة وإصدار")</h2><p>إدارة قوالب الشهادات وإصدار شهادات البرامج.</p></div></div>
     <div class="form-grid compact">
         <label>البرنامج<select @bind="projectId">@foreach (var project in projects){<option value="@project.Id">@project.Name</option>}</select></label>
         <label>اسم القالب<input @bind="templateName" /></label>
         <label class="span-2">نص القالب<input @bind="bodyTemplate" /></label>
+        <label class="check-row"><input type="checkbox" @bind="templateActive" /> القالب فعال</label>
         <label>المستلم<input @bind="recipientName" /></label>
         <label>القالب<select @bind="templateIdText"><option value="">بدون قالب</option>@foreach (var template in templates){<option value="@template.Id">@template.Name</option>}</select></label>
+        <label class="span-2">تسجيل حاضر<select @bind="registrationCertificateId">@foreach (var registration in attendedRegistrations){<option value="@registration.Id">@registration.ParticipantName - @registration.ProjectName</option>}</select></label>
+        <label class="span-2">سبب إلغاء الشهادة<input @bind="certificateCancelNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveTemplateAsync">حفظ القالب</button><button class="secondary" @onclick="IssueCertificateAsync">إصدار شهادة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveTemplateAsync">@(editingTemplateId.HasValue ? "حفظ التعديل" : "حفظ القالب")</button>
+        @if (editingTemplateId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetTemplateForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="IssueCertificateAsync">إصدار شهادة</button>
+        <button class="secondary" @onclick="IssueRegistrationCertificateAsync">إصدار من تسجيل حاضر</button>
+    </div>
 </section>
 
 <section class="panel" style="margin-top:14px">
-    <div class="panel-heading"><i class="fa-solid fa-square-poll-vertical"></i><div><h2>استبيان برنامج</h2><p>إدارة الاستبيانات وسجلات الإجابات.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-square-poll-vertical"></i><div><h2>@(editingSurveyId.HasValue ? "تعديل استبيان برنامج" : "استبيان برنامج")</h2><p>إدارة الاستبيانات وسجلات الإجابات.</p></div></div>
     <div class="form-grid compact">
         <label>عنوان الاستبيان<input @bind="surveyTitle" /></label>
         <label>الحالة<select @bind="surveyStatus"><option value="@ProgramSurveyStatus.Draft">مسودة</option><option value="@ProgramSurveyStatus.Active">نشط</option><option value="@ProgramSurveyStatus.Closed">مغلق</option></select></label>
         <label class="span-2">الأسئلة JSON<input @bind="questionsJson" /></label>
+        <label class="span-2">ملاحظات الاستبيان<input @bind="surveyNotes" /></label>
         <label>الاستبيان<select @bind="surveyId">@foreach (var survey in surveys){<option value="@survey.Id">@survey.Title</option>}</select></label>
         <label>المجيب<input @bind="respondentName" /></label>
         <label class="span-2">الإجابات JSON<input @bind="answersJson" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveSurveyAsync">حفظ الاستبيان</button><button class="secondary" @onclick="SaveSurveySubmissionAsync">حفظ إجابة</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveSurveyAsync">@(editingSurveyId.HasValue ? "حفظ التعديل" : "حفظ الاستبيان")</button>
+        @if (editingSurveyId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetSurveyForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="SaveSurveySubmissionAsync">حفظ إجابة</button>
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-table"></i> السجلات</span></div>
     <table>
-        <thead><tr><th>النوع</th><th>البرنامج</th><th>العنوان/المستلم</th><th>الحالة/العدد</th></tr></thead>
+        <thead><tr><th>النوع</th><th>البرنامج</th><th>العنوان/المستلم</th><th>الحالة/العدد</th><th>إجراءات</th></tr></thead>
         <tbody>
+            @foreach (var template in templates)
+            {
+                <tr><td>قالب شهادة</td><td>@template.ProjectName</td><td>@template.Name</td><td>@(template.IsActive ? "فعال" : "موقوف")</td><td><button class="secondary small" @onclick="() => EditTemplate(template)">تعديل</button></td></tr>
+            }
             @foreach (var issue in certificateIssues)
             {
-                <tr><td>شهادة</td><td>@issue.ProjectName</td><td>@issue.RecipientName<br />@issue.CertificateNumber</td><td>@issue.Status</td></tr>
+                <tr>
+                    <td>شهادة</td>
+                    <td>@issue.ProjectName</td>
+                    <td>@issue.RecipientName<br />@issue.CertificateNumber</td>
+                    <td>@issue.Status</td>
+                    <td>
+                        @if (issue.Status == ProgramCertificateIssueStatus.Issued.ToString())
+                        {
+                            <button class="secondary small" @onclick="() => CancelCertificateAsync(issue.Id)">إلغاء</button>
+                        }
+                    </td>
+                </tr>
             }
             @foreach (var survey in surveys)
             {
-                <tr><td>استبيان</td><td>@survey.ProjectName</td><td>@survey.Title</td><td>@survey.Status / @survey.SubmissionsCount إجابات</td></tr>
+                <tr><td>استبيان</td><td>@survey.ProjectName</td><td>@survey.Title</td><td>@survey.Status / @survey.SubmissionsCount إجابات</td><td><button class="secondary small" @onclick="() => EditSurvey(survey)">تعديل</button></td></tr>
             }
             @foreach (var submission in submissions)
             {
-                <tr><td>إجابة</td><td>@submission.SurveyTitle</td><td>@submission.RespondentName</td><td>@submission.SubmittedAt.ToString("yyyy-MM-dd")</td></tr>
+                <tr><td>إجابة</td><td>@submission.SurveyTitle</td><td>@submission.RespondentName</td><td>@submission.SubmittedAt.ToString("yyyy-MM-dd")</td><td></td></tr>
             }
         </tbody>
     </table>
@@ -60,16 +95,23 @@
     private List<ProgramProjectResponse> projects = [];
     private List<ProgramCertificateTemplateResponse> templates = [];
     private List<ProgramCertificateIssueResponse> certificateIssues = [];
+    private List<ProgramRegistrationResponse> attendedRegistrations = [];
     private List<ProgramSurveyResponse> surveys = [];
     private List<ProgramSurveySubmissionResponse> submissions = [];
     private int projectId;
+    private int registrationCertificateId;
     private string templateName = string.Empty;
     private string bodyTemplate = "تشهد الجمعية بأن {name} أكمل البرنامج بنجاح.";
+    private bool templateActive = true;
+    private int? editingTemplateId;
     private string recipientName = string.Empty;
     private string templateIdText = string.Empty;
+    private string? certificateCancelNotes;
     private string surveyTitle = string.Empty;
     private string questionsJson = "[\"ما تقييمك للبرنامج؟\"]";
     private ProgramSurveyStatus surveyStatus = ProgramSurveyStatus.Draft;
+    private string? surveyNotes;
+    private int? editingSurveyId;
     private int surveyId;
     private string respondentName = string.Empty;
     private string answersJson = "{\"rating\":5}";
@@ -89,6 +131,8 @@
     {
         templates = await ProgramsProjects.GetCertificateTemplatesAsync();
         certificateIssues = await ProgramsProjects.GetCertificateIssuesAsync();
+        attendedRegistrations = await ProgramsProjects.GetRegistrationsAsync(status: ProgramRegistrationStatus.Attended);
+        registrationCertificateId = attendedRegistrations.FirstOrDefault()?.Id ?? registrationCertificateId;
         surveys = await ProgramsProjects.GetSurveysAsync();
         surveyId = surveys.FirstOrDefault()?.Id ?? surveyId;
         submissions = await ProgramsProjects.GetSurveySubmissionsAsync();
@@ -96,9 +140,11 @@
 
     private async Task SaveTemplateAsync()
     {
-        var result = await ProgramsProjects.SaveCertificateTemplateAsync(null, new SaveProgramCertificateTemplateRequest(projectId, templateName, bodyTemplate, true));
+        var result = await ProgramsProjects.SaveCertificateTemplateAsync(editingTemplateId, new SaveProgramCertificateTemplateRequest(projectId, templateName, bodyTemplate, templateActive));
         success = result.Success;
         message = result.Message;
+        if (success)
+            ResetTemplateForm();
         await LoadAsync();
     }
 
@@ -111,11 +157,22 @@
         await LoadAsync();
     }
 
-    private async Task SaveSurveyAsync()
+    private async Task IssueRegistrationCertificateAsync()
     {
-        var result = await ProgramsProjects.SaveSurveyAsync(null, new SaveProgramSurveyRequest(projectId, surveyTitle, questionsJson, surveyStatus, null));
+        var templateId = int.TryParse(templateIdText, out var value) ? value : (int?)null;
+        var result = await ProgramsProjects.IssueCertificateFromRegistrationAsync(registrationCertificateId, new IssueProgramCertificateFromRegistrationRequest(templateId, null, DateTime.UtcNow.AddHours(3), null));
         success = result.Success;
         message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveSurveyAsync()
+    {
+        var result = await ProgramsProjects.SaveSurveyAsync(editingSurveyId, new SaveProgramSurveyRequest(projectId, surveyTitle, questionsJson, surveyStatus, surveyNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetSurveyForm();
         await LoadAsync();
     }
 
@@ -125,5 +182,53 @@
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private async Task CancelCertificateAsync(int id)
+    {
+        var result = await ProgramsProjects.CancelCertificateIssueAsync(id, certificateCancelNotes);
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            certificateCancelNotes = null;
+        await LoadAsync();
+    }
+
+    private void EditTemplate(ProgramCertificateTemplateResponse template)
+    {
+        editingTemplateId = template.Id;
+        projectId = template.ProgramProjectId ?? projects.FirstOrDefault()?.Id ?? 0;
+        templateName = template.Name;
+        bodyTemplate = template.BodyTemplate;
+        templateActive = template.IsActive;
+    }
+
+    private void ResetTemplateForm()
+    {
+        editingTemplateId = null;
+        projectId = projects.FirstOrDefault()?.Id ?? 0;
+        templateName = string.Empty;
+        bodyTemplate = "تشهد الجمعية بأن {name} أكمل البرنامج بنجاح.";
+        templateActive = true;
+    }
+
+    private void EditSurvey(ProgramSurveyResponse survey)
+    {
+        editingSurveyId = survey.Id;
+        projectId = survey.ProgramProjectId;
+        surveyTitle = survey.Title;
+        questionsJson = survey.QuestionsJson;
+        surveyStatus = Enum.TryParse<ProgramSurveyStatus>(survey.Status, out var parsedStatus) ? parsedStatus : ProgramSurveyStatus.Draft;
+        surveyNotes = survey.Notes;
+    }
+
+    private void ResetSurveyForm()
+    {
+        editingSurveyId = null;
+        projectId = projects.FirstOrDefault()?.Id ?? 0;
+        surveyTitle = string.Empty;
+        questionsJson = "[\"ما تقييمك للبرنامج؟\"]";
+        surveyStatus = ProgramSurveyStatus.Draft;
+        surveyNotes = null;
     }
 }

@@ -12,6 +12,7 @@ public interface IVolunteeringService
     Task<Result<IEnumerable<VolunteerRequestResponse>>> GetRequestsAsync(VolunteerRequestSource? source = null, VolunteerRequestStatus? status = null, CancellationToken cancellationToken = default);
     Task<Result<VolunteerRequestResponse>> SaveRequestAsync(int? id, SaveVolunteerRequestRequest request, CancellationToken cancellationToken = default);
     Task<Result> UpdateRequestStatusAsync(int id, UpdateVolunteerRequestStatusRequest request, CancellationToken cancellationToken = default);
+    Task<Result<VolunteerRequestConversionResponse>> ConvertRequestToVolunteerAsync(int id, ConvertVolunteerRequestRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<VolunteerOpportunityResponse>>> GetOpportunitiesAsync(VolunteerOpportunityStatus? status = null, CancellationToken cancellationToken = default);
     Task<Result<VolunteerOpportunityResponse>> SaveOpportunityAsync(int? id, SaveVolunteerOpportunityRequest request, CancellationToken cancellationToken = default);
     Task<Result> SaveOpportunityReportAsync(int id, SaveVolunteerOpportunityReportRequest request, CancellationToken cancellationToken = default);

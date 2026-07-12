@@ -11,20 +11,21 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-folder-tree"></i><div><h2>خارطة الملفات المؤسسية</h2><p>مستندات التأسيس وملاحظات مساعد التأسيس الذكي.</p></div></div>
+        <div class="panel-heading"><i class="fa-solid fa-folder-tree"></i><div><h2>@(editingId.HasValue ? "تعديل ملف تأسيس" : "خارطة الملفات المؤسسية")</h2><p>مستندات التأسيس وملاحظات مساعد التأسيس الذكي.</p></div></div>
     <div class="form-grid compact">
         <label>الكود<input @bind="documentCode" /></label><label>العنوان<input @bind="title" /></label>
         <label>الإدارة<input @bind="ownerDepartment" /></label><label>رابط الملف<input @bind="fileUrl" /></label>
         <label>الحالة<select @bind="status"><option value="@EstablishmentDocumentStatus.Draft">مسودة</option><option value="@EstablishmentDocumentStatus.Active">نشط</option><option value="@EstablishmentDocumentStatus.NeedsReview">بحاجة مراجعة</option><option value="@EstablishmentDocumentStatus.Archived">مؤرشف</option></select></label>
         <label class="span-2">ملاحظات المساعد<input @bind="helperNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المستند</button><button class="secondary" @onclick="LoadActiveAsync">النشطة</button><button class="secondary" @onclick="LoadAsync">كل الملفات</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingId.HasValue ? "حفظ التعديل" : "حفظ المستند")</button>@if (editingId.HasValue){<button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>}<button class="secondary" @onclick="LoadActiveAsync">النشطة</button><button class="secondary" @onclick="LoadAsync">كل الملفات</button></div>
 </section>
 
-<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> ملفات التأسيس</span></div><table><thead><tr><th>الكود</th><th>العنوان</th><th>الإدارة</th><th>الحالة</th><th>ملاحظات</th></tr></thead><tbody>@foreach (var item in documents){<tr><td>@item.DocumentCode</td><td>@item.Title<br />@item.FileUrl</td><td>@item.OwnerDepartment</td><td>@item.Status</td><td>@item.HelperNotes</td></tr>}</tbody></table></section>
+<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> ملفات التأسيس</span></div><table><thead><tr><th>الكود</th><th>العنوان</th><th>الإدارة</th><th>الحالة</th><th>ملاحظات</th><th>إجراء</th></tr></thead><tbody>@foreach (var item in documents){<tr><td>@item.DocumentCode</td><td>@item.Title<br />@item.FileUrl</td><td>@item.OwnerDepartment</td><td>@item.Status</td><td>@item.HelperNotes</td><td><button class="secondary" @onclick="@(() => Edit(item))">تعديل</button><button class="secondary" @onclick="@(() => ChangeStatusAsync(item, EstablishmentDocumentStatus.Active))">تفعيل</button><button class="secondary" @onclick="@(() => ChangeStatusAsync(item, EstablishmentDocumentStatus.NeedsReview))">مراجعة</button><button class="secondary" @onclick="@(() => ChangeStatusAsync(item, EstablishmentDocumentStatus.Archived))">أرشفة</button></td></tr>}</tbody></table></section>
 
 @code {
     private List<EstablishmentDocumentResponse> documents = [];
+    private int? editingId;
     private string documentCode = $"FD-{DateTime.UtcNow:yyyyMMddHHmm}";
     private string title = string.Empty;
     private string? ownerDepartment;
@@ -36,5 +37,26 @@
     protected override async Task OnInitializedAsync() => await LoadAsync();
     private async Task LoadAsync() => documents = await Executive.GetFoundationDocumentsAsync();
     private async Task LoadActiveAsync() => documents = await Executive.GetFoundationDocumentsAsync(EstablishmentDocumentStatus.Active);
-    private async Task SaveAsync(){ var result = await Executive.SaveFoundationDocumentAsync(null, new SaveEstablishmentDocumentRequest(documentCode, title, ownerDepartment, fileUrl, status, helperNotes)); success = result.Success; message = result.Message; if (success) documentCode = $"FD-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+    private async Task SaveAsync(){ var result = await Executive.SaveFoundationDocumentAsync(editingId, new SaveEstablishmentDocumentRequest(documentCode, title, ownerDepartment, fileUrl, status, helperNotes)); success = result.Success; message = result.Message; if (success) ResetForm(); await LoadAsync(); }
+    private async Task ChangeStatusAsync(EstablishmentDocumentResponse item, EstablishmentDocumentStatus newStatus){ var result = await Executive.SaveFoundationDocumentAsync(item.Id, new SaveEstablishmentDocumentRequest(item.DocumentCode, item.Title, item.OwnerDepartment, item.FileUrl, newStatus, item.HelperNotes)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private void Edit(EstablishmentDocumentResponse item)
+    {
+        editingId = item.Id;
+        documentCode = item.DocumentCode;
+        title = item.Title;
+        ownerDepartment = item.OwnerDepartment;
+        fileUrl = item.FileUrl;
+        status = Enum.TryParse<EstablishmentDocumentStatus>(item.Status, out var parsedStatus) ? parsedStatus : EstablishmentDocumentStatus.Active;
+        helperNotes = item.HelperNotes;
+    }
+    private void ResetForm()
+    {
+        editingId = null;
+        documentCode = $"FD-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        title = string.Empty;
+        ownerDepartment = null;
+        fileUrl = null;
+        status = EstablishmentDocumentStatus.Active;
+        helperNotes = null;
+    }
 }

@@ -138,6 +138,38 @@ public class ProgramSupplierConfigration : IEntityTypeConfiguration<ProgramSuppl
     }
 }
 
+public class ProgramSupplierProposalConfigration : IEntityTypeConfiguration<ProgramSupplierProposal>
+{
+    public void Configure(EntityTypeBuilder<ProgramSupplierProposal> entity)
+    {
+        entity.HasKey(x => x.Id);
+        entity.Property(x => x.ProposalNumber).IsRequired().HasMaxLength(80);
+        entity.Property(x => x.Title).IsRequired().HasMaxLength(200);
+        entity.Property(x => x.Scope).HasMaxLength(3000);
+        entity.Property(x => x.Amount).HasColumnType("decimal(18,2)");
+        entity.Property(x => x.DecisionNotes).HasMaxLength(1000);
+        entity.Property(x => x.Notes).HasMaxLength(1000);
+        entity.HasIndex(x => x.ProposalNumber).IsUnique();
+        entity.HasIndex(x => new { x.ProgramProjectId, x.Status });
+        entity.HasIndex(x => new { x.ProgramSupplierId, x.Status });
+
+        entity.HasOne(x => x.ProgramProject)
+            .WithMany(x => x.SupplierProposals)
+            .HasForeignKey(x => x.ProgramProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasOne(x => x.ProgramSupplier)
+            .WithMany(x => x.Proposals)
+            .HasForeignKey(x => x.ProgramSupplierId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        entity.HasOne(x => x.ConvertedContract)
+            .WithMany()
+            .HasForeignKey(x => x.ConvertedContractId)
+            .OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
 public class ProgramIdeaConfigration : IEntityTypeConfiguration<ProgramIdea>
 {
     public void Configure(EntityTypeBuilder<ProgramIdea> entity)
@@ -150,6 +182,8 @@ public class ProgramIdeaConfigration : IEntityTypeConfiguration<ProgramIdea>
         entity.Property(x => x.EstimatedBudget).HasColumnType("decimal(18,2)");
         entity.Property(x => x.DecisionNotes).HasMaxLength(1000);
         entity.HasIndex(x => x.Status);
+        entity.HasIndex(x => x.ConvertedProjectId);
+        entity.HasOne(x => x.ConvertedProject).WithMany().HasForeignKey(x => x.ConvertedProjectId).OnDelete(DeleteBehavior.SetNull);
     }
 }
 

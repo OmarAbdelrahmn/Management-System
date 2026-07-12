@@ -11,15 +11,31 @@
 }
 
 <section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-message"></i><div><h2>القوالب والقوائم والحملات</h2><p>إدارة قنوات SMS وWhatsApp والبريد والتنبيهات مع تحديث القوالب والقوائم والحملات.</p></div></div>
     <div class="form-grid compact">
         <label>القناة<select @bind="channel"><option value="@CommunicationChannelType.Sms">SMS</option><option value="@CommunicationChannelType.WhatsApp">WhatsApp</option><option value="@CommunicationChannelType.Email">Email</option><option value="@CommunicationChannelType.Push">Push</option></select></label>
         <label>اسم القالب<input @bind="templateName" /></label>
-        <label>نص القالب<input @bind="templateBody" /></label>
+        <label class="span-2">نص القالب<input @bind="templateBody" /></label>
+        <label>القالب فعال<select @bind="templateActiveText"><option value="true">نعم</option><option value="false">لا</option></select></label>
         <label>اسم القائمة<input @bind="listName" /></label>
-        <label>المستلمون CSV<input @bind="recipientsCsv" /></label>
+        <label class="span-2">المستلمون CSV<input @bind="recipientsCsv" /></label>
+        <label>القائمة فعالة<select @bind="listActiveText"><option value="true">نعم</option><option value="false">لا</option></select></label>
+        <label>قالب الحملة<select @bind="campaignTemplateIdText"><option value="">بدون قالب</option>@foreach (var template in templates){<option value="@template.Id">@template.Name</option>}</select></label>
+        <label>قائمة الحملة<select @bind="campaignListIdText"><option value="">بدون قائمة</option>@foreach (var list in lists){<option value="@list.Id">@list.Name</option>}</select></label>
         <label>عنوان الحملة<input @bind="campaignTitle" /></label>
+        <label>حالة الحملة<select @bind="campaignStatus">@foreach (var value in Enum.GetValues<CommunicationMessageStatus>()){<option value="@value">@value</option>}</select></label>
+        <label class="span-2">نص الحملة<input @bind="campaignBody" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveTemplateAsync">حفظ قالب</button><button class="secondary" @onclick="SaveListAsync">حفظ قائمة</button><button class="secondary" @onclick="SaveCampaignAsync">حفظ حملة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveTemplateAsync">@(editingTemplateId.HasValue ? "تحديث قالب" : "حفظ قالب")</button>
+        <button class="secondary" @onclick="SaveListAsync">@(editingListId.HasValue ? "تحديث قائمة" : "حفظ قائمة")</button>
+        <button class="secondary" @onclick="SaveCampaignAsync">@(editingCampaignId.HasValue ? "تحديث حملة" : "حفظ حملة")</button>
+        @if (editingTemplateId.HasValue || editingListId.HasValue || editingCampaignId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForms">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
 </section>
 
 <section class="table-section">
@@ -27,29 +43,202 @@
     <table>
         <thead><tr><th>النوع</th><th>القناة</th><th>العنوان</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
-            @foreach (var item in templates){<tr><td>قالب</td><td>@item.ChannelType</td><td>@item.Name</td><td>@item.IsActive</td><td></td></tr>}
-            @foreach (var item in lists){<tr><td>قائمة</td><td>@item.ChannelType</td><td>@item.Name</td><td>@item.IsActive</td><td></td></tr>}
-            @foreach (var item in campaigns){<tr><td>حملة</td><td>@item.ChannelType</td><td>@item.Title</td><td>@item.Status</td><td><button class="secondary" @onclick="@(() => SendAsync(item.Id))">إرسال</button></td></tr>}
+            @foreach (var item in templates)
+            {
+                <tr><td>قالب</td><td>@item.ChannelType</td><td>@item.Name</td><td>@(item.IsActive ? "فعال" : "غير فعال")</td><td><button class="secondary" @onclick="@(() => EditTemplate(item))">تعديل</button><button class="secondary" @onclick="@(() => SetTemplateActiveAsync(item, false))">تعطيل</button><button class="secondary" @onclick="@(() => SetTemplateActiveAsync(item, true))">تفعيل</button></td></tr>
+            }
+            @foreach (var item in lists)
+            {
+                <tr><td>قائمة</td><td>@item.ChannelType</td><td>@item.Name</td><td>@(item.IsActive ? "فعالة" : "غير فعالة")</td><td><button class="secondary" @onclick="@(() => EditList(item))">تعديل</button><button class="secondary" @onclick="@(() => SetListActiveAsync(item, false))">تعطيل</button><button class="secondary" @onclick="@(() => SetListActiveAsync(item, true))">تفعيل</button></td></tr>
+            }
+            @foreach (var item in campaigns)
+            {
+                <tr><td>حملة</td><td>@item.ChannelType</td><td>@item.Title</td><td>@item.Status<br />@item.DeliveredCount مرسل / @item.FailedCount فشل</td><td><button class="secondary" @onclick="@(() => EditCampaign(item))">تعديل</button><button class="secondary" @onclick="@(() => SelectCampaign(item))">تفاصيل</button><button class="secondary" @onclick="@(() => SendAsync(item.Id, true))">إرسال</button><button class="secondary" @onclick="@(() => SendAsync(item.Id, false))">تسجيل فشل</button></td></tr>
+            }
         </tbody>
     </table>
 </section>
+
+@if (selectedCampaign is not null)
+{
+    <section class="table-section">
+        <div class="table-title"><span><i class="fa-solid fa-users-line"></i> مستلمو الحملة: @selectedCampaign.Title</span></div>
+        <table>
+            <thead><tr><th>المستلم</th><th>الحالة</th><th>وقت المحاولة</th><th>وقت التسليم</th><th>الخطأ</th></tr></thead>
+            <tbody>
+                @foreach (var recipient in selectedCampaign.Recipients)
+                {
+                    <tr>
+                        <td>@recipient.Recipient</td>
+                        <td><span class="status">@recipient.Status</span></td>
+                        <td>@(recipient.AttemptedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                        <td>@(recipient.DeliveredAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                        <td>@(recipient.Error ?? "-")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
 
 @code {
     private List<CommunicationTemplateResponse> templates = [];
     private List<CommunicationListResponse> lists = [];
     private List<CommunicationCampaignResponse> campaigns = [];
+    private CommunicationCampaignResponse? selectedCampaign;
+    private int? editingTemplateId;
+    private int? editingListId;
+    private int? editingCampaignId;
     private CommunicationChannelType channel = CommunicationChannelType.Sms;
     private string templateName = string.Empty;
     private string templateBody = string.Empty;
+    private string templateActiveText = "true";
     private string listName = string.Empty;
     private string recipientsCsv = string.Empty;
+    private string listActiveText = "true";
+    private string campaignTemplateIdText = string.Empty;
+    private string campaignListIdText = string.Empty;
     private string campaignTitle = string.Empty;
+    private string campaignBody = string.Empty;
+    private CommunicationMessageStatus campaignStatus = CommunicationMessageStatus.Draft;
     private bool success;
     private string? message;
+
     protected override async Task OnInitializedAsync() => await LoadAsync();
-    private async Task LoadAsync(){ templates = await PrMedia.GetTemplatesAsync(); lists = await PrMedia.GetListsAsync(); campaigns = await PrMedia.GetCampaignsAsync(); }
-    private async Task SaveTemplateAsync(){ var r = await PrMedia.SaveTemplateAsync(null, new SaveCommunicationTemplateRequest(channel, templateName, templateBody, true)); success = r.Success; message = r.Message; await LoadAsync(); }
-    private async Task SaveListAsync(){ var r = await PrMedia.SaveListAsync(null, new SaveCommunicationListRequest(channel, listName, recipientsCsv, true)); success = r.Success; message = r.Message; await LoadAsync(); }
-    private async Task SaveCampaignAsync(){ var r = await PrMedia.SaveCampaignAsync(null, new SaveCommunicationCampaignRequest(channel, templates.FirstOrDefault()?.Id, lists.FirstOrDefault()?.Id, campaignTitle, templateBody, CommunicationMessageStatus.Draft)); success = r.Success; message = r.Message; await LoadAsync(); }
-    private async Task SendAsync(int id){ var r = await PrMedia.SendCampaignAsync(id); success = r.Success; message = r.Message; await LoadAsync(); }
+
+    private async Task LoadAsync()
+    {
+        var selectedId = selectedCampaign?.Id;
+        templates = await PrMedia.GetTemplatesAsync();
+        lists = await PrMedia.GetListsAsync();
+        campaigns = await PrMedia.GetCampaignsAsync();
+        selectedCampaign = selectedId.HasValue ? campaigns.FirstOrDefault(x => x.Id == selectedId.Value) : selectedCampaign;
+    }
+
+    private async Task SaveTemplateAsync()
+    {
+        var result = await PrMedia.SaveTemplateAsync(editingTemplateId, new SaveCommunicationTemplateRequest(channel, templateName, templateBody, templateActiveText == "true"));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetTemplateForm();
+        await LoadAsync();
+    }
+
+    private async Task SaveListAsync()
+    {
+        var result = await PrMedia.SaveListAsync(editingListId, new SaveCommunicationListRequest(channel, listName, recipientsCsv, listActiveText == "true"));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetListForm();
+        await LoadAsync();
+    }
+
+    private async Task SaveCampaignAsync()
+    {
+        var templateId = int.TryParse(campaignTemplateIdText, out var templateValue) ? templateValue : (int?)null;
+        var listId = int.TryParse(campaignListIdText, out var listValue) ? listValue : (int?)null;
+        var result = await PrMedia.SaveCampaignAsync(editingCampaignId, new SaveCommunicationCampaignRequest(channel, templateId, listId, campaignTitle, campaignBody, campaignStatus));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetCampaignForm();
+        await LoadAsync();
+    }
+
+    private void EditTemplate(CommunicationTemplateResponse item)
+    {
+        editingTemplateId = item.Id;
+        channel = Enum.TryParse<CommunicationChannelType>(item.ChannelType, out var parsedChannel) ? parsedChannel : CommunicationChannelType.Sms;
+        templateName = item.Name;
+        templateBody = item.Body;
+        templateActiveText = item.IsActive ? "true" : "false";
+        message = null;
+    }
+
+    private void EditList(CommunicationListResponse item)
+    {
+        editingListId = item.Id;
+        channel = Enum.TryParse<CommunicationChannelType>(item.ChannelType, out var parsedChannel) ? parsedChannel : CommunicationChannelType.Sms;
+        listName = item.Name;
+        recipientsCsv = item.RecipientsCsv;
+        listActiveText = item.IsActive ? "true" : "false";
+        message = null;
+    }
+
+    private void EditCampaign(CommunicationCampaignResponse item)
+    {
+        editingCampaignId = item.Id;
+        channel = Enum.TryParse<CommunicationChannelType>(item.ChannelType, out var parsedChannel) ? parsedChannel : CommunicationChannelType.Sms;
+        campaignTemplateIdText = item.CommunicationTemplateId?.ToString() ?? string.Empty;
+        campaignListIdText = item.CommunicationListId?.ToString() ?? string.Empty;
+        campaignTitle = item.Title;
+        campaignBody = item.MessageBody;
+        campaignStatus = Enum.TryParse<CommunicationMessageStatus>(item.Status, out var parsedStatus) ? parsedStatus : CommunicationMessageStatus.Draft;
+        selectedCampaign = item;
+        message = null;
+    }
+
+    private async Task SetTemplateActiveAsync(CommunicationTemplateResponse item, bool isActive)
+    {
+        var result = await PrMedia.SaveTemplateAsync(item.Id, new SaveCommunicationTemplateRequest(ParseChannel(item.ChannelType), item.Name, item.Body, isActive));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SetListActiveAsync(CommunicationListResponse item, bool isActive)
+    {
+        var result = await PrMedia.SaveListAsync(item.Id, new SaveCommunicationListRequest(ParseChannel(item.ChannelType), item.Name, item.RecipientsCsv, isActive));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void SelectCampaign(CommunicationCampaignResponse campaign) => selectedCampaign = campaign;
+
+    private async Task SendAsync(int id, bool markSent)
+    {
+        var result = await PrMedia.SendCampaignAsync(id, markSent);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private static CommunicationChannelType ParseChannel(string value) =>
+        Enum.TryParse<CommunicationChannelType>(value, out var parsedChannel) ? parsedChannel : CommunicationChannelType.Sms;
+
+    private void ResetForms()
+    {
+        ResetTemplateForm();
+        ResetListForm();
+        ResetCampaignForm();
+    }
+
+    private void ResetTemplateForm()
+    {
+        editingTemplateId = null;
+        templateName = string.Empty;
+        templateBody = string.Empty;
+        templateActiveText = "true";
+    }
+
+    private void ResetListForm()
+    {
+        editingListId = null;
+        listName = string.Empty;
+        recipientsCsv = string.Empty;
+        listActiveText = "true";
+    }
+
+    private void ResetCampaignForm()
+    {
+        editingCampaignId = null;
+        campaignTemplateIdText = string.Empty;
+        campaignListIdText = string.Empty;
+        campaignTitle = string.Empty;
+        campaignBody = string.Empty;
+        campaignStatus = CommunicationMessageStatus.Draft;
+    }
 }

@@ -17,20 +17,28 @@ public class VolunteeringController(IVolunteeringService service) : ControllerBa
     public async Task<IActionResult> Users([FromQuery] VolunteerUserStatus? status, CancellationToken ct) => ToAction(await service.GetUsersAsync(status, ct));
     [HttpPost("users")]
     public async Task<IActionResult> SaveUser([FromBody] SaveVolunteerUserRequest request, CancellationToken ct) => ToAction(await service.SaveUserAsync(null, request, ct));
+    [HttpPut("users/{id:int}")]
+    public async Task<IActionResult> UpdateUser(int id, [FromBody] SaveVolunteerUserRequest request, CancellationToken ct) => ToAction(await service.SaveUserAsync(id, request, ct));
     [HttpGet("requests")]
     public async Task<IActionResult> Requests([FromQuery] VolunteerRequestSource? source, [FromQuery] VolunteerRequestStatus? status, CancellationToken ct) => ToAction(await service.GetRequestsAsync(source, status, ct));
     [HttpPost("requests")]
     public async Task<IActionResult> SaveRequest([FromBody] SaveVolunteerRequestRequest request, CancellationToken ct) => ToAction(await service.SaveRequestAsync(null, request, ct));
+    [HttpPut("requests/{id:int}")]
+    public async Task<IActionResult> UpdateRequest(int id, [FromBody] SaveVolunteerRequestRequest request, CancellationToken ct) => ToAction(await service.SaveRequestAsync(id, request, ct));
     [HttpPost("requests/{id:int}/status")]
     public async Task<IActionResult> UpdateRequestStatus(int id, [FromBody] UpdateVolunteerRequestStatusRequest request, CancellationToken ct)
     {
         var result = await service.UpdateRequestStatusAsync(id, request, ct);
         return result.IsSuccess ? NoContent() : result.ToProblem();
     }
+    [HttpPost("requests/{id:int}/convert")]
+    public async Task<IActionResult> ConvertRequestToVolunteer(int id, [FromBody] ConvertVolunteerRequestRequest request, CancellationToken ct) => ToAction(await service.ConvertRequestToVolunteerAsync(id, request, ct));
     [HttpGet("opportunities")]
     public async Task<IActionResult> Opportunities([FromQuery] VolunteerOpportunityStatus? status, CancellationToken ct) => ToAction(await service.GetOpportunitiesAsync(status, ct));
     [HttpPost("opportunities")]
     public async Task<IActionResult> SaveOpportunity([FromBody] SaveVolunteerOpportunityRequest request, CancellationToken ct) => ToAction(await service.SaveOpportunityAsync(null, request, ct));
+    [HttpPut("opportunities/{id:int}")]
+    public async Task<IActionResult> UpdateOpportunity(int id, [FromBody] SaveVolunteerOpportunityRequest request, CancellationToken ct) => ToAction(await service.SaveOpportunityAsync(id, request, ct));
     [HttpPost("opportunities/{id:int}/report")]
     public async Task<IActionResult> SaveOpportunityReport(int id, [FromBody] SaveVolunteerOpportunityReportRequest request, CancellationToken ct)
     {
@@ -41,10 +49,14 @@ public class VolunteeringController(IVolunteeringService service) : ControllerBa
     public async Task<IActionResult> Tasks([FromQuery] int? opportunityId, [FromQuery] VolunteerTaskStatus? status, CancellationToken ct) => ToAction(await service.GetTasksAsync(opportunityId, status, ct));
     [HttpPost("tasks")]
     public async Task<IActionResult> SaveTask([FromBody] SaveVolunteerOpportunityTaskRequest request, CancellationToken ct) => ToAction(await service.SaveTaskAsync(null, request, ct));
+    [HttpPut("tasks/{id:int}")]
+    public async Task<IActionResult> UpdateTask(int id, [FromBody] SaveVolunteerOpportunityTaskRequest request, CancellationToken ct) => ToAction(await service.SaveTaskAsync(id, request, ct));
     [HttpGet("attendance")]
     public async Task<IActionResult> Attendance([FromQuery] int? opportunityId, [FromQuery] int? volunteerUserId, CancellationToken ct) => ToAction(await service.GetAttendanceAsync(opportunityId, volunteerUserId, ct));
     [HttpPost("attendance")]
     public async Task<IActionResult> SaveAttendance([FromBody] SaveVolunteerAttendanceRequest request, CancellationToken ct) => ToAction(await service.SaveAttendanceAsync(null, request, ct));
+    [HttpPut("attendance/{id:int}")]
+    public async Task<IActionResult> UpdateAttendance(int id, [FromBody] SaveVolunteerAttendanceRequest request, CancellationToken ct) => ToAction(await service.SaveAttendanceAsync(id, request, ct));
 
     private IActionResult ToAction<T>(Application.Abstraction.Result<T> result) => result.IsSuccess ? Ok(result.Value) : result.ToProblem();
 }

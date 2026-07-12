@@ -12,7 +12,8 @@ public enum SystemReportRunStatus
 {
     Queued = 0,
     Generated = 1,
-    Failed = 2
+    Failed = 2,
+    Archived = 3
 }
 
 public class SystemReportDefinition : IAuditable

@@ -11,24 +11,81 @@
 }
 
 <section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-receipt"></i><div><h2>@(editingReceiptId.HasValue ? "تعديل سند قبض" : "سند قبض")</h2><p>تسجيل وتصحيح سندات القبض وترحيلها إلى اليومية.</p></div></div>
     <div class="form-grid compact">
         <label>نوع السند<select @bind="receiptKind"><option value="@ReceiptVoucherKind.Donation">تبرع عام</option><option value="@ReceiptVoucherKind.Project">مشروع</option><option value="@ReceiptVoucherKind.Beneficiary">مستفيد</option><option value="@ReceiptVoucherKind.Sponsorship">كفالة</option><option value="@ReceiptVoucherKind.Program">برنامج</option><option value="@ReceiptVoucherKind.Generic">متنوع</option><option value="@ReceiptVoucherKind.Return">مرتجع</option></select></label>
+        <label>رقم السند<input @bind="receiptNumber" placeholder="يولد تلقائياً عند تركه فارغاً" /></label>
+        <label>تاريخ السند<input type="date" @bind="receiptDate" /></label>
         <label>الدافع<input @bind="payerName" /></label>
         <label>المبلغ<input type="number" step="0.01" @bind="amount" /></label>
         <label>المرجع<input @bind="reference" /></label>
-        <label>مطالبة آجل - المدين<input @bind="debtorName" /></label>
-        <label>تاريخ الاستحقاق<input type="date" @bind="dueDate" /></label>
+        <label>الحالة<select @bind="receiptStatus"><option value="@AccountingRecordStatus.Draft">مسودة</option><option value="@AccountingRecordStatus.Approved">معتمد</option><option value="@AccountingRecordStatus.Posted">مرحل</option><option value="@AccountingRecordStatus.Rejected">مرفوض</option><option value="@AccountingRecordStatus.Canceled">ملغى</option></select></label>
+        <label class="span-2">ملاحظات السند<input @bind="receiptNotes" /></label>
+        <label>حساب مدين<select @bind="receiptDebitAccountId"><option value="0">اختر الحساب</option>@foreach (var account in assetAccounts){<option value="@account.Id">@account.Code - @account.NameAr</option>}</select></label>
+        <label>حساب دائن<select @bind="receiptCreditAccountId"><option value="0">اختر الحساب</option>@foreach (var account in incomeAccounts){<option value="@account.Id">@account.Code - @account.NameAr</option>}</select></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveReceiptAsync">حفظ سند قبض</button><button class="secondary" @onclick="SaveDeferredAsync">حفظ مطالبة آجل</button><button class="secondary" @onclick="ReceiveDeferredAsync">استلام أول مطالبة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveReceiptAsync">@(editingReceiptId.HasValue ? "حفظ التعديل" : "حفظ سند قبض")</button>
+        @if (editingReceiptId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetReceiptForm">إلغاء التعديل</button>
+        }
+    </div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-hand-holding-dollar"></i><div><h2>@(editingDeferredId.HasValue ? "تعديل مطالبة آجلة" : "مطالبة آجلة")</h2><p>إثبات المطالبات وتحصيلها مع إنشاء سند قبض عند الحاجة.</p></div></div>
+    <div class="form-grid compact">
+        <label>نوع المطالبة<select @bind="deferredKind"><option value="@DeferredReceivableKind.Generic">عام</option><option value="@DeferredReceivableKind.ProjectIncome">دخل مشروع</option><option value="@DeferredReceivableKind.Investment">استثمار</option><option value="@DeferredReceivableKind.GeneralIncome">دخل عام</option></select></label>
+        <label>رقم المطالبة<input @bind="receivableNumber" placeholder="يولد تلقائياً عند تركه فارغاً" /></label>
+        <label>المدين<input @bind="debtorName" /></label>
+        <label>تاريخ الاستحقاق<input type="date" @bind="dueDate" /></label>
+        <label>مبلغ التحصيل<input type="number" step="0.01" @bind="receiveAmount" /></label>
+        <label class="span-2">ملاحظات المطالبة<input @bind="deferredNotes" /></label>
+    </div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveDeferredAsync">@(editingDeferredId.HasValue ? "حفظ التعديل" : "حفظ مطالبة آجل")</button>
+        @if (editingDeferredId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetDeferredForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="ReceiveDeferredAsync">تحصيل المطالبة المحددة</button>
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-receipt"></i> المقبوضات</span></div>
     <table>
-        <thead><tr><th>النوع</th><th>الرقم</th><th>الطرف</th><th>المبلغ</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>النوع</th><th>الرقم</th><th>الطرف</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
-            @foreach (var receipt in receipts){<tr><td>@receipt.Kind</td><td>@receipt.ReceiptNumber</td><td>@receipt.PayerName</td><td>@receipt.Amount</td><td>@receipt.Status</td></tr>}
-            @foreach (var item in deferred){<tr><td>آجل @item.Kind</td><td>@item.ReceivableNumber</td><td>@item.DebtorName</td><td>@item.RemainingAmount</td><td>@item.Status</td></tr>}
+            @foreach (var receipt in receipts)
+            {
+                <tr>
+                    <td>@receipt.Kind</td>
+                    <td>@receipt.ReceiptNumber</td>
+                    <td>@receipt.PayerName</td>
+                    <td>@receipt.Amount</td>
+                    <td>@receipt.Status</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => EditReceipt(receipt))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => DecideReceiptAsync(receipt.Id, AccountingRecordStatus.Approved))">اعتماد</button>
+                        <button class="secondary" @onclick="@(() => PostReceiptLedgerAsync(receipt.Id))">قيد قبض</button>
+                        <button class="secondary" @onclick="@(() => DecideReceiptAsync(receipt.Id, AccountingRecordStatus.Canceled))">إلغاء</button>
+                    </td>
+                </tr>
+            }
+            @foreach (var item in deferred)
+            {
+                <tr>
+                    <td>آجل @item.Kind</td>
+                    <td>@item.ReceivableNumber</td>
+                    <td>@item.DebtorName</td>
+                    <td>@item.RemainingAmount</td>
+                    <td>@item.Status</td>
+                    <td><button class="secondary" @onclick="@(() => EditDeferred(item))">تعديل/تحصيل</button></td>
+                </tr>
+            }
         </tbody>
     </table>
 </section>
@@ -36,18 +93,144 @@
 @code {
     private List<ReceiptVoucherResponse> receipts = [];
     private List<DeferredReceivableResponse> deferred = [];
+    private List<FinanceAccountResponse> assetAccounts = [];
+    private List<FinanceAccountResponse> incomeAccounts = [];
     private ReceiptVoucherKind receiptKind = ReceiptVoucherKind.Donation;
+    private string? receiptNumber;
+    private DateTime receiptDate = DateTime.UtcNow.AddHours(3).Date;
     private string payerName = string.Empty;
     private decimal amount;
     private string? reference;
+    private AccountingRecordStatus receiptStatus = AccountingRecordStatus.Draft;
+    private string? receiptNotes;
+    private int? editingReceiptId;
+    private DeferredReceivableKind deferredKind = DeferredReceivableKind.Generic;
+    private string? receivableNumber;
     private string debtorName = string.Empty;
     private DateTime dueDate = DateTime.UtcNow.AddHours(3).Date.AddMonths(1);
+    private decimal receiveAmount;
+    private string? deferredNotes;
+    private int? editingDeferredId;
+    private int receiptDebitAccountId;
+    private int receiptCreditAccountId;
     private bool success;
     private string? message;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
-    private async Task LoadAsync(){ receipts = await Accounting.GetReceiptsAsync(); deferred = await Accounting.GetDeferredReceivablesAsync(); }
-    private async Task SaveReceiptAsync(){ var r = await Accounting.SaveReceiptAsync(null, new SaveReceiptVoucherRequest(null, receiptKind, DateTime.UtcNow.AddHours(3), amount, payerName, reference, AccountingRecordStatus.Posted, null)); success = r.Success; message = r.Message; await LoadAsync(); }
-    private async Task SaveDeferredAsync(){ var r = await Accounting.SaveDeferredReceivableAsync(null, new SaveDeferredReceivableRequest(null, DeferredReceivableKind.Generic, debtorName, amount, dueDate, null)); success = r.Success; message = r.Message; await LoadAsync(); }
-    private async Task ReceiveDeferredAsync(){ var item = deferred.FirstOrDefault(); if (item is null){ success = false; message = "لا توجد مطالبة."; return; } var r = await Accounting.ReceiveDeferredReceivableAsync(item.Id, item.Amount); success = r.Success; message = r.Message; await LoadAsync(); }
+
+    private async Task LoadAsync()
+    {
+        receipts = await Accounting.GetReceiptsAsync();
+        deferred = await Accounting.GetDeferredReceivablesAsync();
+        assetAccounts = await Accounting.GetAccountsAsync(AccountingAccountType.Asset);
+        incomeAccounts = await Accounting.GetAccountsAsync(AccountingAccountType.Income);
+        receiptDebitAccountId = receiptDebitAccountId == 0 ? assetAccounts.FirstOrDefault()?.Id ?? 0 : receiptDebitAccountId;
+        receiptCreditAccountId = receiptCreditAccountId == 0 ? incomeAccounts.FirstOrDefault()?.Id ?? 0 : receiptCreditAccountId;
+    }
+
+    private async Task SaveReceiptAsync()
+    {
+        var result = await Accounting.SaveReceiptAsync(editingReceiptId, new SaveReceiptVoucherRequest(receiptNumber, receiptKind, receiptDate, amount, payerName, reference, receiptStatus, receiptNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetReceiptForm();
+        await LoadAsync();
+    }
+
+    private async Task SaveDeferredAsync()
+    {
+        var result = await Accounting.SaveDeferredReceivableAsync(editingDeferredId, new SaveDeferredReceivableRequest(receivableNumber, deferredKind, debtorName, amount, dueDate, deferredNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetDeferredForm();
+        await LoadAsync();
+    }
+
+    private async Task ReceiveDeferredAsync()
+    {
+        var item = editingDeferredId.HasValue
+            ? deferred.FirstOrDefault(x => x.Id == editingDeferredId.Value)
+            : deferred.FirstOrDefault(x => x.RemainingAmount > 0);
+        if (item is null)
+        {
+            success = false;
+            message = "لا توجد مطالبة محددة للتحصيل.";
+            return;
+        }
+
+        var amountToReceive = receiveAmount > 0 ? receiveAmount : item.RemainingAmount;
+        var result = await Accounting.ReceiveDeferredReceivableWithReceiptAsync(item.Id, new ReceiveDeferredReceivableWithReceiptRequest(amountToReceive, receiptKind, DateTime.UtcNow.AddHours(3), AccountingRecordStatus.Posted, reference, deferredNotes ?? "تحصيل مطالبة آجلة"));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetDeferredForm();
+        await LoadAsync();
+    }
+
+    private async Task DecideReceiptAsync(int id, AccountingRecordStatus status)
+    {
+        var result = await Accounting.DecideReceiptAsync(id, status, receiptNotes ?? reference);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task PostReceiptLedgerAsync(int id)
+    {
+        var result = await Accounting.CreateLedgerFromReceiptAsync(id, new CreateVoucherLedgerEntryRequest(receiptDebitAccountId, receiptCreditAccountId, null, AccountingRecordStatus.Posted, receiptNotes ?? reference));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void EditReceipt(ReceiptVoucherResponse receipt)
+    {
+        editingReceiptId = receipt.Id;
+        receiptNumber = receipt.ReceiptNumber;
+        receiptKind = Enum.TryParse<ReceiptVoucherKind>(receipt.Kind, out var parsedKind) ? parsedKind : ReceiptVoucherKind.Donation;
+        receiptDate = receipt.ReceiptDate;
+        payerName = receipt.PayerName;
+        amount = receipt.Amount;
+        reference = receipt.ReferenceNumber;
+        receiptStatus = Enum.TryParse<AccountingRecordStatus>(receipt.Status, out var parsedStatus) ? parsedStatus : AccountingRecordStatus.Draft;
+        receiptNotes = receipt.Notes;
+    }
+
+    private void EditDeferred(DeferredReceivableResponse item)
+    {
+        editingDeferredId = item.Id;
+        receivableNumber = item.ReceivableNumber;
+        deferredKind = Enum.TryParse<DeferredReceivableKind>(item.Kind, out var parsedKind) ? parsedKind : DeferredReceivableKind.Generic;
+        debtorName = item.DebtorName;
+        amount = item.Amount;
+        dueDate = item.DueDate;
+        receiveAmount = item.RemainingAmount;
+        deferredNotes = item.Notes;
+    }
+
+    private void ResetReceiptForm()
+    {
+        editingReceiptId = null;
+        receiptNumber = null;
+        receiptKind = ReceiptVoucherKind.Donation;
+        receiptDate = DateTime.UtcNow.AddHours(3).Date;
+        payerName = string.Empty;
+        amount = 0;
+        reference = null;
+        receiptStatus = AccountingRecordStatus.Draft;
+        receiptNotes = null;
+    }
+
+    private void ResetDeferredForm()
+    {
+        editingDeferredId = null;
+        deferredKind = DeferredReceivableKind.Generic;
+        receivableNumber = null;
+        debtorName = string.Empty;
+        dueDate = DateTime.UtcNow.AddHours(3).Date.AddMonths(1);
+        receiveAmount = 0;
+        deferredNotes = null;
+    }
 }

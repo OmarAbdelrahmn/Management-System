@@ -25,17 +25,17 @@
         <label class="span-2">وصف المشكلة<input @bind="issueDescription" /></label>
         <label class="span-2">ملاحظات الإكمال<input @bind="completionNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ طلب الصيانة</button><button class="secondary" @onclick="CompleteFirstAsync">إكمال أول طلب</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingRequestId.HasValue ? "تحديث طلب الصيانة" : "حفظ طلب الصيانة")</button><button class="secondary" @onclick="ResetForm">تفريغ</button><button class="secondary" @onclick="CompleteFirstAsync">إكمال أول طلب</button></div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-table"></i> سجل طلبات الصيانة</span></div>
     <table>
-        <thead><tr><th>الطلب</th><th>الأصل</th><th>الوصف</th><th>التكلفة</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الطلب</th><th>الأصل</th><th>الوصف</th><th>التكلفة</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var item in requests)
             {
-                <tr><td>@item.RequestNumber<br />@item.RequestType</td><td>@item.AssetName<br />@item.VehiclePlateNumber</td><td>@item.IssueDescription<br />@item.VendorName</td><td>@item.EstimatedCost / @item.ActualCost</td><td>@item.Status</td></tr>
+                <tr><td>@item.RequestNumber<br />@item.RequestType</td><td>@item.AssetName<br />@item.VehiclePlateNumber</td><td>@item.IssueDescription<br />@item.VendorName</td><td>@item.EstimatedCost / @item.ActualCost</td><td>@item.Status</td><td><button class="secondary" @onclick="@(() => EditRequest(item))">تعديل</button><button class="secondary" @onclick="@(() => ChangeStatusAsync(item.Id, MaintenanceRequestStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => ChangeStatusAsync(item.Id, MaintenanceRequestStatus.InProgress))">تنفيذ</button><button class="secondary" @onclick="@(() => ChangeStatusAsync(item.Id, MaintenanceRequestStatus.Completed))">إكمال</button></td></tr>
             }
         </tbody>
     </table>
@@ -44,6 +44,7 @@
 @code {
     private List<FleetVehicleResponse> vehicles = [];
     private List<MaintenanceRequestResponse> requests = [];
+    private int? editingRequestId;
     private MaintenanceRequestType requestType = MaintenanceRequestType.Vehicle;
     private int? fleetVehicleId;
     private string requestedBy = string.Empty;
@@ -60,6 +61,9 @@
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
     private async Task LoadAsync(){ vehicles = await Movement.GetVehiclesAsync(); requests = await Movement.GetMaintenanceRequestsAsync(); }
-    private async Task SaveAsync(){ var result = await Movement.SaveMaintenanceRequestAsync(null, new SaveMaintenanceRequestRequest(requestType, fleetVehicleId, requestedBy, assetName, issueDescription, requestDate, status, estimatedCost, actualCost, vendorName, completionNotes)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task SaveAsync(){ var result = await Movement.SaveMaintenanceRequestAsync(editingRequestId, new SaveMaintenanceRequestRequest(requestType, fleetVehicleId, requestedBy, assetName, issueDescription, requestDate, status, estimatedCost, actualCost, vendorName, completionNotes)); success = result.Success; message = result.Message; if (result.Success) ResetForm(); await LoadAsync(); }
     private async Task CompleteFirstAsync(){ var request = requests.FirstOrDefault(x => x.Status != MaintenanceRequestStatus.Completed.ToString()); if (request is null){ success = false; message = "لا يوجد طلب صيانة."; return; } var result = await Movement.UpdateMaintenanceStatusAsync(request.Id, MaintenanceRequestStatus.Completed, actualCost, completionNotes); success = result.Success; message = result.Message; await LoadAsync(); }
+    private void EditRequest(MaintenanceRequestResponse item){ editingRequestId = item.Id; requestType = Enum.TryParse<MaintenanceRequestType>(item.RequestType, out var parsedType) ? parsedType : MaintenanceRequestType.Vehicle; fleetVehicleId = item.FleetVehicleId; requestedBy = item.RequestedBy; assetName = item.AssetName; issueDescription = item.IssueDescription; requestDate = item.RequestDate; status = Enum.TryParse<MaintenanceRequestStatus>(item.Status, out var parsedStatus) ? parsedStatus : MaintenanceRequestStatus.Requested; estimatedCost = item.EstimatedCost; actualCost = item.ActualCost; vendorName = item.VendorName; completionNotes = item.CompletionNotes; message = null; }
+    private async Task ChangeStatusAsync(int id, MaintenanceRequestStatus nextStatus){ var result = await Movement.UpdateMaintenanceStatusAsync(id, nextStatus, actualCost, completionNotes); success = result.Success; message = result.Message; await LoadAsync(); }
+    private void ResetForm(){ editingRequestId = null; requestType = MaintenanceRequestType.Vehicle; fleetVehicleId = null; requestedBy = string.Empty; assetName = string.Empty; issueDescription = string.Empty; requestDate = DateTime.UtcNow.AddHours(3).Date; status = MaintenanceRequestStatus.Requested; estimatedCost = 0; actualCost = 0; vendorName = null; completionNotes = null; }
 }

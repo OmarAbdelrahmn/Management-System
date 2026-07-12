@@ -43,9 +43,21 @@ public record DecideAidRequestRequest(
     string? SocialResearchNotes,
     string? DecisionNotes);
 
+public record CreatePaymentOrderFromAidRequestRequest(
+    PaymentOrderType OrderType,
+    DateTime? DueDate,
+    string? Notes);
+
+public record CreatePaymentOrderFromEntitySupportRequest(
+    PaymentOrderType OrderType,
+    DateTime? DueDate,
+    string? Notes);
+
 public record PaymentOrderResponse(
     int Id,
     int? BeneficiaryAidRequestId,
+    int? EntitySupportRequestId,
+    string? EntitySupportRequesterName,
     int? BeneficiaryProfileId,
     string? BeneficiaryName,
     string OrderNumber,
@@ -142,6 +154,12 @@ public record SaveSponsorshipPaymentRequest(
     DateTime DueDate,
     decimal Amount,
     SponsorshipPaymentStatus Status,
+    string? Notes);
+
+public record GenerateSponsorshipPaymentsRequest(
+    DateTime FirstDueDate,
+    int PaymentCount,
+    int MonthsBetweenPayments,
     string? Notes);
 
 public record EntitySupportResponse(

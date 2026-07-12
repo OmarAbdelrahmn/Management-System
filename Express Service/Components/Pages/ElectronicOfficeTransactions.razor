@@ -5,10 +5,11 @@
 
 <h1 class="page-title">المعاملات الداخلية</h1>
 @if (!string.IsNullOrWhiteSpace(message)){<section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>}
-<section class="panel"><div class="panel-heading"><i class="fa-solid fa-diagram-project"></i><div><h2>معاملة داخلية</h2><p>طلب معاملة، الإلغاء، المتابعة، إنجاز المهام، المرفوض، المدار، والجاري/المكتمل.</p></div></div><div class="form-grid compact"><label>رقم المعاملة<input @bind="transactionNumber" /></label><label>الموضوع<input @bind="subject" /></label><label>طالب المعاملة<input @bind="requestedBy" /></label><label>الخطوة الحالية<input @bind="currentStep" /></label><label>الحالة<select @bind="status"><option value="@OfficeTransactionStatus.Pending">جارية</option><option value="@OfficeTransactionStatus.RequiredFollowUp">بحاجة متابعة</option><option value="@OfficeTransactionStatus.RejectedWithNote">مرفوضة بملاحظة</option><option value="@OfficeTransactionStatus.Managed">تمت متابعتها</option><option value="@OfficeTransactionStatus.Completed">مكتملة</option><option value="@OfficeTransactionStatus.Canceled">ملغاة</option></select></label><label>التاريخ<input type="date" @bind="requestedAt" /></label><label class="span-2">ملاحظات<input @bind="notes" /></label></div><div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المعاملة</button><button class="secondary" @onclick="LoadRequiredAsync">بحاجة متابعة</button><button class="secondary" @onclick="LoadAsync">كل المعاملات</button></div></section>
-<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> المعاملات</span></div><table><thead><tr><th>المعاملة</th><th>الموضوع</th><th>الخطوة</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>@foreach (var item in transactions){<tr><td>@item.TransactionNumber<br />@item.RequestedAt.ToString("yyyy-MM-dd")</td><td>@item.Subject<br />@item.RequestedBy</td><td>@item.CurrentStep</td><td>@item.Status<br />@item.Notes</td><td><button class="secondary" @onclick="@(() => UpdateAsync(item.Id, OfficeTransactionStatus.Completed))">إكمال</button><button class="secondary" @onclick="@(() => UpdateAsync(item.Id, OfficeTransactionStatus.Canceled))">إلغاء</button></td></tr>}</tbody></table></section>
+<section class="panel"><div class="panel-heading"><i class="fa-solid fa-diagram-project"></i><div><h2>@(editingTransactionId.HasValue ? "تعديل معاملة داخلية" : "معاملة داخلية")</h2><p>طلب معاملة، الإلغاء، المتابعة، إنجاز المهام، المرفوض، المدار، والجاري/المكتمل.</p></div></div><div class="form-grid compact"><label>رقم المعاملة<input @bind="transactionNumber" /></label><label>الموضوع<input @bind="subject" /></label><label>طالب المعاملة<input @bind="requestedBy" /></label><label>الخطوة الحالية<input @bind="currentStep" /></label><label>الحالة<select @bind="status"><option value="@OfficeTransactionStatus.Pending">جارية</option><option value="@OfficeTransactionStatus.RequiredFollowUp">بحاجة متابعة</option><option value="@OfficeTransactionStatus.RejectedWithNote">مرفوضة بملاحظة</option><option value="@OfficeTransactionStatus.Managed">تمت متابعتها</option><option value="@OfficeTransactionStatus.Completed">مكتملة</option><option value="@OfficeTransactionStatus.Canceled">ملغاة</option></select></label><label>التاريخ<input type="date" @bind="requestedAt" /></label><label class="span-2">ملاحظات<input @bind="notes" /></label></div><div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingTransactionId.HasValue ? "حفظ التعديل" : "حفظ المعاملة")</button>@if (editingTransactionId.HasValue){<button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>}<button class="secondary" @onclick="LoadRequiredAsync">بحاجة متابعة</button><button class="secondary" @onclick="LoadAsync">كل المعاملات</button></div></section>
+<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> المعاملات</span></div><table><thead><tr><th>المعاملة</th><th>الموضوع</th><th>الخطوة</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>@foreach (var item in transactions){<tr><td>@item.TransactionNumber<br />@item.RequestedAt.ToString("yyyy-MM-dd")</td><td>@item.Subject<br />@item.RequestedBy</td><td>@item.CurrentStep</td><td>@item.Status<br />@item.Notes</td><td><button class="secondary" @onclick="@(() => Edit(item))">تعديل</button><button class="secondary" @onclick="@(() => UpdateAsync(item.Id, OfficeTransactionStatus.RequiredFollowUp))">متابعة</button><button class="secondary" @onclick="@(() => UpdateAsync(item.Id, OfficeTransactionStatus.Managed))">إدارة</button><button class="secondary" @onclick="@(() => UpdateAsync(item.Id, OfficeTransactionStatus.Completed))">إكمال</button><button class="secondary" @onclick="@(() => UpdateAsync(item.Id, OfficeTransactionStatus.Canceled))">إلغاء</button></td></tr>}</tbody></table></section>
 @code {
     private List<OfficeTransactionResponse> transactions = [];
+    private int? editingTransactionId;
     private string transactionNumber = $"TR-{DateTime.UtcNow:yyyyMMddHHmm}";
     private string subject = string.Empty;
     private string requestedBy = string.Empty;
@@ -21,6 +22,28 @@
     protected override async Task OnInitializedAsync() => await LoadAsync();
     private async Task LoadAsync() => transactions = await Office.GetTransactionsAsync();
     private async Task LoadRequiredAsync() => transactions = await Office.GetTransactionsAsync(OfficeTransactionStatus.RequiredFollowUp);
-    private async Task SaveAsync(){ var result = await Office.SaveTransactionAsync(null, new SaveOfficeTransactionRequest(transactionNumber, subject, requestedBy, currentStep, status, notes, requestedAt)); success = result.Success; message = result.Message; if (success) transactionNumber = $"TR-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+    private async Task SaveAsync(){ var result = await Office.SaveTransactionAsync(editingTransactionId, new SaveOfficeTransactionRequest(transactionNumber, subject, requestedBy, currentStep, status, notes, requestedAt)); success = result.Success; message = result.Message; if (success) ResetForm(); await LoadAsync(); }
     private async Task UpdateAsync(int id, OfficeTransactionStatus next){ var result = await Office.UpdateTransactionStatusAsync(id, next, notes); success = result.Success; message = result.Message; await LoadAsync(); }
+    private void Edit(OfficeTransactionResponse item)
+    {
+        editingTransactionId = item.Id;
+        transactionNumber = item.TransactionNumber;
+        subject = item.Subject;
+        requestedBy = item.RequestedBy;
+        currentStep = item.CurrentStep;
+        status = Enum.TryParse<OfficeTransactionStatus>(item.Status, out var parsedStatus) ? parsedStatus : OfficeTransactionStatus.Pending;
+        notes = item.Notes;
+        requestedAt = item.RequestedAt;
+    }
+    private void ResetForm()
+    {
+        editingTransactionId = null;
+        transactionNumber = $"TR-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        subject = string.Empty;
+        requestedBy = string.Empty;
+        currentStep = null;
+        status = OfficeTransactionStatus.Pending;
+        notes = null;
+        requestedAt = DateTime.UtcNow.AddHours(3).Date;
+    }
 }

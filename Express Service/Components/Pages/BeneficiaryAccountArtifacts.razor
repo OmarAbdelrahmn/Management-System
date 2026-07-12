@@ -12,17 +12,25 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-id-card"></i><div><h2>إنشاء سجل</h2><p>إصدار بطاقة أو باركود ملف، وتسجيل طلبات الانضمام والبحث الخارجي.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-id-card"></i><div><h2>@(editingArtifactId.HasValue ? "تعديل سجل" : "إنشاء سجل")</h2><p>إصدار بطاقة أو باركود ملف، وتسجيل طلبات الانضمام والبحث الخارجي.</p></div></div>
     <div class="form-grid">
         <label>النوع<select @bind="artifactType"><option value="@BeneficiaryAccountArtifactType.Card">بطاقة مستفيد</option><option value="@BeneficiaryAccountArtifactType.Barcode">باركود ملف</option><option value="@BeneficiaryAccountArtifactType.ExternalJoin">طلب انضمام من الموقع</option><option value="@BeneficiaryAccountArtifactType.AssociationSearch">بحث في الجمعيات</option></select></label>
+        <label>الحالة<select @bind="artifactStatus">@foreach (var status in Enum.GetValues<BeneficiaryAccountArtifactStatus>()){<option value="@status">@status</option>}</select></label>
         <label>المستفيد<select @bind="beneficiaryProfileId"><option value="0">بدون ملف</option>@foreach (var profile in profiles){<option value="@profile.Id">@profile.BeneficiaryNumber - @profile.FullName</option>}</select></label>
         <label>التابع<select @bind="beneficiaryDependentId"><option value="0">بدون تابع</option>@foreach (var dependent in dependents){<option value="@dependent.Id">@dependent.FullName - @dependent.BeneficiaryName</option>}</select></label>
-        <label>اسم صاحب السجل<input @bind="holderName" placeholder="يستنتج من الملف عند تركه فارغاً" /></label>
+        <label>اسم صاحب السجل<input @bind="holderName" placeholder="يستنتج من الملف عند تركه فارغا" /></label>
         <label>المصدر<input @bind="source" /></label>
         <label>بيانات مختصرة<input @bind="payload" /></label>
         <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="CreateAsync">إنشاء السجل</button><button class="secondary" @onclick="LoadAsync">تحديث القائمة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingArtifactId.HasValue ? "تحديث السجل" : "إنشاء السجل")</button>
+        @if (editingArtifactId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadAsync">تحديث القائمة</button>
+    </div>
 </section>
 
 <section class="panel" style="margin-top:14px">
@@ -49,6 +57,7 @@
                     <td><span class="status">@artifact.Status</span></td>
                     <td>@artifact.Notes</td>
                     <td>
+                        <button class="secondary" @onclick="@(() => EditArtifact(artifact))">تعديل</button>
                         <button class="secondary" @onclick="@(() => UpdateStatusAsync(artifact.Id, BeneficiaryAccountArtifactStatus.Issued))">إصدار</button>
                         <button class="secondary" @onclick="@(() => UpdateStatusAsync(artifact.Id, BeneficiaryAccountArtifactStatus.Cancelled))">إلغاء</button>
                     </td>
@@ -62,7 +71,9 @@
     private List<BeneficiaryResponse> profiles = [];
     private List<BeneficiaryDependentResponse> dependents = [];
     private List<BeneficiaryAccountArtifactResponse> artifacts = [];
+    private int? editingArtifactId;
     private BeneficiaryAccountArtifactType artifactType = BeneficiaryAccountArtifactType.Card;
+    private BeneficiaryAccountArtifactStatus artifactStatus = BeneficiaryAccountArtifactStatus.Ready;
     private int beneficiaryProfileId;
     private int beneficiaryDependentId;
     private string? holderName;
@@ -89,26 +100,51 @@
         artifacts = await Beneficiaries.GetAccountArtifactsAsync(type, status);
     }
 
-    private async Task CreateAsync()
+    private async Task SaveAsync()
     {
-        var result = await Beneficiaries.CreateAccountArtifactAsync(new CreateBeneficiaryAccountArtifactRequest(
-            artifactType,
-            beneficiaryProfileId == 0 ? null : beneficiaryProfileId,
-            beneficiaryDependentId == 0 ? null : beneficiaryDependentId,
-            holderName,
-            source,
-            payload,
-            notes));
+        (bool Success, string Message) result;
+        int? profileId = beneficiaryProfileId == 0 ? null : beneficiaryProfileId;
+        int? dependentId = beneficiaryDependentId == 0 ? null : beneficiaryDependentId;
+
+        if (editingArtifactId.HasValue)
+        {
+            result = await Beneficiaries.UpdateAccountArtifactAsync(
+                editingArtifactId.Value,
+                new UpdateBeneficiaryAccountArtifactRequest(artifactType, artifactStatus, profileId, dependentId, holderName, source, payload, notes));
+        }
+        else
+        {
+            result = await Beneficiaries.CreateAccountArtifactAsync(new CreateBeneficiaryAccountArtifactRequest(
+                artifactType,
+                profileId,
+                dependentId,
+                holderName,
+                source,
+                payload,
+                notes));
+        }
 
         success = result.Success;
         message = result.Message;
         if (success)
         {
-            holderName = null;
-            payload = null;
-            notes = null;
+            ResetForm();
             await LoadAsync();
         }
+    }
+
+    private void EditArtifact(BeneficiaryAccountArtifactResponse artifact)
+    {
+        editingArtifactId = artifact.Id;
+        artifactType = Enum.TryParse<BeneficiaryAccountArtifactType>(artifact.Type, out var parsedType) ? parsedType : BeneficiaryAccountArtifactType.Card;
+        artifactStatus = Enum.TryParse<BeneficiaryAccountArtifactStatus>(artifact.Status, out var parsedStatus) ? parsedStatus : BeneficiaryAccountArtifactStatus.Draft;
+        beneficiaryProfileId = artifact.BeneficiaryProfileId ?? 0;
+        beneficiaryDependentId = artifact.BeneficiaryDependentId ?? 0;
+        holderName = artifact.HolderName;
+        source = artifact.Source;
+        payload = artifact.Payload;
+        notes = artifact.Notes;
+        message = null;
     }
 
     private async Task UpdateStatusAsync(int id, BeneficiaryAccountArtifactStatus status)
@@ -117,5 +153,18 @@
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private void ResetForm()
+    {
+        editingArtifactId = null;
+        artifactType = BeneficiaryAccountArtifactType.Card;
+        artifactStatus = BeneficiaryAccountArtifactStatus.Ready;
+        beneficiaryProfileId = profiles.FirstOrDefault()?.Id ?? 0;
+        beneficiaryDependentId = 0;
+        holderName = null;
+        source = "Rafed";
+        payload = null;
+        notes = null;
     }
 }

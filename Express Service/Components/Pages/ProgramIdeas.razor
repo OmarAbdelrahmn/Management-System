@@ -28,6 +28,9 @@
     <div class="form-grid compact">
         <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="Pending">قيد الاعتماد</option><option value="Marketing">قيد التسويق</option><option value="Approved">معتمد/جاري</option><option value="Note">ملاحظة</option><option value="Rejected">مرفوض نهائياً</option><option value="Cancelled">ملغى</option><option value="Completed">مكتمل</option></select></label>
         <label>ملاحظة القرار<input @bind="decisionNotes" /></label>
+        <label>نوع التحويل<select @bind="convertProjectType"><option>Program</option><option>Project</option><option>Qualification</option><option>Design</option></select></label>
+        <label>مدير التنفيذ<input @bind="convertManagerName" /></label>
+        <label>المستهدفون<input type="number" step="1" @bind="convertTargetBeneficiaries" /></label>
     </div>
     <div class="actions-row"><button class="primary" @onclick="LoadAsync">تحديث</button></div>
 </section>
@@ -35,7 +38,7 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-list"></i> المقترحات</span></div>
     <table>
-        <thead><tr><th>العنوان</th><th>المقترح</th><th>الميزانية</th><th>الحالة</th><th>القرار</th><th>إجراء</th></tr></thead>
+        <thead><tr><th>العنوان</th><th>المقترح</th><th>الميزانية</th><th>الحالة</th><th>القرار/المشروع</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var idea in ideas)
             {
@@ -44,11 +47,12 @@
                     <td>@idea.OwnerName</td>
                     <td>@idea.EstimatedBudget</td>
                     <td><span class="status">@idea.Status</span></td>
-                    <td>@idea.DecisionNotes</td>
+                    <td>@idea.DecisionNotes<br />@idea.ConvertedProjectCode</td>
                     <td>
                         <button class="secondary" @onclick="@(() => Edit(idea))">تعديل</button>
                         <button class="secondary" @onclick="@(() => UpdateStatusAsync(idea.Id, ProgramIdeaStatus.Marketing))">تسويق</button>
                         <button class="secondary" @onclick="@(() => UpdateStatusAsync(idea.Id, ProgramIdeaStatus.Approved))">اعتماد</button>
+                        <button class="secondary" @onclick="@(() => ConvertAsync(idea.Id))">تحويل</button>
                         <button class="secondary" @onclick="@(() => UpdateStatusAsync(idea.Id, ProgramIdeaStatus.Rejected))">رفض</button>
                         <button class="secondary" @onclick="@(() => UpdateStatusAsync(idea.Id, ProgramIdeaStatus.Completed))">إكمال</button>
                     </td>
@@ -69,6 +73,9 @@
     private ProgramIdeaStatus status = ProgramIdeaStatus.Pending;
     private string statusText = string.Empty;
     private string? decisionNotes;
+    private string convertProjectType = "Program";
+    private string? convertManagerName;
+    private decimal convertTargetBeneficiaries;
     private bool success;
     private string? message;
 
@@ -93,6 +100,14 @@
     private async Task UpdateStatusAsync(int id, ProgramIdeaStatus newStatus)
     {
         var result = await ProgramsProjects.UpdateIdeaStatusAsync(id, newStatus, decisionNotes);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task ConvertAsync(int id)
+    {
+        var result = await ProgramsProjects.ConvertIdeaToProjectAsync(id, new ConvertProgramIdeaToProjectRequest(convertProjectType, convertManagerName, DateTime.UtcNow.AddHours(3).Date, null, ProgramProjectStatus.Planning, convertTargetBeneficiaries, decisionNotes));
         success = result.Success;
         message = result.Message;
         await LoadAsync();

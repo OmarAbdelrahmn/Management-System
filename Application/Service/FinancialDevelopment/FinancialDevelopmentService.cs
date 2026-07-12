@@ -1,5 +1,6 @@
 using Application.Abstraction;
 using Application.Abstraction.Errors;
+using Application.Contracts.Accounting;
 using Application.Contracts.FinancialDevelopment;
 using Domain;
 using Domain.Entities;
@@ -93,6 +94,29 @@ public class FinancialDevelopmentService(ApplicationDbcontext dbcontext) : IFina
         return Result.Success(MapOpportunity(entity));
     }
 
+    public async Task<Result<FundraisingOpportunityResponse>> CompleteOpportunityAsync(int id, CompleteFundraisingOpportunityRequest request, CancellationToken cancellationToken = default)
+    {
+        var entity = await dbcontext.FundraisingOpportunities.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (entity is null)
+            return Result.Failure<FundraisingOpportunityResponse>(FinancialDevelopmentErrors.OpportunityNotFound);
+        if (entity.Status == FundraisingOpportunityStatus.Completed)
+            return Result.Success(MapOpportunity(entity));
+        if (entity.Status != FundraisingOpportunityStatus.Active)
+            return Result.Failure<FundraisingOpportunityResponse>(FinancialDevelopmentErrors.OpportunityNotActive);
+
+        entity.CurrentAmount = await dbcontext.DonationContributions
+            .Where(x => x.FundraisingOpportunityId == id && x.Status == DonationContributionStatus.Confirmed)
+            .SumAsync(x => x.Amount, cancellationToken);
+        if (entity.TargetAmount <= 0 || entity.CurrentAmount < entity.TargetAmount)
+            return Result.Failure<FundraisingOpportunityResponse>(FinancialDevelopmentErrors.OpportunityTargetNotReached);
+
+        entity.Status = FundraisingOpportunityStatus.Completed;
+        entity.Notes = AppendNote(entity.Notes, request.Notes, 1500);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+
+        return Result.Success(MapOpportunity(entity));
+    }
+
     public async Task<Result<IEnumerable<DonationContributionResponse>>> GetContributionsAsync(DonationContributionStatus? status = null, int? supporterId = null, int? opportunityId = null, CancellationToken cancellationToken = default)
     {
         var query = dbcontext.DonationContributions
@@ -119,11 +143,13 @@ public class FinancialDevelopmentService(ApplicationDbcontext dbcontext) : IFina
         if (request.FundraisingOpportunityId.HasValue && !await dbcontext.FundraisingOpportunities.AnyAsync(x => x.Id == request.FundraisingOpportunityId.Value, cancellationToken))
             return Result.Failure<DonationContributionResponse>(FinancialDevelopmentErrors.OpportunityNotFound);
 
+        var isNew = !id.HasValue;
         var entity = await FindOrCreateAsync(dbcontext.DonationContributions, id, cancellationToken);
         if (entity is null)
             return Result.Failure<DonationContributionResponse>(FinancialDevelopmentErrors.ContributionNotFound);
 
         var previousOpportunityId = entity.FundraisingOpportunityId;
+        var previousStatus = isNew ? (DonationContributionStatus?)null : entity.Status;
         entity.FinancialSupporterId = request.FinancialSupporterId;
         entity.FundraisingOpportunityId = request.FundraisingOpportunityId;
         entity.Amount = request.Amount;
@@ -138,6 +164,8 @@ public class FinancialDevelopmentService(ApplicationDbcontext dbcontext) : IFina
         entity.Notes = request.Notes?.Trim();
 
         await dbcontext.SaveChangesAsync(cancellationToken);
+        QueueContributionActivity(entity.Id, isNew ? DonationContributionActivityType.Created : DonationContributionActivityType.Updated, previousStatus, entity.Status, entity.Amount, entity.Notes);
+        await dbcontext.SaveChangesAsync(cancellationToken);
         await RecalculateOpportunityAmountAsync(previousOpportunityId, cancellationToken);
         if (entity.FundraisingOpportunityId != previousOpportunityId)
             await RecalculateOpportunityAmountAsync(entity.FundraisingOpportunityId, cancellationToken);
@@ -148,6 +176,45 @@ public class FinancialDevelopmentService(ApplicationDbcontext dbcontext) : IFina
             .Include(x => x.FundraisingOpportunity)
             .FirstAsync(x => x.Id == entity.Id, cancellationToken);
         return Result.Success(MapContribution(saved));
+    }
+
+    public async Task<Result<DonationContributionResponse>> UpdateContributionStatusAsync(int id, UpdateDonationContributionStatusRequest request, CancellationToken cancellationToken = default)
+    {
+        var entity = await dbcontext.DonationContributions
+            .Include(x => x.FinancialSupporter)
+            .Include(x => x.FundraisingOpportunity)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (entity is null)
+            return Result.Failure<DonationContributionResponse>(FinancialDevelopmentErrors.ContributionNotFound);
+
+        var previousStatus = entity.Status;
+        entity.Status = request.Status;
+        if (!string.IsNullOrWhiteSpace(request.Notes))
+            entity.Notes = request.Notes.Trim();
+
+        QueueContributionActivity(entity.Id, DonationContributionActivityType.StatusChanged, previousStatus, entity.Status, entity.Amount, request.Notes?.Trim());
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        await RecalculateOpportunityAmountAsync(entity.FundraisingOpportunityId, cancellationToken);
+
+        return Result.Success(MapContribution(entity));
+    }
+
+    public async Task<Result<IEnumerable<DonationContributionActivityResponse>>> GetContributionActivitiesAsync(int contributionId, CancellationToken cancellationToken = default)
+    {
+        var exists = await dbcontext.DonationContributions.AnyAsync(x => x.Id == contributionId, cancellationToken);
+        if (!exists)
+            return Result.Failure<IEnumerable<DonationContributionActivityResponse>>(FinancialDevelopmentErrors.ContributionNotFound);
+
+        var activities = await dbcontext.DonationContributionActivities
+            .AsNoTracking()
+            .Where(x => x.DonationContributionId == contributionId)
+            .OrderByDescending(x => x.OccurredAt)
+            .ThenByDescending(x => x.Id)
+            .Select(x => MapContributionActivity(x))
+            .ToListAsync(cancellationToken);
+
+        return Result.Success<IEnumerable<DonationContributionActivityResponse>>(activities);
     }
 
     public async Task<Result<DonationReportSummaryResponse>> GetDonationReportAsync(DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
@@ -209,6 +276,46 @@ public class FinancialDevelopmentService(ApplicationDbcontext dbcontext) : IFina
         return Result.Success(MapDigitalCampaign(entity));
     }
 
+    public async Task<Result<DigitalCampaignDonationResponse>> RecordDigitalCampaignDonationAsync(int id, RecordDigitalCampaignDonationRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.Amount <= 0 || request.Status is not (DonationContributionStatus.Pending or DonationContributionStatus.Confirmed))
+            return Result.Failure<DigitalCampaignDonationResponse>(FinancialDevelopmentErrors.InvalidRequest);
+
+        var campaign = await dbcontext.DigitalMarketingCampaigns.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (campaign is null)
+            return Result.Failure<DigitalCampaignDonationResponse>(FinancialDevelopmentErrors.CampaignNotFound);
+        if (campaign.Status != DigitalMarketingCampaignStatus.Running)
+            return Result.Failure<DigitalCampaignDonationResponse>(FinancialDevelopmentErrors.CampaignNotRunning);
+
+        var contribution = await SaveContributionAsync(null, new SaveDonationContributionRequest(
+            request.FinancialSupporterId,
+            request.FundraisingOpportunityId,
+            request.Amount,
+            request.DonationDate ?? DateTime.UtcNow.AddHours(3),
+            $"DigitalMarketing:{campaign.Channel}",
+            request.PaymentMethod,
+            request.TransactionReference,
+            false,
+            null,
+            null,
+            request.Status,
+            BuildCampaignDonationNotes(campaign.Title, request.Notes)), cancellationToken);
+
+        if (!contribution.IsSuccess)
+            return Result.Failure<DigitalCampaignDonationResponse>(contribution.Error);
+
+        if (request.CountAsLead)
+            campaign.LeadsCount += 1;
+        if (request.Status == DonationContributionStatus.Confirmed)
+        {
+            campaign.DonationsCount += 1;
+            campaign.DonationsAmount += request.Amount;
+        }
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(new DigitalCampaignDonationResponse(MapDigitalCampaign(campaign), contribution.Value));
+    }
+
     public async Task<Result<IEnumerable<AbandonedDonationCartResponse>>> GetAbandonedCartsAsync(AbandonedDonationCartStatus? status = null, CancellationToken cancellationToken = default)
     {
         var query = dbcontext.AbandonedDonationCarts
@@ -244,6 +351,48 @@ public class FinancialDevelopmentService(ApplicationDbcontext dbcontext) : IFina
         await dbcontext.SaveChangesAsync(cancellationToken);
         var saved = await dbcontext.AbandonedDonationCarts.AsNoTracking().Include(x => x.FundraisingOpportunity).FirstAsync(x => x.Id == entity.Id, cancellationToken);
         return Result.Success(MapAbandonedCart(saved));
+    }
+
+    public async Task<Result<AbandonedDonationCartRecoveryResponse>> RecoverAbandonedCartAsync(int id, RecoverAbandonedDonationCartRequest request, CancellationToken cancellationToken = default)
+    {
+        var cart = await dbcontext.AbandonedDonationCarts
+            .Include(x => x.FundraisingOpportunity)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (cart is null)
+            return Result.Failure<AbandonedDonationCartRecoveryResponse>(FinancialDevelopmentErrors.AbandonedCartNotFound);
+        if (cart.Status is AbandonedDonationCartStatus.Recovered or AbandonedDonationCartStatus.Expired)
+            return Result.Failure<AbandonedDonationCartRecoveryResponse>(FinancialDevelopmentErrors.InvalidRequest);
+        if (request.ContributionStatus is not (DonationContributionStatus.Pending or DonationContributionStatus.Confirmed))
+            return Result.Failure<AbandonedDonationCartRecoveryResponse>(FinancialDevelopmentErrors.InvalidRequest);
+
+        var contribution = await SaveContributionAsync(null, new SaveDonationContributionRequest(
+            request.FinancialSupporterId,
+            cart.FundraisingOpportunityId,
+            cart.Amount,
+            request.DonationDate ?? DateTime.UtcNow.AddHours(3),
+            "RecoveredCart",
+            request.PaymentMethod,
+            request.TransactionReference,
+            false,
+            null,
+            null,
+            request.ContributionStatus,
+            request.Notes ?? cart.FollowUpNotes), cancellationToken);
+
+        if (!contribution.IsSuccess)
+            return Result.Failure<AbandonedDonationCartRecoveryResponse>(contribution.Error);
+
+        cart.Status = AbandonedDonationCartStatus.Recovered;
+        cart.FollowUpNotes = request.Notes?.Trim() ?? cart.FollowUpNotes;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+
+        var savedCart = await dbcontext.AbandonedDonationCarts
+            .AsNoTracking()
+            .Include(x => x.FundraisingOpportunity)
+            .FirstAsync(x => x.Id == cart.Id, cancellationToken);
+
+        return Result.Success(new AbandonedDonationCartRecoveryResponse(MapAbandonedCart(savedCart), contribution.Value));
     }
 
     public async Task<Result<IEnumerable<EndowmentAssetResponse>>> GetEndowmentsAsync(EndowmentAssetStatus? status = null, CancellationToken cancellationToken = default)
@@ -330,7 +479,7 @@ public class FinancialDevelopmentService(ApplicationDbcontext dbcontext) : IFina
 
     public async Task<Result<EndowmentInvoiceResponse>> SaveEndowmentInvoiceAsync(int? id, SaveEndowmentInvoiceRequest request, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(request.InvoiceNumber) || request.Amount <= 0 || request.PaidAmount < 0 || request.PaidAmount > request.Amount)
+        if (string.IsNullOrWhiteSpace(request.InvoiceNumber) || request.Amount <= 0 || request.PaidAmount < 0 || request.PaidAmount > request.Amount || request.Status == EndowmentInvoiceStatus.Paid && request.PaidAmount < request.Amount)
             return Result.Failure<EndowmentInvoiceResponse>(FinancialDevelopmentErrors.InvalidRequest);
 
         if (!await dbcontext.EndowmentAssets.AnyAsync(x => x.Id == request.EndowmentAssetId, cancellationToken))
@@ -363,6 +512,55 @@ public class FinancialDevelopmentService(ApplicationDbcontext dbcontext) : IFina
         return Result.Success(MapInvoice(saved));
     }
 
+    public async Task<Result<EndowmentInvoicePaymentResponse>> PayEndowmentInvoiceAsync(int id, PayEndowmentInvoiceRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.Amount <= 0 || request.ReceiptStatus is not (AccountingRecordStatus.Posted or AccountingRecordStatus.Approved))
+            return Result.Failure<EndowmentInvoicePaymentResponse>(FinancialDevelopmentErrors.InvalidRequest);
+
+        var invoice = await dbcontext.EndowmentInvoices
+            .Include(x => x.EndowmentAsset)
+            .Include(x => x.EndowmentContract)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (invoice is null)
+            return Result.Failure<EndowmentInvoicePaymentResponse>(FinancialDevelopmentErrors.InvoiceNotFound);
+        if (invoice.Status == EndowmentInvoiceStatus.Cancelled)
+            return Result.Failure<EndowmentInvoicePaymentResponse>(FinancialDevelopmentErrors.InvoiceCancelled);
+        if (invoice.Status == EndowmentInvoiceStatus.Paid || invoice.PaidAmount >= invoice.Amount)
+            return Result.Failure<EndowmentInvoicePaymentResponse>(FinancialDevelopmentErrors.InvoiceAlreadyPaid);
+
+        var remaining = invoice.Amount - invoice.PaidAmount;
+        if (request.Amount > remaining)
+            return Result.Failure<EndowmentInvoicePaymentResponse>(FinancialDevelopmentErrors.PaymentExceedsInvoiceBalance);
+
+        var paymentDate = request.PaymentDate ?? DateTime.UtcNow.AddHours(3);
+        var receipt = new ReceiptVoucher
+        {
+            ReceiptNumber = await GenerateEndowmentReceiptNumberAsync(cancellationToken),
+            Kind = ReceiptVoucherKind.Investment,
+            ReceiptDate = paymentDate,
+            Amount = request.Amount,
+            PayerName = ResolveEndowmentPayerName(invoice),
+            ReferenceNumber = string.IsNullOrWhiteSpace(request.ReferenceNumber) ? invoice.InvoiceNumber : request.ReferenceNumber.Trim(),
+            Status = request.ReceiptStatus,
+            Notes = BuildEndowmentReceiptNotes(invoice.InvoiceNumber, request.PaymentMethod, request.Notes)
+        };
+        dbcontext.ReceiptVouchers.Add(receipt);
+
+        invoice.PaidAmount += request.Amount;
+        invoice.Status = invoice.PaidAmount >= invoice.Amount
+            ? EndowmentInvoiceStatus.Paid
+            : invoice.DueDate.Date < DateTime.UtcNow.AddHours(3).Date ? EndowmentInvoiceStatus.Overdue : EndowmentInvoiceStatus.Due;
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+
+        var remainingAfterPayment = invoice.Amount - invoice.PaidAmount;
+        return Result.Success(new EndowmentInvoicePaymentResponse(
+            MapInvoice(invoice),
+            MapReceipt(receipt),
+            remainingAfterPayment,
+            remainingAfterPayment == 0));
+    }
+
     private async Task RecalculateOpportunityAmountAsync(int? opportunityId, CancellationToken cancellationToken)
     {
         if (!opportunityId.HasValue)
@@ -378,6 +576,57 @@ public class FinancialDevelopmentService(ApplicationDbcontext dbcontext) : IFina
         await dbcontext.SaveChangesAsync(cancellationToken);
     }
 
+    private async Task<string> GenerateEndowmentReceiptNumberAsync(CancellationToken cancellationToken)
+    {
+        var year = DateTime.UtcNow.AddHours(3).Year;
+        var count = await dbcontext.ReceiptVouchers.CountAsync(x => x.CreatedAt.Year == year, cancellationToken) + 1;
+        return $"RCV-END-{year}-{count:0000}";
+    }
+
+    private static string ResolveEndowmentPayerName(EndowmentInvoice invoice)
+    {
+        if (!string.IsNullOrWhiteSpace(invoice.EndowmentContract?.LesseeName))
+            return invoice.EndowmentContract.LesseeName.Trim();
+        if (!string.IsNullOrWhiteSpace(invoice.EndowmentAsset?.ManagerName))
+            return invoice.EndowmentAsset.ManagerName.Trim();
+
+        return string.IsNullOrWhiteSpace(invoice.EndowmentAsset?.Name) ? "Endowment payer" : invoice.EndowmentAsset.Name.Trim();
+    }
+
+    private static string? BuildEndowmentReceiptNotes(string invoiceNumber, string? paymentMethod, string? notes)
+    {
+        var parts = new List<string> { $"Endowment invoice: {invoiceNumber}" };
+        if (!string.IsNullOrWhiteSpace(paymentMethod))
+            parts.Add($"Payment method: {paymentMethod.Trim()}");
+        if (!string.IsNullOrWhiteSpace(notes))
+            parts.Add(notes.Trim());
+
+        var combined = string.Join(" | ", parts);
+        return combined.Length <= 1000 ? combined : combined[..1000];
+    }
+
+    private static string? BuildCampaignDonationNotes(string campaignTitle, string? notes)
+    {
+        var parts = new List<string> { $"Digital campaign: {campaignTitle}" };
+        if (!string.IsNullOrWhiteSpace(notes))
+            parts.Add(notes.Trim());
+
+        var combined = string.Join(" | ", parts);
+        return combined.Length <= 1000 ? combined : combined[..1000];
+    }
+
+    private static string? AppendNote(string? existingNotes, string? newNote, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(newNote))
+            return existingNotes;
+
+        var trimmedNote = newNote.Trim();
+        var combined = string.IsNullOrWhiteSpace(existingNotes)
+            ? trimmedNote
+            : $"{existingNotes.Trim()}{Environment.NewLine}{trimmedNote}";
+        return combined.Length <= maxLength ? combined : combined[..maxLength];
+    }
+
     private static async Task<T?> FindOrCreateAsync<T>(DbSet<T> set, int? id, CancellationToken cancellationToken) where T : class, new()
     {
         if (!id.HasValue)
@@ -390,6 +639,26 @@ public class FinancialDevelopmentService(ApplicationDbcontext dbcontext) : IFina
         return await set.FirstOrDefaultAsync(x => EF.Property<int>(x, "Id") == id.Value, cancellationToken);
     }
 
+    private void QueueContributionActivity(
+        int contributionId,
+        DonationContributionActivityType type,
+        DonationContributionStatus? fromStatus,
+        DonationContributionStatus toStatus,
+        decimal amount,
+        string? notes)
+    {
+        dbcontext.DonationContributionActivities.Add(new DonationContributionActivity
+        {
+            DonationContributionId = contributionId,
+            Type = type,
+            FromStatus = fromStatus,
+            ToStatus = toStatus,
+            Amount = amount,
+            Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
+            OccurredAt = DateTime.UtcNow.AddHours(3)
+        });
+    }
+
     private static FinancialSupporterResponse MapSupporter(FinancialSupporter x) =>
         new(x.Id, x.Name, x.SupporterType.ToString(), x.Category, x.Mobile, x.Email, x.PreferredContactChannel, x.Status.ToString(), x.Notes);
 
@@ -398,6 +667,9 @@ public class FinancialDevelopmentService(ApplicationDbcontext dbcontext) : IFina
 
     private static DonationContributionResponse MapContribution(DonationContribution x) =>
         new(x.Id, x.FinancialSupporterId, x.FinancialSupporter?.Name ?? string.Empty, x.FundraisingOpportunityId, x.FundraisingOpportunity?.Title ?? string.Empty, x.Amount, x.DonationDate, x.SourceChannel, x.PaymentMethod, x.TransactionReference, x.IsGift, x.GiftRecipientName, x.CertificateNumber, x.Status.ToString(), x.Notes);
+
+    private static DonationContributionActivityResponse MapContributionActivity(DonationContributionActivity x) =>
+        new(x.Id, x.DonationContributionId, x.Type.ToString(), x.FromStatus?.ToString(), x.ToStatus.ToString(), x.Amount, x.Notes, x.OccurredAt);
 
     private static DigitalMarketingCampaignResponse MapDigitalCampaign(DigitalMarketingCampaign x) =>
         new(x.Id, x.Title, x.Channel.ToString(), x.Budget, x.TargetAudience, x.LandingPageUrl, x.StartDate, x.EndDate, x.Status.ToString(), x.LeadsCount, x.DonationsCount, x.DonationsAmount, x.Notes);
@@ -413,4 +685,7 @@ public class FinancialDevelopmentService(ApplicationDbcontext dbcontext) : IFina
 
     private static EndowmentInvoiceResponse MapInvoice(EndowmentInvoice x) =>
         new(x.Id, x.EndowmentAssetId, x.EndowmentAsset?.Name ?? string.Empty, x.EndowmentContractId, x.EndowmentContract?.ContractNumber, x.InvoiceNumber, x.DueDate, x.Amount, x.PaidAmount, x.Status.ToString(), x.Notes);
+
+    private static ReceiptVoucherResponse MapReceipt(ReceiptVoucher x) =>
+        new(x.Id, x.ReceiptNumber, x.Kind.ToString(), x.ReceiptDate, x.Amount, x.PayerName, x.ReferenceNumber, x.Status.ToString(), x.Notes);
 }

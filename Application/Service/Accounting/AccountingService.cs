@@ -233,6 +233,45 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
         return Result.Success(MapReceipt(receipt));
     }
 
+    public async Task<Result<ReceiptVoucherResponse>> DecideReceiptAsync(int id, DecideAccountingRecordRequest request, CancellationToken cancellationToken = default)
+    {
+        var receipt = await dbcontext.ReceiptVouchers.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (receipt is null)
+            return Result.Failure<ReceiptVoucherResponse>(AccountingErrors.ReceiptNotFound);
+
+        receipt.Status = request.Status;
+        receipt.Notes = request.Notes?.Trim() ?? receipt.Notes;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapReceipt(receipt));
+    }
+
+    public async Task<Result<LedgerEntryResponse>> CreateLedgerFromReceiptAsync(int id, CreateVoucherLedgerEntryRequest request, CancellationToken cancellationToken = default)
+    {
+        var receipt = await dbcontext.ReceiptVouchers.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (receipt is null)
+            return Result.Failure<LedgerEntryResponse>(AccountingErrors.ReceiptNotFound);
+        if (receipt.Status is not (AccountingRecordStatus.Approved or AccountingRecordStatus.Posted) || request.Status is not (AccountingRecordStatus.Approved or AccountingRecordStatus.Posted))
+            return Result.Failure<LedgerEntryResponse>(AccountingErrors.InvalidRequest);
+
+        var ledger = await SaveLedgerEntryAsync(null, new SaveLedgerEntryRequest(
+            $"JRN-{receipt.ReceiptNumber}",
+            receipt.ReceiptDate,
+            $"ترحيل سند قبض {receipt.ReceiptNumber} - {receipt.PayerName}",
+            request.Status,
+            [
+                new SaveLedgerLineRequest(request.DebitAccountId, request.FinanceCostCenterId, receipt.Amount, 0, request.Notes ?? receipt.Notes),
+                new SaveLedgerLineRequest(request.CreditAccountId, request.FinanceCostCenterId, 0, receipt.Amount, request.Notes ?? receipt.Notes)
+            ]), cancellationToken);
+
+        if (!ledger.IsSuccess)
+            return ledger;
+
+        receipt.Status = AccountingRecordStatus.Posted;
+        receipt.Notes = request.Notes?.Trim() ?? receipt.Notes;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return ledger;
+    }
+
     public async Task<Result<IEnumerable<DeferredReceivableResponse>>> GetDeferredReceivablesAsync(DeferredReceivableKind? kind, AccountingRecordStatus? status, CancellationToken cancellationToken = default)
     {
         var query = dbcontext.DeferredReceivables.AsNoTracking().AsQueryable();
@@ -289,6 +328,37 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
         return Result.Success(MapDeferred(deferred));
     }
 
+    public async Task<Result<DeferredReceivableSettlementResponse>> ReceiveDeferredReceivableWithReceiptAsync(int id, ReceiveDeferredReceivableWithReceiptRequest request, CancellationToken cancellationToken = default)
+    {
+        var deferred = await dbcontext.DeferredReceivables.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (deferred is null)
+            return Result.Failure<DeferredReceivableSettlementResponse>(AccountingErrors.DeferredReceivableNotFound);
+        if (request.Amount <= 0 || request.Amount > deferred.Amount - deferred.ReceivedAmount)
+            return Result.Failure<DeferredReceivableSettlementResponse>(AccountingErrors.InvalidRequest);
+        if (request.ReceiptStatus is not (AccountingRecordStatus.Draft or AccountingRecordStatus.Posted or AccountingRecordStatus.Approved))
+            return Result.Failure<DeferredReceivableSettlementResponse>(AccountingErrors.InvalidRequest);
+
+        var receipt = new ReceiptVoucher
+        {
+            ReceiptNumber = await GenerateNumberAsync("RCV", dbcontext.ReceiptVouchers, cancellationToken),
+            Kind = request.ReceiptKind,
+            ReceiptDate = request.ReceiptDate ?? DateTime.UtcNow.AddHours(3),
+            Amount = request.Amount,
+            PayerName = deferred.DebtorName,
+            ReferenceNumber = string.IsNullOrWhiteSpace(request.ReferenceNumber) ? deferred.ReceivableNumber : request.ReferenceNumber.Trim(),
+            Status = request.ReceiptStatus,
+            Notes = request.Notes?.Trim()
+        };
+
+        deferred.ReceivedAmount += request.Amount;
+        deferred.Status = deferred.ReceivedAmount >= deferred.Amount ? AccountingRecordStatus.Closed : AccountingRecordStatus.Posted;
+        deferred.Notes = request.Notes?.Trim() ?? deferred.Notes;
+
+        dbcontext.ReceiptVouchers.Add(receipt);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(new DeferredReceivableSettlementResponse(MapDeferred(deferred), MapReceipt(receipt)));
+    }
+
     public async Task<Result<IEnumerable<ExpenseVoucherResponse>>> GetExpensesAsync(ExpenseVoucherKind? kind, AccountingRecordStatus? status, CancellationToken cancellationToken = default)
     {
         var query = dbcontext.ExpenseVouchers.AsNoTracking().AsQueryable();
@@ -331,6 +401,45 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
         return Result.Success(MapExpense(expense));
     }
 
+    public async Task<Result<ExpenseVoucherResponse>> DecideExpenseAsync(int id, DecideAccountingRecordRequest request, CancellationToken cancellationToken = default)
+    {
+        var expense = await dbcontext.ExpenseVouchers.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (expense is null)
+            return Result.Failure<ExpenseVoucherResponse>(AccountingErrors.ExpenseNotFound);
+
+        expense.Status = request.Status;
+        expense.Notes = request.Notes?.Trim() ?? expense.Notes;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapExpense(expense));
+    }
+
+    public async Task<Result<LedgerEntryResponse>> CreateLedgerFromExpenseAsync(int id, CreateVoucherLedgerEntryRequest request, CancellationToken cancellationToken = default)
+    {
+        var expense = await dbcontext.ExpenseVouchers.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (expense is null)
+            return Result.Failure<LedgerEntryResponse>(AccountingErrors.ExpenseNotFound);
+        if (expense.Status is not (AccountingRecordStatus.Approved or AccountingRecordStatus.Posted or AccountingRecordStatus.Closed) || request.Status is not (AccountingRecordStatus.Approved or AccountingRecordStatus.Posted))
+            return Result.Failure<LedgerEntryResponse>(AccountingErrors.InvalidRequest);
+
+        var ledger = await SaveLedgerEntryAsync(null, new SaveLedgerEntryRequest(
+            $"JRN-{expense.ExpenseNumber}",
+            expense.ExpenseDate,
+            $"ترحيل سند صرف {expense.ExpenseNumber} - {expense.PayeeName}",
+            request.Status,
+            [
+                new SaveLedgerLineRequest(request.DebitAccountId, request.FinanceCostCenterId, expense.Amount, 0, request.Notes ?? expense.Notes),
+                new SaveLedgerLineRequest(request.CreditAccountId, request.FinanceCostCenterId, 0, expense.Amount, request.Notes ?? expense.Notes)
+            ]), cancellationToken);
+
+        if (!ledger.IsSuccess)
+            return ledger;
+
+        expense.Status = AccountingRecordStatus.Posted;
+        expense.Notes = request.Notes?.Trim() ?? expense.Notes;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return ledger;
+    }
+
     public async Task<Result<IEnumerable<SalaryDisbursementResponse>>> GetSalaryDisbursementsAsync(AccountingRecordStatus? status, CancellationToken cancellationToken = default)
     {
         var query = dbcontext.SalaryDisbursements.AsNoTracking().AsQueryable();
@@ -364,6 +473,48 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
         salary.Notes = request.Notes?.Trim();
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapSalary(salary));
+    }
+
+    public async Task<Result<SalaryDisbursementResponse>> DecideSalaryDisbursementAsync(int id, DecideAccountingRecordRequest request, CancellationToken cancellationToken = default)
+    {
+        var salary = await dbcontext.SalaryDisbursements.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (salary is null)
+            return Result.Failure<SalaryDisbursementResponse>(AccountingErrors.ExpenseNotFound);
+
+        salary.Status = request.Status;
+        salary.Notes = request.Notes?.Trim() ?? salary.Notes;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapSalary(salary));
+    }
+
+    public async Task<Result<ExpenseVoucherResponse>> CreateExpenseFromSalaryDisbursementAsync(int id, CreateSalaryExpenseVoucherRequest request, CancellationToken cancellationToken = default)
+    {
+        var salary = await dbcontext.SalaryDisbursements.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (salary is null)
+            return Result.Failure<ExpenseVoucherResponse>(AccountingErrors.SalaryDisbursementNotFound);
+        if (salary.Status is not (AccountingRecordStatus.Approved or AccountingRecordStatus.Posted) || request.Status is not (AccountingRecordStatus.Draft or AccountingRecordStatus.Approved or AccountingRecordStatus.Posted))
+            return Result.Failure<ExpenseVoucherResponse>(AccountingErrors.InvalidRequest);
+
+        var expenseNumber = $"EXP-SAL-{salary.PayrollMonth:yyyyMM}";
+        if (await dbcontext.ExpenseVouchers.AnyAsync(x => x.ExpenseNumber == expenseNumber, cancellationToken))
+            return Result.Failure<ExpenseVoucherResponse>(AccountingErrors.DuplicateNumber);
+
+        var expense = new ExpenseVoucher
+        {
+            ExpenseNumber = expenseNumber,
+            Kind = ExpenseVoucherKind.Salary,
+            ExpenseDate = request.ExpenseDate ?? salary.PayrollMonth,
+            Amount = salary.TotalAmount,
+            PayeeName = string.IsNullOrWhiteSpace(request.PayeeName) ? $"مسير رواتب {salary.PayrollMonth:yyyy-MM}" : request.PayeeName.Trim(),
+            Status = request.Status,
+            Notes = request.Notes?.Trim() ?? salary.Notes
+        };
+
+        salary.Status = AccountingRecordStatus.Posted;
+        salary.Notes = request.Notes?.Trim() ?? salary.Notes;
+        dbcontext.ExpenseVouchers.Add(expense);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapExpense(expense));
     }
 
     public async Task<Result<IEnumerable<FinancialReviewItemResponse>>> GetReviewItemsAsync(FinancialReviewKind? kind, AccountingRecordStatus? status, CancellationToken cancellationToken = default)

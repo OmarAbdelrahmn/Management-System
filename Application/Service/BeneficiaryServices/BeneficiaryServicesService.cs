@@ -108,9 +108,87 @@ public class BeneficiaryServicesService(ApplicationDbcontext dbcontext) : IBenef
         return Result.Success(MapAidRequest(aidRequest));
     }
 
+    public async Task<Result<PaymentOrderResponse>> CreatePaymentOrderFromAidRequestAsync(int aidRequestId, CreatePaymentOrderFromAidRequestRequest request, CancellationToken cancellationToken = default)
+    {
+        var aidRequest = await dbcontext.BeneficiaryAidRequests
+            .Include(x => x.BeneficiaryProfile)
+            .Include(x => x.BeneficiaryEntity)
+            .FirstOrDefaultAsync(x => x.Id == aidRequestId, cancellationToken);
+
+        if (aidRequest is null)
+            return Result.Failure<PaymentOrderResponse>(BeneficiaryServicesErrors.AidRequestNotFound);
+
+        if (aidRequest.Status is not (AidRequestStatus.ManagerApproved or AidRequestStatus.CommitteeApproved or AidRequestStatus.Transferred))
+            return Result.Failure<PaymentOrderResponse>(BeneficiaryServicesErrors.AidRequestNotApproved);
+
+        var existingOrder = await dbcontext.BeneficiaryPaymentOrders
+            .AnyAsync(x => x.BeneficiaryAidRequestId == aidRequest.Id && x.Status != PaymentOrderStatus.Removed, cancellationToken);
+        if (existingOrder)
+            return Result.Failure<PaymentOrderResponse>(BeneficiaryServicesErrors.DuplicatePaymentOrderForAidRequest);
+
+        var notes = string.IsNullOrWhiteSpace(request.Notes)
+            ? aidRequest.DecisionNotes
+            : request.Notes.Trim();
+        var order = new BeneficiaryPaymentOrder
+        {
+            BeneficiaryAidRequestId = aidRequest.Id,
+            BeneficiaryAidRequest = aidRequest,
+            BeneficiaryProfileId = aidRequest.BeneficiaryProfileId,
+            BeneficiaryProfile = aidRequest.BeneficiaryProfile,
+            OrderNumber = await GeneratePaymentOrderNumberAsync(cancellationToken),
+            OrderType = request.OrderType,
+            Amount = aidRequest.Amount,
+            ItemDescription = $"{aidRequest.AidType} - {aidRequest.Description}",
+            DueDate = request.DueDate?.Date,
+            DecisionNotes = notes
+        };
+
+        aidRequest.Status = AidRequestStatus.Transferred;
+        aidRequest.DecidedAt = DateTime.UtcNow.AddHours(3);
+        dbcontext.BeneficiaryPaymentOrders.Add(order);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapPaymentOrder(order));
+    }
+
+    public async Task<Result<PaymentOrderResponse>> CreatePaymentOrderFromEntitySupportAsync(int entitySupportId, CreatePaymentOrderFromEntitySupportRequest request, CancellationToken cancellationToken = default)
+    {
+        var support = await dbcontext.EntitySupportRequests
+            .Include(x => x.BeneficiaryEntity)
+            .FirstOrDefaultAsync(x => x.Id == entitySupportId, cancellationToken);
+
+        if (support is null)
+            return Result.Failure<PaymentOrderResponse>(BeneficiaryServicesErrors.EntitySupportNotFound);
+        if (support.Status != EntitySupportStatus.Approved)
+            return Result.Failure<PaymentOrderResponse>(BeneficiaryServicesErrors.EntitySupportNotApproved);
+
+        var existingOrder = await dbcontext.BeneficiaryPaymentOrders
+            .AnyAsync(x => x.EntitySupportRequestId == support.Id && x.Status != PaymentOrderStatus.Removed, cancellationToken);
+        if (existingOrder)
+            return Result.Failure<PaymentOrderResponse>(BeneficiaryServicesErrors.DuplicatePaymentOrderForEntitySupport);
+
+        var notes = string.IsNullOrWhiteSpace(request.Notes)
+            ? support.DecisionNotes
+            : request.Notes.Trim();
+        var order = new BeneficiaryPaymentOrder
+        {
+            EntitySupportRequestId = support.Id,
+            EntitySupportRequest = support,
+            OrderNumber = await GeneratePaymentOrderNumberAsync(cancellationToken),
+            OrderType = request.OrderType,
+            Amount = support.Amount,
+            ItemDescription = $"{support.SupportType} - {support.RequesterName}",
+            DueDate = request.DueDate?.Date,
+            DecisionNotes = notes
+        };
+
+        dbcontext.BeneficiaryPaymentOrders.Add(order);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapPaymentOrder(order));
+    }
+
     public async Task<Result<IEnumerable<PaymentOrderResponse>>> GetPaymentOrdersAsync(PaymentOrderType? type, PaymentOrderStatus? status, CancellationToken cancellationToken = default)
     {
-        var query = dbcontext.BeneficiaryPaymentOrders.AsNoTracking().Include(x => x.BeneficiaryProfile).Include(x => x.BeneficiaryAidRequest).AsQueryable();
+        var query = dbcontext.BeneficiaryPaymentOrders.AsNoTracking().Include(x => x.BeneficiaryProfile).Include(x => x.BeneficiaryAidRequest).Include(x => x.EntitySupportRequest).AsQueryable();
         if (type.HasValue)
             query = query.Where(x => x.OrderType == type.Value);
         if (status.HasValue)
@@ -143,7 +221,7 @@ public class BeneficiaryServicesService(ApplicationDbcontext dbcontext) : IBenef
         BeneficiaryPaymentOrder order;
         if (id.HasValue)
         {
-            order = await dbcontext.BeneficiaryPaymentOrders.Include(x => x.BeneficiaryProfile).Include(x => x.BeneficiaryAidRequest).FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken) ?? null!;
+            order = await dbcontext.BeneficiaryPaymentOrders.Include(x => x.BeneficiaryProfile).Include(x => x.BeneficiaryAidRequest).Include(x => x.EntitySupportRequest).FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken) ?? null!;
             if (order is null)
                 return Result.Failure<PaymentOrderResponse>(BeneficiaryServicesErrors.PaymentOrderNotFound);
         }
@@ -168,13 +246,24 @@ public class BeneficiaryServicesService(ApplicationDbcontext dbcontext) : IBenef
 
     public async Task<Result<PaymentOrderResponse>> DecidePaymentOrderAsync(int id, DecidePaymentOrderRequest request, CancellationToken cancellationToken = default)
     {
-        var order = await dbcontext.BeneficiaryPaymentOrders.Include(x => x.BeneficiaryProfile).Include(x => x.BeneficiaryAidRequest).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var order = await dbcontext.BeneficiaryPaymentOrders.Include(x => x.BeneficiaryProfile).Include(x => x.BeneficiaryAidRequest).Include(x => x.EntitySupportRequest).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (order is null)
             return Result.Failure<PaymentOrderResponse>(BeneficiaryServicesErrors.PaymentOrderNotFound);
 
         order.Status = request.Status;
         order.DecisionNotes = request.DecisionNotes?.Trim();
         order.ClosedAt = request.Status == PaymentOrderStatus.Closed ? DateTime.UtcNow.AddHours(3) : order.ClosedAt;
+        if (request.Status == PaymentOrderStatus.Closed && order.BeneficiaryAidRequest is not null)
+        {
+            order.BeneficiaryAidRequest.Status = AidRequestStatus.Closed;
+            order.BeneficiaryAidRequest.DecisionNotes = request.DecisionNotes?.Trim() ?? order.BeneficiaryAidRequest.DecisionNotes;
+            order.BeneficiaryAidRequest.DecidedAt = order.ClosedAt;
+        }
+        if (request.Status == PaymentOrderStatus.Closed && order.EntitySupportRequest is not null)
+        {
+            order.EntitySupportRequest.Status = EntitySupportStatus.Closed;
+            order.EntitySupportRequest.DecisionNotes = request.DecisionNotes?.Trim() ?? order.EntitySupportRequest.DecisionNotes;
+        }
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapPaymentOrder(order));
     }
@@ -320,6 +409,41 @@ public class BeneficiaryServicesService(ApplicationDbcontext dbcontext) : IBenef
         return Result.Success<IEnumerable<SponsorshipPaymentResponse>>(payments);
     }
 
+    public async Task<Result<IEnumerable<SponsorshipPaymentResponse>>> GenerateSponsorshipPaymentsAsync(int recordId, GenerateSponsorshipPaymentsRequest request, CancellationToken cancellationToken = default)
+    {
+        var record = await SponsorshipRecordQuery(false).FirstOrDefaultAsync(x => x.Id == recordId, cancellationToken);
+        if (record is null)
+            return Result.Failure<IEnumerable<SponsorshipPaymentResponse>>(BeneficiaryServicesErrors.SponsorshipRecordNotFound);
+        if (record.Status != SponsorshipStatus.Active)
+            return Result.Failure<IEnumerable<SponsorshipPaymentResponse>>(BeneficiaryServicesErrors.SponsorshipRecordNotActive);
+        if (record.Payments.Count != 0)
+            return Result.Failure<IEnumerable<SponsorshipPaymentResponse>>(BeneficiaryServicesErrors.SponsorshipPaymentsAlreadyGenerated);
+        if (record.Amount <= 0 || request.PaymentCount <= 0 || request.MonthsBetweenPayments <= 0)
+            return Result.Failure<IEnumerable<SponsorshipPaymentResponse>>(BeneficiaryServicesErrors.InvalidRequest);
+
+        var lastDueDate = request.FirstDueDate.Date.AddMonths((request.PaymentCount - 1) * request.MonthsBetweenPayments);
+        if (record.EndsAt.HasValue && lastDueDate > record.EndsAt.Value.Date)
+            return Result.Failure<IEnumerable<SponsorshipPaymentResponse>>(BeneficiaryServicesErrors.InvalidRequest);
+
+        var payments = new List<SponsorshipPayment>();
+        for (var index = 0; index < request.PaymentCount; index++)
+        {
+            payments.Add(new SponsorshipPayment
+            {
+                SponsorshipRecordId = record.Id,
+                SponsorshipRecord = record,
+                DueDate = request.FirstDueDate.Date.AddMonths(index * request.MonthsBetweenPayments),
+                Amount = record.Amount,
+                Status = SponsorshipPaymentStatus.Pending,
+                Notes = request.Notes?.Trim()
+            });
+        }
+
+        dbcontext.SponsorshipPayments.AddRange(payments);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success<IEnumerable<SponsorshipPaymentResponse>>(payments.Select(MapSponsorshipPayment).ToList());
+    }
+
     public async Task<Result<SponsorshipPaymentResponse>> SaveSponsorshipPaymentAsync(int? id, SaveSponsorshipPaymentRequest request, CancellationToken cancellationToken = default)
     {
         var record = await SponsorshipRecordQuery(false).FirstOrDefaultAsync(x => x.Id == request.SponsorshipRecordId, cancellationToken);
@@ -462,6 +586,8 @@ public class BeneficiaryServicesService(ApplicationDbcontext dbcontext) : IBenef
         var coupon = await dbcontext.CouponRequests.Include(x => x.BeneficiaryProfile).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (coupon is null)
             return Result.Failure<CouponRequestResponse>(BeneficiaryServicesErrors.CouponNotFound);
+        if (!IsValidCouponTransition(coupon.Status, request.Status))
+            return Result.Failure<CouponRequestResponse>(BeneficiaryServicesErrors.InvalidCouponStatusTransition);
 
         coupon.Status = request.Status;
         coupon.Notes = request.Notes?.Trim() ?? coupon.Notes;
@@ -474,6 +600,17 @@ public class BeneficiaryServicesService(ApplicationDbcontext dbcontext) : IBenef
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapCoupon(coupon));
     }
+
+    private static bool IsValidCouponTransition(CouponStatus current, CouponStatus next) =>
+        current == next ||
+        next == CouponStatus.Cancelled && current != CouponStatus.Delivered ||
+        current switch
+        {
+            CouponStatus.Required => next == CouponStatus.Issued,
+            CouponStatus.Issued => next == CouponStatus.Approved,
+            CouponStatus.Approved => next == CouponStatus.Delivered,
+            _ => false
+        };
 
     private IQueryable<SponsorshipRecord> SponsorshipRecordQuery(bool asNoTracking = true)
     {
@@ -497,6 +634,7 @@ public class BeneficiaryServicesService(ApplicationDbcontext dbcontext) : IBenef
     {
         await dbcontext.Entry(order).Reference(x => x.BeneficiaryProfile).LoadAsync(cancellationToken);
         await dbcontext.Entry(order).Reference(x => x.BeneficiaryAidRequest).LoadAsync(cancellationToken);
+        await dbcontext.Entry(order).Reference(x => x.EntitySupportRequest).LoadAsync(cancellationToken);
     }
 
     private async Task LoadSponsorshipRecordReferencesAsync(SponsorshipRecord record, CancellationToken cancellationToken)
@@ -525,7 +663,7 @@ public class BeneficiaryServicesService(ApplicationDbcontext dbcontext) : IBenef
         new(request.Id, request.BeneficiaryProfileId, request.BeneficiaryProfile?.FullName, request.BeneficiaryEntityId, request.BeneficiaryEntity?.NameAr, request.RequestNumber, request.AidType, request.Amount, request.Description, request.Status.ToString(), request.IsExternal, request.SocialResearchNotes, request.DecisionNotes, request.CreatedAt);
 
     private static PaymentOrderResponse MapPaymentOrder(BeneficiaryPaymentOrder order) =>
-        new(order.Id, order.BeneficiaryAidRequestId, order.BeneficiaryProfileId, order.BeneficiaryProfile?.FullName, order.OrderNumber, order.OrderType.ToString(), order.Amount, order.ItemDescription, order.Status.ToString(), order.DueDate, order.DecisionNotes, order.ClosedAt);
+        new(order.Id, order.BeneficiaryAidRequestId, order.EntitySupportRequestId, order.EntitySupportRequest?.RequesterName, order.BeneficiaryProfileId, order.BeneficiaryProfile?.FullName, order.OrderNumber, order.OrderType.ToString(), order.Amount, order.ItemDescription, order.Status.ToString(), order.DueDate, order.DecisionNotes, order.ClosedAt);
 
     private static SponsorResponse MapSponsor(Sponsor sponsor) =>
         new(sponsor.Id, sponsor.FullName, sponsor.Mobile, sponsor.Email, sponsor.Status.ToString(), sponsor.Notes);

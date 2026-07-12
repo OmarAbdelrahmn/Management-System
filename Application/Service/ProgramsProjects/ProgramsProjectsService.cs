@@ -4,6 +4,7 @@ using Application.Contracts.ProgramsProjects;
 using Domain;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Application.Service.ProgramsProjects;
 
@@ -11,6 +12,10 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
 {
     public async Task<Result<ProgramsProjectsDashboardResponse>> GetDashboardAsync(CancellationToken cancellationToken = default)
     {
+        var today = DateTime.UtcNow.AddHours(3).Date;
+        var nextMonth = today.AddDays(30);
+        var recentActivitySince = today.AddDays(-30);
+
         var projectsCount = await dbcontext.ProgramProjects.CountAsync(cancellationToken);
         var activeProjectsCount = await dbcontext.ProgramProjects.CountAsync(x => x.Status == ProgramProjectStatus.Active, cancellationToken);
         var completedProjectsCount = await dbcontext.ProgramProjects.CountAsync(x => x.Status == ProgramProjectStatus.Completed, cancellationToken);
@@ -24,6 +29,23 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
         var totalExpenses = await dbcontext.ProgramProjectFinanceEntries
             .Where(x => x.EntryType == ProgramProjectFinanceEntryType.Expense || x.EntryType == ProgramProjectFinanceEntryType.Custody)
             .SumAsync(x => x.Amount, cancellationToken);
+        var overdueTasksCount = await dbcontext.ProgramProjectTasks.CountAsync(
+            x => x.DueDate.HasValue &&
+                x.DueDate.Value.Date < today &&
+                x.Status != ProgramProjectTaskStatus.Completed &&
+                x.Status != ProgramProjectTaskStatus.Finished,
+            cancellationToken);
+        var pendingRegistrationsCount = await dbcontext.ProgramRegistrations.CountAsync(x => x.Status == ProgramRegistrationStatus.Pending, cancellationToken);
+        var attendedRegistrationsCount = await dbcontext.ProgramRegistrations.CountAsync(x => x.Status == ProgramRegistrationStatus.Attended, cancellationToken);
+        var upcomingSessionsCount = await dbcontext.ProgramSessions.CountAsync(x => x.StartsAt.Date >= today && x.StartsAt.Date <= nextMonth, cancellationToken);
+        var activeSurveysCount = await dbcontext.ProgramSurveys.CountAsync(x => x.Status == ProgramSurveyStatus.Active, cancellationToken);
+        var issuedCertificatesCount = await dbcontext.ProgramCertificateIssues.CountAsync(x => x.Status == ProgramCertificateIssueStatus.Issued, cancellationToken);
+        var pendingSupplierProposalsCount = await dbcontext.ProgramSupplierProposals.CountAsync(x => x.Status == ProgramSupplierProposalStatus.Submitted, cancellationToken);
+        var openQualificationCasesCount = await dbcontext.ProgramQualificationCases.CountAsync(
+            x => x.Status != ProgramQualificationCaseStatus.Completed &&
+                x.Status != ProgramQualificationCaseStatus.Cancelled,
+            cancellationToken);
+        var recentActivityCount = await dbcontext.ProgramProjectActivities.CountAsync(x => x.OccurredAt.Date >= recentActivitySince, cancellationToken);
 
         return Result.Success(new ProgramsProjectsDashboardResponse(
             projectsCount,
@@ -34,7 +56,16 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
             pendingApprovalsCount,
             totalBudget,
             totalIncome,
-            totalExpenses));
+            totalExpenses,
+            overdueTasksCount,
+            pendingRegistrationsCount,
+            attendedRegistrationsCount,
+            upcomingSessionsCount,
+            activeSurveysCount,
+            issuedCertificatesCount,
+            pendingSupplierProposalsCount,
+            openQualificationCasesCount,
+            recentActivityCount));
     }
 
     public async Task<Result<IEnumerable<ProgramProjectResponse>>> SearchProjectsAsync(ProgramProjectSearchRequest request, CancellationToken cancellationToken = default)
@@ -141,12 +172,17 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
         if (project is null)
             return Result.Failure<ProgramProjectResponse>(ProgramsProjectsErrors.ProjectNotFound);
 
+        var notes = request.Notes?.Trim();
+        var transitionError = ValidateProjectStatusTransition(project, request.Status, notes);
+        if (transitionError is not null)
+            return Result.Failure<ProgramProjectResponse>(transitionError);
+
         var fromStatus = project.Status.ToString();
         project.Status = request.Status;
-        if (!string.IsNullOrWhiteSpace(request.Notes))
-            project.Notes = request.Notes.Trim();
+        if (!string.IsNullOrWhiteSpace(notes))
+            project.Notes = notes;
 
-        QueueProjectActivity(project.Id, ProgramProjectActivityType.StatusChanged, "تغيير حالة المشروع/البرنامج", request.Notes?.Trim(), fromStatus, project.Status.ToString());
+        QueueProjectActivity(project.Id, ProgramProjectActivityType.StatusChanged, "تغيير حالة المشروع/البرنامج", notes, fromStatus, project.Status.ToString());
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapProject(project));
     }
@@ -213,6 +249,8 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
 
         if (string.IsNullOrWhiteSpace(request.Title) || request.ProgressPercent < 0 || request.ProgressPercent > 100)
             return Result.Failure<ProgramProjectTaskResponse>(ProgramsProjectsErrors.InvalidRequest);
+        if (request.Status is ProgramProjectTaskStatus.Completed or ProgramProjectTaskStatus.Finished && request.ProgressPercent != 100)
+            return Result.Failure<ProgramProjectTaskResponse>(ProgramsProjectsErrors.TaskCompletionProgressRequired);
 
         ProgramProjectTask task;
         if (id.HasValue)
@@ -341,6 +379,73 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
         return Result.Success(MapContract(contract));
     }
 
+    public async Task<Result<ProgramContractPaymentResponse>> RecordContractPaymentAsync(int contractId, RecordProgramContractPaymentRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.Amount <= 0)
+            return Result.Failure<ProgramContractPaymentResponse>(ProgramsProjectsErrors.InvalidRequest);
+
+        var contract = await dbcontext.ProgramProjectContracts
+            .Include(x => x.ProgramProject)
+            .Include(x => x.ProgramSupplier)
+            .FirstOrDefaultAsync(x => x.Id == contractId, cancellationToken);
+
+        if (contract is null)
+            return Result.Failure<ProgramContractPaymentResponse>(ProgramsProjectsErrors.ContractNotFound);
+
+        var paidAmount = await dbcontext.ProgramProjectFinanceEntries
+            .Where(x =>
+                x.ProgramProjectId == contract.ProgramProjectId &&
+                x.ReferenceNumber == contract.ContractNumber &&
+                (x.EntryType == ProgramProjectFinanceEntryType.Expense || x.EntryType == ProgramProjectFinanceEntryType.Custody))
+            .SumAsync(x => x.Amount, cancellationToken);
+
+        var remainingAmount = contract.Amount - paidAmount;
+        if (remainingAmount <= 0)
+            return Result.Failure<ProgramContractPaymentResponse>(ProgramsProjectsErrors.ContractAlreadyPaid);
+
+        if (request.Amount > remainingAmount)
+            return Result.Failure<ProgramContractPaymentResponse>(ProgramsProjectsErrors.ContractPaymentExceedsBalance);
+
+        var paymentReference = request.PaymentReference?.Trim();
+        var notes = request.Notes?.Trim();
+        if (!string.IsNullOrWhiteSpace(paymentReference))
+            notes = string.IsNullOrWhiteSpace(notes)
+                ? $"مرجع السداد: {paymentReference}"
+                : $"{notes} | مرجع السداد: {paymentReference}";
+
+        var entry = new ProgramProjectFinanceEntry
+        {
+            ProgramProjectId = contract.ProgramProjectId,
+            ProgramProject = contract.ProgramProject,
+            EntryType = ProgramProjectFinanceEntryType.Expense,
+            EntryDate = request.PaidAt ?? DateTime.UtcNow.AddHours(3),
+            Amount = request.Amount,
+            SourceOrPayee = contract.ProgramSupplier?.Name ?? contract.Title,
+            ReferenceNumber = contract.ContractNumber,
+            Notes = notes ?? $"سداد عقد {contract.ContractNumber}"
+        };
+
+        dbcontext.ProgramProjectFinanceEntries.Add(entry);
+        QueueProjectActivity(
+            entry.ProgramProjectId,
+            ProgramProjectActivityType.FinanceEntryAdded,
+            $"سداد عقد: {contract.Title}",
+            entry.Notes,
+            null,
+            null,
+            entry.Amount,
+            contract.ContractNumber);
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+
+        var newPaidAmount = paidAmount + entry.Amount;
+        return Result.Success(new ProgramContractPaymentResponse(
+            MapContract(contract),
+            MapFinanceEntry(entry),
+            newPaidAmount,
+            contract.Amount - newPaidAmount));
+    }
+
     public async Task<Result<IEnumerable<ProgramProjectFinanceEntryResponse>>> GetFinanceEntriesAsync(int? projectId, ProgramProjectFinanceEntryType? entryType, CancellationToken cancellationToken = default)
     {
         var query = dbcontext.ProgramProjectFinanceEntries.AsNoTracking().Include(x => x.ProgramProject).AsQueryable();
@@ -376,6 +481,47 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
 
         dbcontext.ProgramProjectFinanceEntries.Add(entry);
         QueueProjectActivity(entry.ProgramProjectId, ProgramProjectActivityType.FinanceEntryAdded, $"حركة مالية: {entry.EntryType}", entry.Notes, null, null, entry.Amount, entry.ReferenceNumber ?? entry.SourceOrPayee);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapFinanceEntry(entry));
+    }
+
+    public async Task<Result<ProgramProjectFinanceEntryResponse>> UpdateFinanceEntryAsync(int id, AddProgramProjectFinanceEntryRequest request, CancellationToken cancellationToken = default)
+    {
+        var entry = await dbcontext.ProgramProjectFinanceEntries
+            .Include(x => x.ProgramProject)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (entry is null)
+            return Result.Failure<ProgramProjectFinanceEntryResponse>(ProgramsProjectsErrors.FinanceEntryNotFound);
+
+        var project = await dbcontext.ProgramProjects.FirstOrDefaultAsync(x => x.Id == request.ProgramProjectId, cancellationToken);
+        if (project is null)
+            return Result.Failure<ProgramProjectFinanceEntryResponse>(ProgramsProjectsErrors.ProjectNotFound);
+
+        if (request.Amount <= 0 || string.IsNullOrWhiteSpace(request.SourceOrPayee))
+            return Result.Failure<ProgramProjectFinanceEntryResponse>(ProgramsProjectsErrors.InvalidRequest);
+
+        var oldType = entry.EntryType.ToString();
+        var oldAmount = entry.Amount;
+        entry.ProgramProjectId = request.ProgramProjectId;
+        entry.ProgramProject = project;
+        entry.EntryType = request.EntryType;
+        entry.EntryDate = request.EntryDate ?? DateTime.UtcNow.AddHours(3);
+        entry.Amount = request.Amount;
+        entry.SourceOrPayee = request.SourceOrPayee.Trim();
+        entry.ReferenceNumber = request.ReferenceNumber?.Trim();
+        entry.Notes = request.Notes?.Trim();
+
+        QueueProjectActivity(
+            entry.ProgramProjectId,
+            ProgramProjectActivityType.FinanceEntryAdded,
+            $"تعديل حركة مالية: {entry.EntryType}",
+            entry.Notes,
+            oldType,
+            entry.EntryType.ToString(),
+            entry.Amount - oldAmount,
+            entry.ReferenceNumber ?? entry.SourceOrPayee);
+
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapFinanceEntry(entry));
     }
@@ -418,6 +564,45 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
         return Result.Success(MapAssignment(assignment));
     }
 
+    public async Task<Result<ProgramProjectAssignmentResponse>> UpdateAssignmentAsync(int id, AddProgramProjectAssignmentRequest request, CancellationToken cancellationToken = default)
+    {
+        var assignment = await dbcontext.ProgramProjectAssignments
+            .Include(x => x.ProgramProject)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (assignment is null)
+            return Result.Failure<ProgramProjectAssignmentResponse>(ProgramsProjectsErrors.AssignmentNotFound);
+
+        var project = await dbcontext.ProgramProjects.FirstOrDefaultAsync(x => x.Id == request.ProgramProjectId, cancellationToken);
+        if (project is null)
+            return Result.Failure<ProgramProjectAssignmentResponse>(ProgramsProjectsErrors.ProjectNotFound);
+
+        if (string.IsNullOrWhiteSpace(request.DisplayName))
+            return Result.Failure<ProgramProjectAssignmentResponse>(ProgramsProjectsErrors.InvalidRequest);
+
+        var oldType = assignment.AssignmentType.ToString();
+        assignment.ProgramProjectId = request.ProgramProjectId;
+        assignment.ProgramProject = project;
+        assignment.AssignmentType = request.AssignmentType;
+        assignment.DisplayName = request.DisplayName.Trim();
+        assignment.ExternalReference = request.ExternalReference?.Trim();
+        assignment.AssignedAt = request.AssignedAt ?? DateTime.UtcNow.AddHours(3);
+        assignment.Notes = request.Notes?.Trim();
+
+        QueueProjectActivity(
+            assignment.ProgramProjectId,
+            ProgramProjectActivityType.AssignmentAdded,
+            $"تعديل إلحاق {assignment.AssignmentType}: {assignment.DisplayName}",
+            assignment.Notes,
+            oldType,
+            assignment.AssignmentType.ToString(),
+            null,
+            assignment.ExternalReference);
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapAssignment(assignment));
+    }
+
     public async Task<Result<IEnumerable<ProgramProjectReportResponse>>> GetReportsAsync(int? projectId, string? reportType, CancellationToken cancellationToken = default)
     {
         var query = dbcontext.ProgramProjectReports.AsNoTracking().Include(x => x.ProgramProject).AsQueryable();
@@ -456,6 +641,82 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
         QueueProjectActivity(report.ProgramProjectId, ProgramProjectActivityType.ReportAdded, $"تقرير: {report.ReportType}", report.Summary, null, null, null, report.FilePath);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapReport(report));
+    }
+
+    public async Task<Result<ProgramProjectReportResponse>> UpdateReportAsync(int id, AddProgramProjectReportRequest request, CancellationToken cancellationToken = default)
+    {
+        var report = await dbcontext.ProgramProjectReports
+            .Include(x => x.ProgramProject)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (report is null)
+            return Result.Failure<ProgramProjectReportResponse>(ProgramsProjectsErrors.ReportNotFound);
+
+        var project = await dbcontext.ProgramProjects.FirstOrDefaultAsync(x => x.Id == request.ProgramProjectId, cancellationToken);
+        if (project is null)
+            return Result.Failure<ProgramProjectReportResponse>(ProgramsProjectsErrors.ProjectNotFound);
+
+        if (string.IsNullOrWhiteSpace(request.ReportType) || string.IsNullOrWhiteSpace(request.Summary))
+            return Result.Failure<ProgramProjectReportResponse>(ProgramsProjectsErrors.InvalidRequest);
+
+        var oldReportType = report.ReportType;
+        report.ProgramProjectId = request.ProgramProjectId;
+        report.ProgramProject = project;
+        report.ReportType = request.ReportType.Trim();
+        report.ReportDate = request.ReportDate ?? DateTime.UtcNow.AddHours(3);
+        report.Summary = request.Summary.Trim();
+        report.FilePath = request.FilePath?.Trim();
+
+        QueueProjectActivity(
+            report.ProgramProjectId,
+            ProgramProjectActivityType.ReportAdded,
+            $"تعديل تقرير: {report.ReportType}",
+            report.Summary,
+            oldReportType,
+            report.ReportType,
+            null,
+            report.FilePath);
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapReport(report));
+    }
+
+    public async Task<Result<ProgramProjectResponse>> CloseProjectAsync(int id, CloseProgramProjectRequest request, CancellationToken cancellationToken = default)
+    {
+        var project = await ProjectQuery(false).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (project is null)
+            return Result.Failure<ProgramProjectResponse>(ProgramsProjectsErrors.ProjectNotFound);
+        if (project.Status is ProgramProjectStatus.Completed or ProgramProjectStatus.Cancelled or ProgramProjectStatus.Deleted)
+            return Result.Failure<ProgramProjectResponse>(ProgramsProjectsErrors.ProjectAlreadyClosed);
+        if (string.IsNullOrWhiteSpace(request.Summary))
+            return Result.Failure<ProgramProjectResponse>(ProgramsProjectsErrors.InvalidRequest);
+
+        var closedAt = request.ClosedAt ?? DateTime.UtcNow.AddHours(3);
+        if (project.StartsAt.HasValue && closedAt.Date < project.StartsAt.Value.Date)
+            return Result.Failure<ProgramProjectResponse>(ProgramsProjectsErrors.InvalidRequest);
+
+        var fromStatus = project.Status.ToString();
+        project.Status = ProgramProjectStatus.Completed;
+        project.EndsAt = closedAt.Date;
+        if (!string.IsNullOrWhiteSpace(request.Notes))
+            project.Notes = request.Notes.Trim();
+
+        var report = new ProgramProjectReport
+        {
+            ProgramProjectId = project.Id,
+            ProgramProject = project,
+            ReportType = "Final",
+            ReportDate = closedAt,
+            Summary = request.Summary.Trim(),
+            FilePath = request.FilePath?.Trim()
+        };
+
+        dbcontext.ProgramProjectReports.Add(report);
+        QueueProjectActivity(project.Id, ProgramProjectActivityType.ReportAdded, "تقرير ختامي", report.Summary, null, null, null, report.FilePath);
+        QueueProjectActivity(project.Id, ProgramProjectActivityType.StatusChanged, "إغلاق المشروع/البرنامج", project.Notes ?? report.Summary, fromStatus, project.Status.ToString(), null, project.ProjectCode);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        await LoadProjectCollectionsAsync(project, cancellationToken);
+        return Result.Success(MapProject(project));
     }
 
     public async Task<Result<IEnumerable<ProgramProjectActivityResponse>>> GetProjectActivitiesAsync(int projectId, CancellationToken cancellationToken = default)
@@ -530,9 +791,240 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
         return Result.Success(MapSupplier(supplier));
     }
 
+    public async Task<Result<IEnumerable<ProgramSupplierProposalResponse>>> GetSupplierProposalsAsync(int? projectId, int? supplierId, ProgramSupplierProposalStatus? status, CancellationToken cancellationToken = default)
+    {
+        var query = dbcontext.ProgramSupplierProposals
+            .AsNoTracking()
+            .Include(x => x.ProgramProject)
+            .Include(x => x.ProgramSupplier)
+            .Include(x => x.ConvertedContract)
+            .AsQueryable();
+
+        if (projectId.HasValue)
+            query = query.Where(x => x.ProgramProjectId == projectId.Value);
+
+        if (supplierId.HasValue)
+            query = query.Where(x => x.ProgramSupplierId == supplierId.Value);
+
+        if (status.HasValue)
+            query = query.Where(x => x.Status == status.Value);
+
+        var proposals = await query
+            .OrderByDescending(x => x.SubmittedAt)
+            .ThenByDescending(x => x.Id)
+            .Select(x => MapSupplierProposal(x))
+            .ToListAsync(cancellationToken);
+
+        return Result.Success<IEnumerable<ProgramSupplierProposalResponse>>(proposals);
+    }
+
+    public async Task<Result<ProgramSupplierProposalResponse>> SaveSupplierProposalAsync(int? id, SaveProgramSupplierProposalRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Title) || request.Amount < 0)
+            return Result.Failure<ProgramSupplierProposalResponse>(ProgramsProjectsErrors.InvalidRequest);
+
+        var project = await dbcontext.ProgramProjects.FirstOrDefaultAsync(x => x.Id == request.ProgramProjectId, cancellationToken);
+        if (project is null)
+            return Result.Failure<ProgramSupplierProposalResponse>(ProgramsProjectsErrors.ProjectNotFound);
+
+        var supplier = await dbcontext.ProgramSuppliers.FirstOrDefaultAsync(x => x.Id == request.ProgramSupplierId, cancellationToken);
+        if (supplier is null)
+            return Result.Failure<ProgramSupplierProposalResponse>(ProgramsProjectsErrors.SupplierNotFound);
+
+        var proposalNumber = string.IsNullOrWhiteSpace(request.ProposalNumber)
+            ? await GenerateProposalNumberAsync(cancellationToken)
+            : request.ProposalNumber.Trim();
+
+        var duplicateNumber = await dbcontext.ProgramSupplierProposals.AnyAsync(x => x.ProposalNumber == proposalNumber && (!id.HasValue || x.Id != id.Value), cancellationToken);
+        if (duplicateNumber)
+            return Result.Failure<ProgramSupplierProposalResponse>(ProgramsProjectsErrors.DuplicateProposalNumber);
+
+        var isNew = !id.HasValue;
+        ProgramSupplierProposal proposal;
+        string? fromStatus = null;
+        if (id.HasValue)
+        {
+            proposal = await dbcontext.ProgramSupplierProposals
+                .Include(x => x.ProgramProject)
+                .Include(x => x.ProgramSupplier)
+                .Include(x => x.ConvertedContract)
+                .FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken)
+                ?? null!;
+
+            if (proposal is null)
+                return Result.Failure<ProgramSupplierProposalResponse>(ProgramsProjectsErrors.SupplierProposalNotFound);
+
+            fromStatus = proposal.Status.ToString();
+        }
+        else
+        {
+            proposal = new ProgramSupplierProposal();
+            dbcontext.ProgramSupplierProposals.Add(proposal);
+        }
+
+        proposal.ProgramProjectId = request.ProgramProjectId;
+        proposal.ProgramSupplierId = request.ProgramSupplierId;
+        proposal.ProgramProject = project;
+        proposal.ProgramSupplier = supplier;
+        proposal.ProposalNumber = proposalNumber;
+        proposal.Title = request.Title.Trim();
+        proposal.Scope = request.Scope?.Trim();
+        proposal.Amount = request.Amount;
+        proposal.SubmittedAt = request.SubmittedAt ?? DateTime.UtcNow.AddHours(3);
+        proposal.ValidUntil = request.ValidUntil?.Date;
+        proposal.Status = request.Status;
+        proposal.Notes = request.Notes?.Trim();
+
+        QueueProjectActivity(
+            proposal.ProgramProjectId,
+            ProgramProjectActivityType.SupplierProposalSaved,
+            isNew ? $"عرض مورد: {proposal.Title}" : $"تحديث عرض مورد: {proposal.Title}",
+            proposal.Notes ?? proposal.Scope,
+            fromStatus,
+            proposal.Status.ToString(),
+            proposal.Amount,
+            proposal.ProposalNumber);
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapSupplierProposal(proposal));
+    }
+
+    public async Task<Result<ProgramSupplierProposalResponse>> DecideSupplierProposalAsync(int id, DecideProgramSupplierProposalRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.Status == ProgramSupplierProposalStatus.Converted)
+            return Result.Failure<ProgramSupplierProposalResponse>(ProgramsProjectsErrors.InvalidRequest);
+
+        var proposal = await dbcontext.ProgramSupplierProposals
+            .Include(x => x.ProgramProject)
+            .Include(x => x.ProgramSupplier)
+            .Include(x => x.ConvertedContract)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (proposal is null)
+            return Result.Failure<ProgramSupplierProposalResponse>(ProgramsProjectsErrors.SupplierProposalNotFound);
+
+        var decisionNotes = request.DecisionNotes?.Trim();
+        var decisionError = ValidateSupplierProposalDecision(proposal, request.Status, decisionNotes);
+        if (decisionError is not null)
+            return Result.Failure<ProgramSupplierProposalResponse>(decisionError);
+
+        var fromStatus = proposal.Status.ToString();
+        proposal.Status = request.Status;
+        proposal.DecisionNotes = decisionNotes ?? proposal.DecisionNotes;
+        proposal.DecidedAt = DateTime.UtcNow.AddHours(3);
+
+        QueueProjectActivity(
+            proposal.ProgramProjectId,
+            ProgramProjectActivityType.SupplierProposalDecided,
+            $"قرار عرض مورد: {proposal.Title}",
+            proposal.DecisionNotes,
+            fromStatus,
+            proposal.Status.ToString(),
+            proposal.Amount,
+            proposal.ProposalNumber);
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapSupplierProposal(proposal));
+    }
+
+    public async Task<Result<ProgramSupplierProposalResponse>> ConvertSupplierProposalToContractAsync(int id, ConvertProgramSupplierProposalRequest request, CancellationToken cancellationToken = default)
+    {
+        var proposal = await dbcontext.ProgramSupplierProposals
+            .Include(x => x.ProgramProject)
+            .Include(x => x.ProgramSupplier)
+            .Include(x => x.ConvertedContract)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (proposal is null)
+            return Result.Failure<ProgramSupplierProposalResponse>(ProgramsProjectsErrors.SupplierProposalNotFound);
+
+        if (proposal.Status != ProgramSupplierProposalStatus.Approved || proposal.ConvertedContractId.HasValue)
+            return Result.Failure<ProgramSupplierProposalResponse>(ProgramsProjectsErrors.InvalidRequest);
+
+        var contractNumber = string.IsNullOrWhiteSpace(request.ContractNumber)
+            ? await GenerateContractNumberAsync(cancellationToken)
+            : request.ContractNumber.Trim();
+
+        var duplicateContract = await dbcontext.ProgramProjectContracts.AnyAsync(x => x.ContractNumber == contractNumber, cancellationToken);
+        if (duplicateContract)
+            return Result.Failure<ProgramSupplierProposalResponse>(ProgramsProjectsErrors.DuplicateContractNumber);
+
+        var contract = new ProgramProjectContract
+        {
+            ProgramProjectId = proposal.ProgramProjectId,
+            ProgramProject = proposal.ProgramProject,
+            ProgramSupplierId = proposal.ProgramSupplierId,
+            ProgramSupplier = proposal.ProgramSupplier,
+            ContractNumber = contractNumber,
+            Title = proposal.Title,
+            Amount = proposal.Amount,
+            SignedAt = (request.SignedAt ?? DateTime.UtcNow.AddHours(3)).Date,
+            EndsAt = request.EndsAt?.Date,
+            Notes = request.Notes?.Trim() ?? proposal.Notes
+        };
+
+        dbcontext.ProgramProjectContracts.Add(contract);
+        var fromStatus = proposal.Status.ToString();
+        proposal.Status = ProgramSupplierProposalStatus.Converted;
+        proposal.DecisionNotes = request.Notes?.Trim() ?? proposal.DecisionNotes;
+        proposal.DecidedAt = DateTime.UtcNow.AddHours(3);
+        proposal.ConvertedContract = contract;
+
+        QueueProjectActivity(
+            proposal.ProgramProjectId,
+            ProgramProjectActivityType.SupplierProposalConverted,
+            $"تحويل عرض إلى عقد: {proposal.Title}",
+            proposal.DecisionNotes,
+            fromStatus,
+            proposal.Status.ToString(),
+            proposal.Amount,
+            proposal.ProposalNumber);
+        QueueProjectActivity(proposal.ProgramProjectId, ProgramProjectActivityType.ContractSaved, $"عقد من عرض مورد: {contract.Title}", contract.Notes, null, null, contract.Amount, contract.ContractNumber);
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        proposal.ConvertedContractId = contract.Id;
+        proposal.ConvertedContract = contract;
+        return Result.Success(MapSupplierProposal(proposal));
+    }
+
+    private static Error? ValidateSupplierProposalDecision(ProgramSupplierProposal proposal, ProgramSupplierProposalStatus status, string? notes)
+    {
+        if (proposal.Status is ProgramSupplierProposalStatus.Converted or ProgramSupplierProposalStatus.Cancelled or ProgramSupplierProposalStatus.Rejected ||
+            proposal.ConvertedContractId.HasValue)
+            return proposal.Status == status && status != ProgramSupplierProposalStatus.Converted
+                ? null
+                : ProgramsProjectsErrors.SupplierProposalAlreadyClosed;
+
+        if (proposal.Status == status)
+            return null;
+
+        if (status is ProgramSupplierProposalStatus.Rejected or ProgramSupplierProposalStatus.Cancelled && string.IsNullOrWhiteSpace(notes))
+            return ProgramsProjectsErrors.SupplierProposalDecisionNotesRequired;
+
+        if (status == ProgramSupplierProposalStatus.Approved)
+        {
+            if (proposal.Status is not (ProgramSupplierProposalStatus.Submitted or ProgramSupplierProposalStatus.UnderReview))
+                return ProgramsProjectsErrors.InvalidSupplierProposalStatusTransition;
+
+            if (proposal.ValidUntil.HasValue && proposal.ValidUntil.Value.Date < DateTime.UtcNow.AddHours(3).Date)
+                return ProgramsProjectsErrors.SupplierProposalExpired;
+
+            return null;
+        }
+
+        return status switch
+        {
+            ProgramSupplierProposalStatus.Submitted when proposal.Status == ProgramSupplierProposalStatus.Draft => null,
+            ProgramSupplierProposalStatus.UnderReview when proposal.Status is ProgramSupplierProposalStatus.Draft or ProgramSupplierProposalStatus.Submitted => null,
+            ProgramSupplierProposalStatus.Rejected when proposal.Status is ProgramSupplierProposalStatus.Draft or ProgramSupplierProposalStatus.Submitted or ProgramSupplierProposalStatus.UnderReview => null,
+            ProgramSupplierProposalStatus.Cancelled when proposal.Status is ProgramSupplierProposalStatus.Draft or ProgramSupplierProposalStatus.Submitted or ProgramSupplierProposalStatus.UnderReview or ProgramSupplierProposalStatus.Approved => null,
+            _ => ProgramsProjectsErrors.InvalidSupplierProposalStatusTransition
+        };
+    }
+
     public async Task<Result<IEnumerable<ProgramIdeaResponse>>> GetIdeasAsync(ProgramIdeaStatus? status, CancellationToken cancellationToken = default)
     {
-        var query = dbcontext.ProgramIdeas.AsNoTracking().AsQueryable();
+        var query = dbcontext.ProgramIdeas.AsNoTracking().Include(x => x.ConvertedProject).AsQueryable();
         if (status.HasValue)
             query = query.Where(x => x.Status == status.Value);
 
@@ -580,6 +1072,60 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
         idea.DecidedAt = DateTime.UtcNow.AddHours(3);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapIdea(idea));
+    }
+
+    public async Task<Result<ProgramProjectResponse>> ConvertIdeaToProjectAsync(int id, ConvertProgramIdeaToProjectRequest request, CancellationToken cancellationToken = default)
+    {
+        var idea = await dbcontext.ProgramIdeas
+            .Include(x => x.ConvertedProject)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (idea is null)
+            return Result.Failure<ProgramProjectResponse>(ProgramsProjectsErrors.IdeaNotFound);
+        if (idea.ConvertedProjectId.HasValue)
+            return Result.Failure<ProgramProjectResponse>(ProgramsProjectsErrors.IdeaAlreadyConverted);
+        if (idea.Status != ProgramIdeaStatus.Approved)
+            return Result.Failure<ProgramProjectResponse>(ProgramsProjectsErrors.IdeaNotApproved);
+        if (string.IsNullOrWhiteSpace(request.ProjectType) || request.TargetBeneficiaries < 0)
+            return Result.Failure<ProgramProjectResponse>(ProgramsProjectsErrors.InvalidRequest);
+        if (request.StartsAt.HasValue && request.EndsAt.HasValue && request.EndsAt.Value.Date < request.StartsAt.Value.Date)
+            return Result.Failure<ProgramProjectResponse>(ProgramsProjectsErrors.InvalidRequest);
+
+        var project = new ProgramProject
+        {
+            ProjectCode = await GenerateProjectCodeAsync(cancellationToken),
+            Name = idea.Title.Trim(),
+            ProjectType = request.ProjectType.Trim(),
+            Description = idea.Description.Trim(),
+            ManagerName = request.ManagerName?.Trim() ?? idea.OwnerName?.Trim(),
+            StartsAt = request.StartsAt?.Date,
+            EndsAt = request.EndsAt?.Date,
+            Status = request.Status,
+            Budget = idea.EstimatedBudget,
+            TargetBeneficiaries = request.TargetBeneficiaries,
+            Notes = string.IsNullOrWhiteSpace(request.Notes) ? idea.MarketingNotes?.Trim() : request.Notes.Trim()
+        };
+
+        dbcontext.ProgramProjects.Add(project);
+        idea.Status = ProgramIdeaStatus.Completed;
+        idea.DecisionNotes = string.IsNullOrWhiteSpace(request.Notes)
+            ? $"تم تحويل المقترح إلى {request.ProjectType.Trim()}."
+            : request.Notes.Trim();
+        idea.DecidedAt = DateTime.UtcNow.AddHours(3);
+        idea.ConvertedProject = project;
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        QueueProjectActivity(
+            project.Id,
+            ProgramProjectActivityType.Created,
+            "تحويل مقترح برنامج إلى مشروع/برنامج",
+            idea.DecisionNotes,
+            ProgramIdeaStatus.Approved.ToString(),
+            idea.Status.ToString(),
+            idea.EstimatedBudget,
+            $"IDEA-{idea.Id}");
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        await LoadProjectCollectionsAsync(project, cancellationToken);
+        return Result.Success(MapProject(project));
     }
 
     public async Task<Result<IEnumerable<ProgramApprovalResponse>>> GetApprovalsAsync(ProgramApprovalStatus? status, CancellationToken cancellationToken = default)
@@ -707,9 +1253,18 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
         if (registration is null)
             return Result.Failure<ProgramRegistrationResponse>(ProgramsProjectsErrors.RegistrationNotFound);
 
+        var decisionNotes = request.DecisionNotes?.Trim();
+        var decisionError = ValidateRegistrationDecision(registration, request.Status, decisionNotes);
+        if (decisionError is not null)
+            return Result.Failure<ProgramRegistrationResponse>(decisionError);
+
+        if (request.Status == ProgramRegistrationStatus.Approved
+            && !await HasRegistrationCapacityAsync(registration.ProgramProjectId, registration.Id, cancellationToken))
+            return Result.Failure<ProgramRegistrationResponse>(ProgramsProjectsErrors.ProgramCapacityReached);
+
         var fromStatus = registration.Status.ToString();
         registration.Status = request.Status;
-        registration.DecisionNotes = request.DecisionNotes?.Trim();
+        registration.DecisionNotes = decisionNotes;
         registration.DecidedAt = DateTime.UtcNow.AddHours(3);
         QueueProjectActivity(registration.ProgramProjectId, ProgramProjectActivityType.RegistrationDecided, $"قرار تسجيل: {registration.ParticipantName}", registration.DecisionNotes, fromStatus, registration.Status.ToString(), null, registration.ExternalReference);
         await dbcontext.SaveChangesAsync(cancellationToken);
@@ -803,6 +1358,7 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
         attendance.Status = request.Status;
         attendance.Notes = request.Notes?.Trim();
 
+        await MarkMatchingRegistrationAttendedAsync(session.ProgramProjectId, attendance, cancellationToken);
         QueueProjectActivity(session.ProgramProjectId, ProgramProjectActivityType.AttendanceSaved, $"حضور مشارك: {attendance.ParticipantName}", attendance.Notes, null, attendance.Status.ToString(), null, session.Title);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapAttendance(attendance));
@@ -827,6 +1383,8 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
             return Result.Failure<ProgramSurveyResponse>(ProgramsProjectsErrors.ProjectNotFound);
         if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.QuestionsJson))
             return Result.Failure<ProgramSurveyResponse>(ProgramsProjectsErrors.InvalidRequest);
+        if (!IsValidJson(request.QuestionsJson, JsonValueKind.Array))
+            return Result.Failure<ProgramSurveyResponse>(ProgramsProjectsErrors.InvalidSurveyJson);
 
         ProgramSurvey survey;
         if (id.HasValue)
@@ -864,22 +1422,34 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
 
     public async Task<Result<ProgramSurveySubmissionResponse>> AddSurveySubmissionAsync(AddProgramSurveySubmissionRequest request, CancellationToken cancellationToken = default)
     {
-        var survey = await dbcontext.ProgramSurveys.FirstOrDefaultAsync(x => x.Id == request.ProgramSurveyId, cancellationToken);
+        var survey = await dbcontext.ProgramSurveys.Include(x => x.ProgramProject).FirstOrDefaultAsync(x => x.Id == request.ProgramSurveyId, cancellationToken);
         if (survey is null)
             return Result.Failure<ProgramSurveySubmissionResponse>(ProgramsProjectsErrors.SurveyNotFound);
         if (string.IsNullOrWhiteSpace(request.RespondentName) || string.IsNullOrWhiteSpace(request.AnswersJson))
             return Result.Failure<ProgramSurveySubmissionResponse>(ProgramsProjectsErrors.InvalidRequest);
+        if (survey.Status != ProgramSurveyStatus.Active)
+            return Result.Failure<ProgramSurveySubmissionResponse>(ProgramsProjectsErrors.SurveyNotActive);
+        if (!IsValidJson(request.AnswersJson, JsonValueKind.Object))
+            return Result.Failure<ProgramSurveySubmissionResponse>(ProgramsProjectsErrors.InvalidSurveyJson);
+
+        var respondentName = request.RespondentName.Trim();
+        var duplicate = await dbcontext.ProgramSurveySubmissions.AnyAsync(
+            x => x.ProgramSurveyId == request.ProgramSurveyId && x.RespondentName == respondentName,
+            cancellationToken);
+        if (duplicate)
+            return Result.Failure<ProgramSurveySubmissionResponse>(ProgramsProjectsErrors.DuplicateSurveySubmission);
 
         var submission = new ProgramSurveySubmission
         {
             ProgramSurveyId = request.ProgramSurveyId,
             ProgramSurvey = survey,
-            RespondentName = request.RespondentName.Trim(),
+            RespondentName = respondentName,
             AnswersJson = request.AnswersJson.Trim(),
             SubmittedAt = request.SubmittedAt ?? DateTime.UtcNow.AddHours(3)
         };
 
         dbcontext.ProgramSurveySubmissions.Add(submission);
+        QueueProjectActivity(survey.ProgramProjectId, ProgramProjectActivityType.SurveySaved, $"إجابة استبيان: {survey.Title}", submission.RespondentName, null, survey.Status.ToString(), null, survey.Title);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapSurveySubmission(submission));
     }
@@ -948,33 +1518,75 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
         var project = await dbcontext.ProgramProjects.FirstOrDefaultAsync(x => x.Id == request.ProgramProjectId, cancellationToken);
         if (project is null)
             return Result.Failure<ProgramCertificateIssueResponse>(ProgramsProjectsErrors.ProjectNotFound);
-        if (request.ProgramCertificateTemplateId.HasValue && !await dbcontext.ProgramCertificateTemplates.AnyAsync(x => x.Id == request.ProgramCertificateTemplateId.Value, cancellationToken))
-            return Result.Failure<ProgramCertificateIssueResponse>(ProgramsProjectsErrors.CertificateTemplateNotFound);
         if (string.IsNullOrWhiteSpace(request.RecipientName))
             return Result.Failure<ProgramCertificateIssueResponse>(ProgramsProjectsErrors.InvalidRequest);
 
-        var certificateNumber = string.IsNullOrWhiteSpace(request.CertificateNumber)
-            ? await GenerateCertificateNumberAsync(cancellationToken)
-            : request.CertificateNumber.Trim();
-        var duplicate = await dbcontext.ProgramCertificateIssues.AnyAsync(x => x.CertificateNumber == certificateNumber, cancellationToken);
-        if (duplicate)
-            return Result.Failure<ProgramCertificateIssueResponse>(ProgramsProjectsErrors.DuplicateCertificateNumber);
+        return await CreateCertificateIssueAsync(
+            project,
+            request.ProgramCertificateTemplateId,
+            request.CertificateNumber,
+            request.RecipientName,
+            request.IssuedAt,
+            request.Notes,
+            cancellationToken);
+    }
 
-        var issue = new ProgramCertificateIssue
-        {
-            ProgramProjectId = request.ProgramProjectId,
-            ProgramProject = project,
-            ProgramCertificateTemplateId = request.ProgramCertificateTemplateId,
-            CertificateNumber = certificateNumber,
-            RecipientName = request.RecipientName.Trim(),
-            IssuedAt = request.IssuedAt ?? DateTime.UtcNow.AddHours(3),
-            Notes = request.Notes?.Trim()
-        };
+    public async Task<Result<ProgramCertificateIssueResponse>> IssueCertificateFromRegistrationAsync(int registrationId, IssueProgramCertificateFromRegistrationRequest request, CancellationToken cancellationToken = default)
+    {
+        var registration = await dbcontext.ProgramRegistrations
+            .Include(x => x.ProgramProject)
+            .FirstOrDefaultAsync(x => x.Id == registrationId, cancellationToken);
+        if (registration is null || registration.ProgramProject is null)
+            return Result.Failure<ProgramCertificateIssueResponse>(ProgramsProjectsErrors.RegistrationNotFound);
+        if (registration.Status != ProgramRegistrationStatus.Attended)
+            return Result.Failure<ProgramCertificateIssueResponse>(ProgramsProjectsErrors.CertificateRequiresAttendedRegistration);
 
-        dbcontext.ProgramCertificateIssues.Add(issue);
-        QueueProjectActivity(issue.ProgramProjectId, ProgramProjectActivityType.CertificateIssued, $"إصدار شهادة: {issue.RecipientName}", issue.Notes, null, issue.Status.ToString(), null, certificateNumber);
+        var notes = string.IsNullOrWhiteSpace(request.Notes)
+            ? $"إصدار من تسجيل البرنامج رقم {registration.Id}"
+            : request.Notes.Trim();
+
+        return await CreateCertificateIssueAsync(
+            registration.ProgramProject,
+            request.ProgramCertificateTemplateId,
+            request.CertificateNumber,
+            registration.ParticipantName,
+            request.IssuedAt,
+            notes,
+            cancellationToken);
+    }
+
+    public async Task<Result<ProgramCertificateIssueResponse>> CancelCertificateIssueAsync(int id, CancelProgramCertificateIssueRequest request, CancellationToken cancellationToken = default)
+    {
+        var issue = await dbcontext.ProgramCertificateIssues
+            .Include(x => x.ProgramProject)
+            .Include(x => x.ProgramCertificateTemplate)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (issue is null)
+            return Result.Failure<ProgramCertificateIssueResponse>(ProgramsProjectsErrors.CertificateIssueNotFound);
+        if (issue.Status == ProgramCertificateIssueStatus.Cancelled)
+            return Result.Failure<ProgramCertificateIssueResponse>(ProgramsProjectsErrors.CertificateIssueAlreadyCancelled);
+
+        var oldStatus = issue.Status.ToString();
+        var notes = request.Notes?.Trim();
+        issue.Status = ProgramCertificateIssueStatus.Cancelled;
+        issue.Notes = string.IsNullOrWhiteSpace(notes)
+            ? issue.Notes
+            : string.IsNullOrWhiteSpace(issue.Notes)
+                ? notes
+                : $"{issue.Notes.Trim()} | {notes}";
+
+        QueueProjectActivity(
+            issue.ProgramProjectId,
+            ProgramProjectActivityType.CertificateCancelled,
+            $"إلغاء شهادة: {issue.RecipientName}",
+            issue.Notes,
+            oldStatus,
+            issue.Status.ToString(),
+            null,
+            issue.CertificateNumber);
+
         await dbcontext.SaveChangesAsync(cancellationToken);
-        await dbcontext.Entry(issue).Reference(x => x.ProgramCertificateTemplate).LoadAsync(cancellationToken);
         return Result.Success(MapCertificateIssue(issue));
     }
 
@@ -1055,6 +1667,63 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
 
         var installments = await query.OrderBy(x => x.DueDate).Select(x => MapQualificationInstallment(x)).ToListAsync(cancellationToken);
         return Result.Success<IEnumerable<ProgramQualificationInstallmentResponse>>(installments);
+    }
+
+    public async Task<Result<IEnumerable<ProgramQualificationInstallmentResponse>>> GenerateQualificationInstallmentsAsync(int caseId, GenerateQualificationInstallmentsRequest request, CancellationToken cancellationToken = default)
+    {
+        var qualificationCase = await dbcontext.ProgramQualificationCases
+            .Include(x => x.Installments)
+            .FirstOrDefaultAsync(x => x.Id == caseId, cancellationToken);
+        if (qualificationCase is null)
+            return Result.Failure<IEnumerable<ProgramQualificationInstallmentResponse>>(ProgramsProjectsErrors.QualificationCaseNotFound);
+        if (qualificationCase.Status != ProgramQualificationCaseStatus.Approved)
+            return Result.Failure<IEnumerable<ProgramQualificationInstallmentResponse>>(ProgramsProjectsErrors.QualificationCaseNotApproved);
+        if (qualificationCase.Installments.Count != 0)
+            return Result.Failure<IEnumerable<ProgramQualificationInstallmentResponse>>(ProgramsProjectsErrors.QualificationInstallmentsAlreadyGenerated);
+        if (qualificationCase.ApprovedAmount <= 0 || qualificationCase.InstallmentCount <= 0 || request.MonthsBetweenInstallments <= 0)
+            return Result.Failure<IEnumerable<ProgramQualificationInstallmentResponse>>(ProgramsProjectsErrors.InvalidRequest);
+
+        var baseAmount = Math.Round(qualificationCase.ApprovedAmount / qualificationCase.InstallmentCount, 2);
+        var generated = new List<ProgramQualificationInstallment>();
+        decimal scheduledTotal = 0;
+
+        for (var index = 0; index < qualificationCase.InstallmentCount; index++)
+        {
+            var amount = index == qualificationCase.InstallmentCount - 1
+                ? qualificationCase.ApprovedAmount - scheduledTotal
+                : baseAmount;
+            scheduledTotal += amount;
+
+            generated.Add(new ProgramQualificationInstallment
+            {
+                ProgramQualificationCaseId = qualificationCase.Id,
+                ProgramQualificationCase = qualificationCase,
+                DueDate = request.FirstDueDate.Date.AddMonths(index * request.MonthsBetweenInstallments),
+                Amount = amount,
+                Status = ProgramQualificationInstallmentStatus.Pending,
+                Notes = request.Notes?.Trim()
+            });
+        }
+
+        dbcontext.ProgramQualificationInstallments.AddRange(generated);
+        var fromStatus = qualificationCase.Status.ToString();
+        qualificationCase.Status = ProgramQualificationCaseStatus.Active;
+
+        if (qualificationCase.ProgramProjectId.HasValue)
+        {
+            QueueProjectActivity(
+                qualificationCase.ProgramProjectId.Value,
+                ProgramProjectActivityType.FinanceEntryAdded,
+                $"جدولة أقساط تأهيل: {qualificationCase.BeneficiaryName}",
+                request.Notes,
+                fromStatus,
+                qualificationCase.Status.ToString(),
+                qualificationCase.ApprovedAmount,
+                $"{request.FirstDueDate:yyyy-MM-dd}");
+        }
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success<IEnumerable<ProgramQualificationInstallmentResponse>>(generated.Select(MapQualificationInstallment).ToList());
     }
 
     public async Task<Result<ProgramQualificationInstallmentResponse>> SaveQualificationInstallmentAsync(int? id, SaveProgramQualificationInstallmentRequest request, CancellationToken cancellationToken = default)
@@ -1166,6 +1835,157 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
         });
     }
 
+    private static Error? ValidateProjectStatusTransition(ProgramProject project, ProgramProjectStatus status, string? notes)
+    {
+        if (project.Status == status)
+            return null;
+
+        if (project.Status is ProgramProjectStatus.Completed or ProgramProjectStatus.Cancelled or ProgramProjectStatus.Deleted)
+            return ProgramsProjectsErrors.ProjectAlreadyClosed;
+
+        if (status == ProgramProjectStatus.Completed)
+            return ProgramsProjectsErrors.ProjectFinalReportRequired;
+
+        if (status is ProgramProjectStatus.Cancelled or ProgramProjectStatus.Deleted && string.IsNullOrWhiteSpace(notes))
+            return ProgramsProjectsErrors.ProjectStatusNotesRequired;
+
+        return status switch
+        {
+            ProgramProjectStatus.Planning when project.Status is ProgramProjectStatus.Draft or ProgramProjectStatus.OnHold => null,
+            ProgramProjectStatus.Active when project.Status is ProgramProjectStatus.Draft or ProgramProjectStatus.Planning or ProgramProjectStatus.OnHold => null,
+            ProgramProjectStatus.OnHold when project.Status is ProgramProjectStatus.Planning or ProgramProjectStatus.Active => null,
+            ProgramProjectStatus.Cancelled or ProgramProjectStatus.Deleted => null,
+            _ => ProgramsProjectsErrors.InvalidProjectStatusTransition
+        };
+    }
+
+    private static Error? ValidateRegistrationDecision(ProgramRegistration registration, ProgramRegistrationStatus status, string? notes)
+    {
+        if (registration.Status != ProgramRegistrationStatus.Pending)
+            return ProgramsProjectsErrors.RegistrationAlreadyDecided;
+
+        if (status is ProgramRegistrationStatus.Pending or ProgramRegistrationStatus.Attended)
+            return ProgramsProjectsErrors.InvalidRegistrationStatusTransition;
+
+        if (status is ProgramRegistrationStatus.Rejected or ProgramRegistrationStatus.Cancelled && string.IsNullOrWhiteSpace(notes))
+            return ProgramsProjectsErrors.RegistrationDecisionNotesRequired;
+
+        return status == ProgramRegistrationStatus.Approved ||
+               status == ProgramRegistrationStatus.Rejected ||
+               status == ProgramRegistrationStatus.Cancelled
+            ? null
+            : ProgramsProjectsErrors.InvalidRegistrationStatusTransition;
+    }
+
+    private static bool IsValidJson(string json, JsonValueKind expectedKind)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.ValueKind == expectedKind;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    private async Task MarkMatchingRegistrationAttendedAsync(int projectId, ProgramSessionAttendance attendance, CancellationToken cancellationToken)
+    {
+        if (attendance.Status != ProgramAttendanceStatus.Present)
+            return;
+
+        var participantName = attendance.ParticipantName.Trim();
+        var externalReference = attendance.ExternalReference?.Trim();
+        ProgramRegistration? registration = null;
+
+        if (!string.IsNullOrWhiteSpace(externalReference))
+        {
+            registration = await dbcontext.ProgramRegistrations.FirstOrDefaultAsync(
+                x => x.ProgramProjectId == projectId && x.ExternalReference == externalReference,
+                cancellationToken);
+        }
+
+        registration ??= await dbcontext.ProgramRegistrations.FirstOrDefaultAsync(
+            x => x.ProgramProjectId == projectId && x.ParticipantName == participantName,
+            cancellationToken);
+
+        if (registration is null || registration.Status != ProgramRegistrationStatus.Approved)
+            return;
+
+        var fromStatus = registration.Status.ToString();
+        registration.Status = ProgramRegistrationStatus.Attended;
+        registration.DecisionNotes = string.IsNullOrWhiteSpace(attendance.Notes)
+            ? "تحديث تلقائي من سجل حضور البرنامج."
+            : attendance.Notes.Trim();
+        registration.DecidedAt = DateTime.UtcNow.AddHours(3);
+
+        QueueProjectActivity(
+            registration.ProgramProjectId,
+            ProgramProjectActivityType.RegistrationDecided,
+            $"تحديث حضور تسجيل: {registration.ParticipantName}",
+            registration.DecisionNotes,
+            fromStatus,
+            registration.Status.ToString(),
+            null,
+            registration.ExternalReference);
+    }
+
+    private async Task<bool> HasRegistrationCapacityAsync(int projectId, int registrationId, CancellationToken cancellationToken)
+    {
+        var target = await dbcontext.ProgramProjects
+            .Where(x => x.Id == projectId)
+            .Select(x => x.TargetBeneficiaries)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (target <= 0)
+            return true;
+
+        var acceptedCount = await dbcontext.ProgramRegistrations.CountAsync(
+            x => x.ProgramProjectId == projectId
+                && x.Id != registrationId
+                && (x.Status == ProgramRegistrationStatus.Approved || x.Status == ProgramRegistrationStatus.Attended),
+            cancellationToken);
+
+        return acceptedCount < target;
+    }
+
+    private async Task<Result<ProgramCertificateIssueResponse>> CreateCertificateIssueAsync(
+        ProgramProject project,
+        int? templateId,
+        string? requestedCertificateNumber,
+        string recipientName,
+        DateTime? issuedAt,
+        string? notes,
+        CancellationToken cancellationToken)
+    {
+        if (templateId.HasValue && !await dbcontext.ProgramCertificateTemplates.AnyAsync(x => x.Id == templateId.Value, cancellationToken))
+            return Result.Failure<ProgramCertificateIssueResponse>(ProgramsProjectsErrors.CertificateTemplateNotFound);
+
+        var certificateNumber = string.IsNullOrWhiteSpace(requestedCertificateNumber)
+            ? await GenerateCertificateNumberAsync(cancellationToken)
+            : requestedCertificateNumber.Trim();
+        var duplicate = await dbcontext.ProgramCertificateIssues.AnyAsync(x => x.CertificateNumber == certificateNumber, cancellationToken);
+        if (duplicate)
+            return Result.Failure<ProgramCertificateIssueResponse>(ProgramsProjectsErrors.DuplicateCertificateNumber);
+
+        var issue = new ProgramCertificateIssue
+        {
+            ProgramProjectId = project.Id,
+            ProgramProject = project,
+            ProgramCertificateTemplateId = templateId,
+            CertificateNumber = certificateNumber,
+            RecipientName = recipientName.Trim(),
+            IssuedAt = issuedAt ?? DateTime.UtcNow.AddHours(3),
+            Notes = notes?.Trim()
+        };
+
+        dbcontext.ProgramCertificateIssues.Add(issue);
+        QueueProjectActivity(issue.ProgramProjectId, ProgramProjectActivityType.CertificateIssued, $"إصدار شهادة: {issue.RecipientName}", issue.Notes, null, issue.Status.ToString(), null, certificateNumber);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        await dbcontext.Entry(issue).Reference(x => x.ProgramCertificateTemplate).LoadAsync(cancellationToken);
+        return Result.Success(MapCertificateIssue(issue));
+    }
+
     private async Task<string> GenerateProjectCodeAsync(CancellationToken cancellationToken)
     {
         var year = DateTime.UtcNow.AddHours(3).Year;
@@ -1178,6 +1998,13 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
         var year = DateTime.UtcNow.AddHours(3).Year;
         var count = await dbcontext.ProgramProjectContracts.CountAsync(x => x.CreatedAt.Year == year, cancellationToken) + 1;
         return $"CTR-{year}-{count:0000}";
+    }
+
+    private async Task<string> GenerateProposalNumberAsync(CancellationToken cancellationToken)
+    {
+        var year = DateTime.UtcNow.AddHours(3).Year;
+        var count = await dbcontext.ProgramSupplierProposals.CountAsync(x => x.CreatedAt.Year == year, cancellationToken) + 1;
+        return $"PROP-{year}-{count:0000}";
     }
 
     private async Task<string> GenerateCertificateNumberAsync(CancellationToken cancellationToken)
@@ -1254,8 +2081,28 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
     private static ProgramSupplierResponse MapSupplier(ProgramSupplier supplier) =>
         new(supplier.Id, supplier.Name, supplier.ContactPerson, supplier.Mobile, supplier.Email, supplier.City, supplier.Status.ToString(), supplier.Notes);
 
+    private static ProgramSupplierProposalResponse MapSupplierProposal(ProgramSupplierProposal proposal) =>
+        new(
+            proposal.Id,
+            proposal.ProgramProjectId,
+            proposal.ProgramProject?.Name ?? string.Empty,
+            proposal.ProgramSupplierId,
+            proposal.ProgramSupplier?.Name ?? string.Empty,
+            proposal.ProposalNumber,
+            proposal.Title,
+            proposal.Scope,
+            proposal.Amount,
+            proposal.SubmittedAt,
+            proposal.ValidUntil,
+            proposal.Status.ToString(),
+            proposal.DecisionNotes,
+            proposal.DecidedAt,
+            proposal.ConvertedContractId,
+            proposal.ConvertedContract?.ContractNumber,
+            proposal.Notes);
+
     private static ProgramIdeaResponse MapIdea(ProgramIdea idea) =>
-        new(idea.Id, idea.Title, idea.OwnerName, idea.Description, idea.MarketingNotes, idea.EstimatedBudget, idea.Status.ToString(), idea.DecisionNotes, idea.DecidedAt, idea.CreatedAt);
+        new(idea.Id, idea.Title, idea.OwnerName, idea.Description, idea.MarketingNotes, idea.EstimatedBudget, idea.Status.ToString(), idea.DecisionNotes, idea.DecidedAt, idea.ConvertedProjectId, idea.ConvertedProject?.ProjectCode, idea.CreatedAt);
 
     private static ProgramApprovalResponse MapApproval(ProgramApproval approval) =>
         new(approval.Id, approval.ProgramIdeaId, approval.ProgramIdea?.Title, approval.ApprovalType, approval.Title, approval.Status.ToString(), approval.DecisionNotes, approval.DecidedAt);

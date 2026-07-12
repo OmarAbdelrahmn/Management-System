@@ -6,17 +6,18 @@
 <h1 class="page-title">لجنة المساعدات</h1>
 @if (!string.IsNullOrWhiteSpace(message)){<section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>}
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-wallet"></i><div><h2>رصيد لجنة المساعدات</h2><p>إدارة الرصيد ونماذج قرارات لجنة المساعدات.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-wallet"></i><div><h2>@(editingEntryId.HasValue ? "تعديل حركة رصيد" : "رصيد لجنة المساعدات")</h2><p>إدارة الرصيد ونماذج قرارات لجنة المساعدات.</p></div></div>
     <div class="form-grid compact">
         <label>رقم الحركة<input @bind="entryNumber" /></label><label>النوع<select @bind="entryType"><option value="@AidCommitteeCreditType.OpeningBalance">رصيد افتتاحي</option><option value="@AidCommitteeCreditType.Allocation">تخصيص</option><option value="@AidCommitteeCreditType.Expense">صرف</option><option value="@AidCommitteeCreditType.Adjustment">تسوية</option></select></label>
         <label>المبلغ<input type="number" step="0.01" @bind="amount" /></label><label>التاريخ<input type="date" @bind="entryDate" /></label>
         <label>المرجع<input @bind="reference" /></label><label class="span-2">ملاحظات<input @bind="notes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الحركة</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingEntryId.HasValue ? "حفظ التعديل" : "حفظ الحركة")</button>@if (editingEntryId.HasValue){<button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>}<button class="secondary" @onclick="LoadAsync">تحديث</button></div>
 </section>
-<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> حركات رصيد اللجنة</span></div><table><thead><tr><th>الحركة</th><th>النوع</th><th>المبلغ</th><th>التاريخ</th><th>ملاحظات</th></tr></thead><tbody>@foreach (var item in entries){<tr><td>@item.EntryNumber<br />@item.Reference</td><td>@item.EntryType</td><td>@item.Amount</td><td>@item.EntryDate.ToString("yyyy-MM-dd")</td><td>@item.Notes</td></tr>}</tbody></table></section>
+<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> حركات رصيد اللجنة</span></div><table><thead><tr><th>الحركة</th><th>النوع</th><th>المبلغ</th><th>التاريخ</th><th>ملاحظات</th><th>إجراء</th></tr></thead><tbody>@foreach (var item in entries){<tr><td>@item.EntryNumber<br />@item.Reference</td><td>@item.EntryType</td><td>@item.Amount</td><td>@item.EntryDate.ToString("yyyy-MM-dd")</td><td>@item.Notes</td><td><button class="secondary" @onclick="@(() => Edit(item))">تعديل</button></td></tr>}</tbody></table></section>
 @code {
     private List<AidCommitteeCreditEntryResponse> entries = [];
+    private int? editingEntryId;
     private string entryNumber = $"AC-{DateTime.UtcNow:yyyyMMddHHmm}";
     private AidCommitteeCreditType entryType = AidCommitteeCreditType.Allocation;
     private decimal amount;
@@ -27,5 +28,25 @@
     private string? message;
     protected override async Task OnInitializedAsync() => await LoadAsync();
     private async Task LoadAsync() => entries = await Executive.GetAidCommitteeEntriesAsync();
-    private async Task SaveAsync(){ var result = await Executive.SaveAidCommitteeEntryAsync(null, new SaveAidCommitteeCreditEntryRequest(entryNumber, entryType, amount, entryDate, reference, notes)); success = result.Success; message = result.Message; if (success) entryNumber = $"AC-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+    private async Task SaveAsync(){ var result = await Executive.SaveAidCommitteeEntryAsync(editingEntryId, new SaveAidCommitteeCreditEntryRequest(entryNumber, entryType, amount, entryDate, reference, notes)); success = result.Success; message = result.Message; if (success) ResetForm(); await LoadAsync(); }
+    private void Edit(AidCommitteeCreditEntryResponse item)
+    {
+        editingEntryId = item.Id;
+        entryNumber = item.EntryNumber;
+        entryType = Enum.TryParse<AidCommitteeCreditType>(item.EntryType, out var parsedType) ? parsedType : AidCommitteeCreditType.Allocation;
+        amount = item.Amount;
+        entryDate = item.EntryDate;
+        reference = item.Reference;
+        notes = item.Notes;
+    }
+    private void ResetForm()
+    {
+        editingEntryId = null;
+        entryNumber = $"AC-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        entryType = AidCommitteeCreditType.Allocation;
+        amount = 0;
+        entryDate = DateTime.UtcNow.AddHours(3).Date;
+        reference = null;
+        notes = null;
+    }
 }

@@ -98,6 +98,17 @@ public record AddBeneficiaryDependentRequest(
     string? Grade,
     string? Notes);
 
+public record UpdateBeneficiaryDependentRequest(
+    int BeneficiaryProfileId,
+    string FullName,
+    string? NationalId,
+    string Relationship,
+    DateTime? BirthDate,
+    string? Category,
+    string? Grade,
+    bool IsActive,
+    string? Notes);
+
 public record BeneficiaryGuardianResponse(
     int Id,
     int BeneficiaryProfileId,
@@ -119,6 +130,17 @@ public record AddBeneficiaryGuardianRequest(
     string? Mobile,
     string Relationship,
     bool IsPrimary,
+    string? Notes);
+
+public record UpdateBeneficiaryGuardianRequest(
+    int BeneficiaryProfileId,
+    string FullName,
+    string? NationalId,
+    string? Mobile,
+    string Relationship,
+    bool IsPrimary,
+    bool IsDeleted,
+    string? DeleteReason,
     string? Notes);
 
 public record BeneficiaryUpdateRequestResponse(
@@ -183,6 +205,16 @@ public record BeneficiaryAccountArtifactResponse(
 
 public record CreateBeneficiaryAccountArtifactRequest(
     BeneficiaryAccountArtifactType Type,
+    int? BeneficiaryProfileId,
+    int? BeneficiaryDependentId,
+    string? HolderName,
+    string? Source,
+    string? Payload,
+    string? Notes);
+
+public record UpdateBeneficiaryAccountArtifactRequest(
+    BeneficiaryAccountArtifactType Type,
+    BeneficiaryAccountArtifactStatus Status,
     int? BeneficiaryProfileId,
     int? BeneficiaryDependentId,
     string? HolderName,

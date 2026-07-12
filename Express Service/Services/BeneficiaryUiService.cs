@@ -60,6 +60,12 @@ public class BeneficiaryUiService(IBeneficiaryService beneficiaries)
         return result.IsSuccess ? (true, "تمت إضافة التابع.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> UpdateDependentAsync(int id, UpdateBeneficiaryDependentRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await beneficiaries.UpdateDependentAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث التابع.") : (false, result.Error.Description);
+    }
+
     public async Task<List<BeneficiaryGuardianResponse>> GetGuardiansAsync(int? beneficiaryProfileId = null, CancellationToken cancellationToken = default)
     {
         var result = await beneficiaries.GetGuardiansAsync(beneficiaryProfileId, cancellationToken);
@@ -70,6 +76,12 @@ public class BeneficiaryUiService(IBeneficiaryService beneficiaries)
     {
         var result = await beneficiaries.AddGuardianAsync(request, cancellationToken);
         return result.IsSuccess ? (true, "تمت إضافة الوصي.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> UpdateGuardianAsync(int id, UpdateBeneficiaryGuardianRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await beneficiaries.UpdateGuardianAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث الوصي.") : (false, result.Error.Description);
     }
 
     public async Task<List<BeneficiaryUpdateRequestResponse>> GetUpdateRequestsAsync(int? beneficiaryProfileId = null, BeneficiaryUpdateRequestStatus? status = null, CancellationToken cancellationToken = default)
@@ -112,6 +124,12 @@ public class BeneficiaryUiService(IBeneficiaryService beneficiaries)
     {
         var result = await beneficiaries.CreateAccountArtifactAsync(request, cancellationToken);
         return result.IsSuccess ? (true, "تم إنشاء سجل البطاقة أو الباركود.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> UpdateAccountArtifactAsync(int id, UpdateBeneficiaryAccountArtifactRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await beneficiaries.UpdateAccountArtifactAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث سجل البطاقة أو الباركود.") : (false, result.Error.Description);
     }
 
     public async Task<(bool Success, string Message)> UpdateAccountArtifactStatusAsync(int id, BeneficiaryAccountArtifactStatus status, string? notes, CancellationToken cancellationToken = default)

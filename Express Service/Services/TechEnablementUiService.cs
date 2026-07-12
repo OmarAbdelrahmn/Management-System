@@ -31,6 +31,8 @@ public class TechEnablementUiService(ITechEnablementService service)
         ToList(await service.GetCybersecurityReviewsAsync(status, cancellationToken));
     public async Task<(bool Success, string Message)> SaveCybersecurityReviewAsync(int? id, SaveCybersecurityReviewRequest request, CancellationToken cancellationToken = default) =>
         ToUi(await service.SaveCybersecurityReviewAsync(id, request, cancellationToken), "تم حفظ سجل الأمن السيبراني.");
+    public async Task<(bool Success, string Message)> UpdateCybersecurityStatusAsync(int id, CybersecurityReviewStatus status, string? owner = null, DateTime? dueDate = null, string? mitigationPlan = null, CancellationToken cancellationToken = default) =>
+        ToUi(await service.UpdateCybersecurityStatusAsync(id, new UpdateCybersecurityReviewStatusRequest(status, owner, dueDate, mitigationPlan), cancellationToken), "تم تحديث حالة المراجعة الأمنية.");
 
     public async Task<List<NcnpDataRecordResponse>> GetNcnpDataAsync(NcnpDataStatus? status = null, CancellationToken cancellationToken = default) =>
         ToList(await service.GetNcnpDataAsync(status, cancellationToken));

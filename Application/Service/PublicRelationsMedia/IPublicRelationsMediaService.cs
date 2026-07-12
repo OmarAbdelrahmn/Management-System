@@ -31,6 +31,7 @@ public interface IPublicRelationsMediaService
     Task<Result<WebsiteNavigationItemResponse>> SaveNavigationItemAsync(int? id, SaveWebsiteNavigationItemRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<WebsiteContentItemResponse>>> GetContentItemsAsync(WebsiteContentType? contentType, WebsiteContentStatus? status, CancellationToken cancellationToken = default);
     Task<Result<WebsiteContentItemResponse>> SaveContentItemAsync(int? id, SaveWebsiteContentItemRequest request, CancellationToken cancellationToken = default);
+    Task<Result<WebsiteContentItemResponse>> UpdateContentStatusAsync(int id, UpdateWebsiteContentStatusRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<WebsiteFormResponse>>> GetFormsAsync(bool? isActive, CancellationToken cancellationToken = default);
     Task<Result<WebsiteFormResponse>> SaveFormAsync(int? id, SaveWebsiteFormRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<WebsiteFormSubmissionResponse>>> GetFormSubmissionsAsync(int? formId, CancellationToken cancellationToken = default);

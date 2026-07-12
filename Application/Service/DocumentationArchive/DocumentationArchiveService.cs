@@ -103,14 +103,55 @@ public class DocumentationArchiveService(ApplicationDbcontext dbcontext) : IDocu
 
     public async Task<Result> UpdateCorrespondenceStatusAsync(int id, UpdateCorrespondenceStatusRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = await dbcontext.CorrespondenceRecords.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var entity = await dbcontext.CorrespondenceRecords.Include(x => x.Operations).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (entity is null)
             return Result.Failure(DocumentationArchiveErrors.CorrespondenceNotFound);
+        if (request.Status == CorrespondenceStatus.PendingRemovalApproval && HasOpenOperations(entity))
+            return Result.Failure(DocumentationArchiveErrors.CorrespondenceHasOpenOperations);
+        if (request.Status == CorrespondenceStatus.Removed)
+        {
+            if (entity.Status != CorrespondenceStatus.PendingRemovalApproval)
+                return Result.Failure(DocumentationArchiveErrors.InvalidCorrespondenceStatusTransition);
+            if (HasOpenOperations(entity))
+                return Result.Failure(DocumentationArchiveErrors.CorrespondenceHasOpenOperations);
+        }
 
         entity.Status = request.Status;
         entity.Notes = TrimOrNull(request.Notes) ?? entity.Notes;
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success();
+    }
+
+    public async Task<Result<CorrespondenceRecordResponse>> RequestCorrespondenceRemovalAsync(int id, RequestCorrespondenceRemovalRequest request, CancellationToken cancellationToken = default)
+    {
+        var entity = await dbcontext.CorrespondenceRecords.Include(x => x.Operations).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (entity is null)
+            return Result.Failure<CorrespondenceRecordResponse>(DocumentationArchiveErrors.CorrespondenceNotFound);
+        if (entity.Status == CorrespondenceStatus.Removed)
+            return Result.Failure<CorrespondenceRecordResponse>(DocumentationArchiveErrors.InvalidCorrespondenceStatusTransition);
+        if (HasOpenOperations(entity))
+            return Result.Failure<CorrespondenceRecordResponse>(DocumentationArchiveErrors.CorrespondenceHasOpenOperations);
+
+        entity.Status = CorrespondenceStatus.PendingRemovalApproval;
+        entity.Notes = AppendNote(entity.Notes, request.Notes, 1000);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+
+        return Result.Success(MapCorrespondence(entity));
+    }
+
+    public async Task<Result<CorrespondenceRecordResponse>> DecideCorrespondenceRemovalAsync(int id, DecideCorrespondenceRemovalRequest request, CancellationToken cancellationToken = default)
+    {
+        var entity = await dbcontext.CorrespondenceRecords.Include(x => x.Operations).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (entity is null)
+            return Result.Failure<CorrespondenceRecordResponse>(DocumentationArchiveErrors.CorrespondenceNotFound);
+        if (entity.Status != CorrespondenceStatus.PendingRemovalApproval)
+            return Result.Failure<CorrespondenceRecordResponse>(DocumentationArchiveErrors.InvalidCorrespondenceStatusTransition);
+
+        entity.Status = request.Approved ? CorrespondenceStatus.Removed : CorrespondenceStatus.Registered;
+        entity.Notes = AppendNote(entity.Notes, request.Notes, 1000);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+
+        return Result.Success(MapCorrespondence(entity));
     }
 
     public async Task<Result<IEnumerable<CorrespondenceOperationResponse>>> GetOperationsAsync(CorrespondenceOperationStatus? status = null, int? correspondenceRecordId = null, CancellationToken cancellationToken = default)
@@ -132,8 +173,13 @@ public class DocumentationArchiveService(ApplicationDbcontext dbcontext) : IDocu
         if (request.CorrespondenceRecordId <= 0 || string.IsNullOrWhiteSpace(request.OperationNumber) || string.IsNullOrWhiteSpace(request.Title))
             return Result.Failure<CorrespondenceOperationResponse>(DocumentationArchiveErrors.InvalidRequest);
 
-        if (!await dbcontext.CorrespondenceRecords.AnyAsync(x => x.Id == request.CorrespondenceRecordId, cancellationToken))
+        var correspondence = await dbcontext.CorrespondenceRecords
+            .Include(x => x.Operations)
+            .FirstOrDefaultAsync(x => x.Id == request.CorrespondenceRecordId, cancellationToken);
+        if (correspondence is null)
             return Result.Failure<CorrespondenceOperationResponse>(DocumentationArchiveErrors.CorrespondenceNotFound);
+        if (correspondence.Status is CorrespondenceStatus.PendingRemovalApproval or CorrespondenceStatus.Removed)
+            return Result.Failure<CorrespondenceOperationResponse>(DocumentationArchiveErrors.InvalidCorrespondenceStatusTransition);
 
         var operationNumber = request.OperationNumber.Trim();
         if (await dbcontext.CorrespondenceOperations.AnyAsync(x => x.OperationNumber == operationNumber && (!id.HasValue || x.Id != id.Value), cancellationToken))
@@ -147,6 +193,7 @@ public class DocumentationArchiveService(ApplicationDbcontext dbcontext) : IDocu
         if (!id.HasValue) dbcontext.CorrespondenceOperations.Add(entity);
 
         entity.CorrespondenceRecordId = request.CorrespondenceRecordId;
+        entity.CorrespondenceRecord = correspondence;
         entity.OperationNumber = operationNumber;
         entity.Title = request.Title.Trim();
         entity.AssignedTo = TrimOrNull(request.AssignedTo);
@@ -156,23 +203,52 @@ public class DocumentationArchiveService(ApplicationDbcontext dbcontext) : IDocu
         entity.CompletedAt = request.Status == CorrespondenceOperationStatus.Completed
             ? DateTime.UtcNow.AddHours(3)
             : null;
+        ApplyCorrespondenceOperationState(correspondence, entity);
 
         await dbcontext.SaveChangesAsync(cancellationToken);
-        entity.CorrespondenceRecord ??= await dbcontext.CorrespondenceRecords.FirstOrDefaultAsync(x => x.Id == entity.CorrespondenceRecordId, cancellationToken);
         return Result.Success(MapOperation(entity));
     }
 
     public async Task<Result> CompleteOperationAsync(int id, CompleteCorrespondenceOperationRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = await dbcontext.CorrespondenceOperations.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var entity = await dbcontext.CorrespondenceOperations
+            .Include(x => x.CorrespondenceRecord)
+            .ThenInclude(x => x!.Operations)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (entity is null)
             return Result.Failure(DocumentationArchiveErrors.OperationNotFound);
 
         entity.Status = CorrespondenceOperationStatus.Completed;
         entity.CompletedAt = request.CompletedAt;
         entity.Notes = TrimOrNull(request.Notes) ?? entity.Notes;
+        if (entity.CorrespondenceRecord is not null)
+            ApplyCorrespondenceOperationState(entity.CorrespondenceRecord, entity);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success();
+    }
+
+    private static void ApplyCorrespondenceOperationState(CorrespondenceRecord correspondence, CorrespondenceOperation currentOperation)
+    {
+        if (correspondence.Status is CorrespondenceStatus.Removed or CorrespondenceStatus.PendingRemovalApproval)
+            return;
+
+        var operations = correspondence.Operations
+            .Where(x => x.Id != currentOperation.Id)
+            .Append(currentOperation)
+            .ToList();
+
+        if (operations.Any(x => x.Status == CorrespondenceOperationStatus.Open))
+        {
+            correspondence.Status = CorrespondenceStatus.NeedsReply;
+            return;
+        }
+
+        if (operations.Count > 0 && operations.All(x => x.Status != CorrespondenceOperationStatus.Open))
+        {
+            correspondence.Status = correspondence.Direction == CorrespondenceDirection.Incoming
+                ? CorrespondenceStatus.Replied
+                : CorrespondenceStatus.Completed;
+        }
     }
 
     private static ArchiveDocumentResponse MapArchiveDocument(ArchiveDocument x) =>
@@ -183,6 +259,20 @@ public class DocumentationArchiveService(ApplicationDbcontext dbcontext) : IDocu
 
     private static CorrespondenceOperationResponse MapOperation(CorrespondenceOperation x) =>
         new(x.Id, x.CorrespondenceRecordId, x.CorrespondenceRecord?.MailNumber ?? string.Empty, x.OperationNumber, x.Title, x.AssignedTo, x.DueDate, x.CompletedAt, x.Status.ToString(), x.Notes);
+
+    private static bool HasOpenOperations(CorrespondenceRecord correspondence) =>
+        correspondence.Operations.Any(x => x.Status == CorrespondenceOperationStatus.Open);
+
+    private static string? AppendNote(string? existingNotes, string? newNote, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(newNote))
+            return existingNotes;
+
+        var combined = string.IsNullOrWhiteSpace(existingNotes)
+            ? newNote.Trim()
+            : $"{existingNotes.Trim()}{Environment.NewLine}{newNote.Trim()}";
+        return combined.Length <= maxLength ? combined : combined[..maxLength];
+    }
 
     private static string? TrimOrNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

@@ -18,11 +18,13 @@ public interface IHumanResourceService
     Task<Result> TerminateEmployeeAsync(int id, TerminateEmployeeRequest request, CancellationToken cancellationToken = default);
     Task<Result> RestoreEmployeeAsync(int id, CancellationToken cancellationToken = default);
     Task<Result<EmployeeAttendanceResponse>> RecordAttendanceAsync(RecordEmployeeAttendanceRequest request, CancellationToken cancellationToken = default);
+    Task<Result<EmployeeAttendanceResponse>> UpdateAttendanceAsync(int id, RecordEmployeeAttendanceRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<EmployeeAttendanceResponse>>> GetAttendanceAsync(int? employeeId, DateTime? from, DateTime? to, CancellationToken cancellationToken = default);
     Task<Result<EmployeeLeaveRequestResponse>> CreateLeaveRequestAsync(CreateEmployeeLeaveRequest request, CancellationToken cancellationToken = default);
     Task<Result<EmployeeLeaveRequestResponse>> DecideLeaveRequestAsync(int id, DecideEmployeeLeaveRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<EmployeeLeaveRequestResponse>>> GetLeaveRequestsAsync(int? employeeId, CancellationToken cancellationToken = default);
     Task<Result<EmployeeDocumentResponse>> AddDocumentAsync(AddEmployeeDocumentRequest request, CancellationToken cancellationToken = default);
+    Task<Result<EmployeeDocumentResponse>> UpdateDocumentAsync(int id, AddEmployeeDocumentRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<EmployeeDocumentResponse>>> GetDocumentsAsync(int? employeeId, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<EmployeeDisciplinaryRecordResponse>>> GetDisciplinaryRecordsAsync(int? employeeId, EmployeeDisciplinaryRecordType? type, CancellationToken cancellationToken = default);
     Task<Result<EmployeeDisciplinaryRecordResponse>> CreateDisciplinaryRecordAsync(CreateEmployeeDisciplinaryRecordRequest request, CancellationToken cancellationToken = default);
@@ -31,13 +33,16 @@ public interface IHumanResourceService
     Task<Result<EmployeeLeaveBalanceResponse>> SaveLeaveBalanceAsync(int? id, SaveEmployeeLeaveBalanceRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<EmployeeEvaluationResponse>>> GetEvaluationsAsync(int? employeeId, CancellationToken cancellationToken = default);
     Task<Result<EmployeeEvaluationResponse>> SaveEvaluationAsync(int? id, SaveEmployeeEvaluationRequest request, CancellationToken cancellationToken = default);
+    Task<Result<EmployeeEvaluationResponse>> DecideEvaluationAsync(int id, DecideEmployeeEvaluationRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<EmployeeCardIssueResponse>>> GetCardIssuesAsync(int? employeeId, string? cardType, CancellationToken cancellationToken = default);
     Task<Result<EmployeeCardIssueResponse>> IssueCardAsync(IssueEmployeeCardRequest request, CancellationToken cancellationToken = default);
+    Task<Result<EmployeeCardIssueResponse>> DecideCardIssueAsync(int id, DecideEmployeeCardIssueRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<EmployeeLetterRequestResponse>>> GetLetterRequestsAsync(int? employeeId, HumanResourceRequestStatus? status, CancellationToken cancellationToken = default);
     Task<Result<EmployeeLetterRequestResponse>> SaveLetterRequestAsync(int? id, SaveEmployeeLetterRequest request, CancellationToken cancellationToken = default);
     Task<Result<EmployeeLetterRequestResponse>> DecideLetterRequestAsync(int id, DecideHumanResourceItemRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<EmployeePayrollRecordResponse>>> GetPayrollRecordsAsync(DateTime? payrollMonth, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<EmployeePayrollRecordResponse>>> GeneratePayrollPreviewAsync(GeneratePayrollPreviewRequest request, CancellationToken cancellationToken = default);
+    Task<Result<EmployeePayrollRecordResponse>> DecidePayrollRecordAsync(int id, DecidePayrollRecordRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<AttendancePolicyResponse>>> GetAttendancePoliciesAsync(CancellationToken cancellationToken = default);
     Task<Result<AttendancePolicyResponse>> SaveAttendancePolicyAsync(int? id, SaveAttendancePolicyRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<AttendanceLocationResponse>>> GetAttendanceLocationsAsync(CancellationToken cancellationToken = default);
@@ -57,7 +62,9 @@ public interface IHumanResourceService
     Task<Result<IEnumerable<RecruitmentRequestResponse>>> GetRecruitmentRequestsAsync(RecruitmentRequestStatus? status, CancellationToken cancellationToken = default);
     Task<Result<RecruitmentRequestResponse>> SaveRecruitmentRequestAsync(int? id, SaveRecruitmentRequest request, CancellationToken cancellationToken = default);
     Task<Result<RecruitmentRequestResponse>> UpdateRecruitmentStatusAsync(int id, UpdateRecruitmentStatusRequest request, CancellationToken cancellationToken = default);
+    Task<Result<EmployeeResponse>> ConvertRecruitmentToEmployeeAsync(int id, ConvertRecruitmentToEmployeeRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<EmployeeAdministrativeRequestResponse>>> GetAdministrativeRequestsAsync(int? employeeId, HumanResourceRequestStatus? status, CancellationToken cancellationToken = default);
     Task<Result<EmployeeAdministrativeRequestResponse>> CreateAdministrativeRequestAsync(CreateEmployeeAdministrativeRequest request, CancellationToken cancellationToken = default);
     Task<Result<EmployeeAdministrativeRequestResponse>> DecideAdministrativeRequestAsync(int id, DecideHumanResourceItemRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<HumanResourceActivityResponse>>> GetActivitiesAsync(HumanResourceActivityEntityType? entityType, int? entityId, int? employeeId, CancellationToken cancellationToken = default);
 }

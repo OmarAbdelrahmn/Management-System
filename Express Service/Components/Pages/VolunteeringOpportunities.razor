@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-hand-holding-heart"></i><div><h2>فرصة تطوعية</h2><p>إدارة الفرص، الإجراءات، التقارير، طلبات التطوع، المتطوعين، المهام، والحضور.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-hand-holding-heart"></i><div><h2>@(editingOpportunityId.HasValue ? "تعديل فرصة تطوعية" : "فرصة تطوعية")</h2><p>إدارة الفرص، الإجراءات، التقارير، طلبات التطوع، المتطوعين، المهام، والحضور.</p></div></div>
     <div class="form-grid compact">
         <label>رقم الفرصة<input @bind="opportunityNumber" /></label>
         <label>العنوان<input @bind="title" /></label>
@@ -24,7 +24,16 @@
         <label class="span-2">إجراءات الفرصة<input @bind="procedureNotes" /></label>
         <label class="span-2">تقرير الفرصة<input @bind="reportSummary" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveOpportunityAsync">حفظ الفرصة</button><button class="secondary" @onclick="LoadOpenOpportunitiesAsync">المفتوحة</button><button class="secondary" @onclick="LoadCompletedOpportunitiesAsync">المكتملة</button><button class="secondary" @onclick="SaveReportForFirstAsync">حفظ تقرير لأول فرصة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveOpportunityAsync">@(editingOpportunityId.HasValue ? "حفظ التعديل" : "حفظ الفرصة")</button>
+        @if (editingOpportunityId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetOpportunityForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadOpenOpportunitiesAsync">المفتوحة</button>
+        <button class="secondary" @onclick="LoadCompletedOpportunitiesAsync">المكتملة</button>
+        <button class="secondary" @onclick="SaveReportForSelectedAsync">حفظ تقرير الفرصة المحددة</button>
+    </div>
 </section>
 
 <section class="panel">
@@ -40,17 +49,44 @@
         <label>الساعات<input type="number" step="0.5" @bind="hours" /></label>
         <label>حالة الحضور<select @bind="attendanceStatus"><option value="@VolunteerAttendanceStatus.Present">حاضر</option><option value="@VolunteerAttendanceStatus.Absent">غائب</option><option value="@VolunteerAttendanceStatus.Excused">معتذر</option></select></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveTaskAsync">حفظ مهمة</button><button class="secondary" @onclick="SaveAttendanceAsync">حفظ حضور</button><button class="secondary" @onclick="LoadOpenTasksAsync">المهام المفتوحة</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveTaskAsync">@(editingTaskId.HasValue ? "حفظ تعديل المهمة" : "حفظ مهمة")</button>
+        @if (editingTaskId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetTaskForm">إلغاء تعديل المهمة</button>
+        }
+        <button class="secondary" @onclick="SaveAttendanceAsync">@(editingAttendanceId.HasValue ? "حفظ تعديل الحضور" : "حفظ حضور")</button>
+        @if (editingAttendanceId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetAttendanceForm">إلغاء تعديل الحضور</button>
+        }
+        <button class="secondary" @onclick="LoadOpenTasksAsync">المهام المفتوحة</button>
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-database"></i> الفرص التطوعية</span></div>
     <table>
-        <thead><tr><th>الفرصة</th><th>الفترة</th><th>المقاعد</th><th>الحالة</th><th>الإجراءات والتقارير</th><th>الأرقام</th></tr></thead>
+        <thead><tr><th>الفرصة</th><th>الفترة</th><th>المقاعد</th><th>الحالة</th><th>الإجراءات والتقارير</th><th>الأرقام</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var item in opportunities)
             {
-                <tr><td>@item.OpportunityNumber<br />@item.Title<br />@item.Department</td><td>@item.StartDate.ToString("yyyy-MM-dd")<br />@item.EndDate?.ToString("yyyy-MM-dd")</td><td>@item.Seats</td><td>@item.Status</td><td>@item.ProcedureNotes<br />@item.ReportSummary</td><td>@item.RequestsCount طلب<br />@item.TasksCount مهمة<br />@item.AttendanceCount حضور</td></tr>
+                <tr>
+                    <td>@item.OpportunityNumber<br />@item.Title<br />@item.Department</td>
+                    <td>@item.StartDate.ToString("yyyy-MM-dd")<br />@item.EndDate?.ToString("yyyy-MM-dd")</td>
+                    <td>@item.Seats</td>
+                    <td>@item.Status</td>
+                    <td>@item.ProcedureNotes<br />@item.ReportSummary</td>
+                    <td>@item.RequestsCount طلب<br />@item.TasksCount مهمة<br />@item.AttendanceCount حضور</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => EditOpportunity(item))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => ChangeOpportunityStatusAsync(item, VolunteerOpportunityStatus.Open))">فتح</button>
+                        <button class="secondary" @onclick="@(() => ChangeOpportunityStatusAsync(item, VolunteerOpportunityStatus.InProgress))">تنفيذ</button>
+                        <button class="secondary" @onclick="@(() => ChangeOpportunityStatusAsync(item, VolunteerOpportunityStatus.Completed))">إكمال</button>
+                        <button class="secondary" @onclick="@(() => ChangeOpportunityStatusAsync(item, VolunteerOpportunityStatus.Cancelled))">إلغاء</button>
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
@@ -59,11 +95,18 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-list-check"></i> مهام الفرص</span></div>
     <table>
-        <thead><tr><th>الفرصة</th><th>المهمة</th><th>المسؤول</th><th>الاستحقاق</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الفرصة</th><th>المهمة</th><th>المسؤول</th><th>الاستحقاق</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var item in tasks)
             {
-                <tr><td>@item.OpportunityTitle</td><td>@item.Title</td><td>@item.AssignedTo</td><td>@item.DueDate?.ToString("yyyy-MM-dd")</td><td>@item.Status<br />@item.Notes</td></tr>
+                <tr>
+                    <td>@item.OpportunityTitle</td>
+                    <td>@item.Title</td>
+                    <td>@item.AssignedTo</td>
+                    <td>@item.DueDate?.ToString("yyyy-MM-dd")</td>
+                    <td>@item.Status<br />@item.Notes</td>
+                    <td><button class="secondary" @onclick="@(() => EditTask(item))">تعديل</button></td>
+                </tr>
             }
         </tbody>
     </table>
@@ -72,11 +115,18 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-clock"></i> سجلات الحضور</span></div>
     <table>
-        <thead><tr><th>الفرصة</th><th>المتطوع</th><th>التاريخ</th><th>الساعات</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الفرصة</th><th>المتطوع</th><th>التاريخ</th><th>الساعات</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var item in attendance)
             {
-                <tr><td>@item.OpportunityTitle</td><td>@item.VolunteerName</td><td>@item.AttendanceDate.ToString("yyyy-MM-dd")</td><td>@item.Hours</td><td>@item.Status<br />@item.Notes</td></tr>
+                <tr>
+                    <td>@item.OpportunityTitle</td>
+                    <td>@item.VolunteerName</td>
+                    <td>@item.AttendanceDate.ToString("yyyy-MM-dd")</td>
+                    <td>@item.Hours</td>
+                    <td>@item.Status<br />@item.Notes</td>
+                    <td><button class="secondary" @onclick="@(() => EditAttendance(item))">تعديل</button></td>
+                </tr>
             }
         </tbody>
     </table>
@@ -87,6 +137,7 @@
     private List<VolunteerOpportunityTaskResponse> tasks = [];
     private List<VolunteerAttendanceResponse> attendance = [];
     private List<VolunteerUserResponse> users = [];
+    private int? editingOpportunityId;
     private string opportunityNumber = $"VO-{DateTime.UtcNow:yyyyMMddHHmm}";
     private string title = string.Empty;
     private string? description;
@@ -98,11 +149,13 @@
     private string? procedureNotes;
     private string? reportSummary;
     private int selectedOpportunityId;
+    private int? editingTaskId;
     private string taskTitle = string.Empty;
     private string? assignedTo;
     private DateTime? taskDueDate = DateTime.UtcNow.AddHours(3).Date.AddDays(3);
     private VolunteerTaskStatus taskStatus = VolunteerTaskStatus.Open;
     private int selectedVolunteerId;
+    private int? editingAttendanceId;
     private DateTime attendanceDate = DateTime.UtcNow.AddHours(3).Date;
     private decimal hours = 1;
     private VolunteerAttendanceStatus attendanceStatus = VolunteerAttendanceStatus.Present;
@@ -114,8 +167,90 @@
     private async Task LoadOpenOpportunitiesAsync() => opportunities = await Volunteering.GetOpportunitiesAsync(VolunteerOpportunityStatus.Open);
     private async Task LoadCompletedOpportunitiesAsync() => opportunities = await Volunteering.GetOpportunitiesAsync(VolunteerOpportunityStatus.Completed);
     private async Task LoadOpenTasksAsync() => tasks = await Volunteering.GetTasksAsync(status: VolunteerTaskStatus.Open);
-    private async Task SaveOpportunityAsync(){ var result = await Volunteering.SaveOpportunityAsync(null, new SaveVolunteerOpportunityRequest(opportunityNumber, title, description, department, startDate, endDate, seats, opportunityStatus, procedureNotes, reportSummary)); success = result.Success; message = result.Message; if (success) opportunityNumber = $"VO-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
-    private async Task SaveReportForFirstAsync(){ var item = opportunities.FirstOrDefault(); if (item is null){ success = false; message = "لا توجد فرصة لحفظ تقريرها."; return; } var result = await Volunteering.SaveOpportunityReportAsync(item.Id, new SaveVolunteerOpportunityReportRequest(procedureNotes, reportSummary, opportunityStatus)); success = result.Success; message = result.Message; await LoadAsync(); }
-    private async Task SaveTaskAsync(){ var result = await Volunteering.SaveTaskAsync(null, new SaveVolunteerOpportunityTaskRequest(selectedOpportunityId, taskTitle, assignedTo, taskDueDate, taskStatus, procedureNotes)); success = result.Success; message = result.Message; await LoadAsync(); }
-    private async Task SaveAttendanceAsync(){ var result = await Volunteering.SaveAttendanceAsync(null, new SaveVolunteerAttendanceRequest(selectedOpportunityId, selectedVolunteerId, attendanceDate, hours, attendanceStatus, reportSummary)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task SaveOpportunityAsync(){ var result = await Volunteering.SaveOpportunityAsync(editingOpportunityId, new SaveVolunteerOpportunityRequest(opportunityNumber, title, description, department, startDate, endDate, seats, opportunityStatus, procedureNotes, reportSummary)); success = result.Success; message = result.Message; if (success) ResetOpportunityForm(); await LoadAsync(); }
+    private async Task SaveReportForSelectedAsync()
+    {
+        var opportunityId = editingOpportunityId ?? (selectedOpportunityId > 0 ? selectedOpportunityId : opportunities.FirstOrDefault()?.Id ?? 0);
+        if (opportunityId == 0){ success = false; message = "لا توجد فرصة لحفظ تقريرها."; return; }
+        var result = await Volunteering.SaveOpportunityReportAsync(opportunityId, new SaveVolunteerOpportunityReportRequest(procedureNotes, reportSummary, opportunityStatus));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+    private async Task SaveTaskAsync(){ var result = await Volunteering.SaveTaskAsync(editingTaskId, new SaveVolunteerOpportunityTaskRequest(selectedOpportunityId, taskTitle, assignedTo, taskDueDate, taskStatus, procedureNotes)); success = result.Success; message = result.Message; if (success) ResetTaskForm(); await LoadAsync(); }
+    private async Task SaveAttendanceAsync(){ var result = await Volunteering.SaveAttendanceAsync(editingAttendanceId, new SaveVolunteerAttendanceRequest(selectedOpportunityId, selectedVolunteerId, attendanceDate, hours, attendanceStatus, reportSummary)); success = result.Success; message = result.Message; if (success) ResetAttendanceForm(); await LoadAsync(); }
+    private async Task ChangeOpportunityStatusAsync(VolunteerOpportunityResponse item, VolunteerOpportunityStatus newStatus)
+    {
+        var result = await Volunteering.SaveOpportunityAsync(item.Id, new SaveVolunteerOpportunityRequest(item.OpportunityNumber, item.Title, item.Description, item.Department, item.StartDate, item.EndDate, item.Seats, newStatus, item.ProcedureNotes, item.ReportSummary));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+    private void EditOpportunity(VolunteerOpportunityResponse item)
+    {
+        editingOpportunityId = item.Id;
+        selectedOpportunityId = item.Id;
+        opportunityNumber = item.OpportunityNumber;
+        title = item.Title;
+        description = item.Description;
+        department = item.Department;
+        startDate = item.StartDate;
+        endDate = item.EndDate;
+        seats = item.Seats;
+        opportunityStatus = Enum.TryParse<VolunteerOpportunityStatus>(item.Status, out var parsedStatus) ? parsedStatus : VolunteerOpportunityStatus.Open;
+        procedureNotes = item.ProcedureNotes;
+        reportSummary = item.ReportSummary;
+    }
+    private void ResetOpportunityForm()
+    {
+        editingOpportunityId = null;
+        opportunityNumber = $"VO-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        title = string.Empty;
+        description = null;
+        department = null;
+        startDate = DateTime.UtcNow.AddHours(3).Date;
+        endDate = DateTime.UtcNow.AddHours(3).Date.AddDays(7);
+        seats = 10;
+        opportunityStatus = VolunteerOpportunityStatus.Open;
+        procedureNotes = null;
+        reportSummary = null;
+    }
+    private void EditTask(VolunteerOpportunityTaskResponse item)
+    {
+        editingTaskId = item.Id;
+        selectedOpportunityId = item.VolunteerOpportunityId;
+        taskTitle = item.Title;
+        assignedTo = item.AssignedTo;
+        taskDueDate = item.DueDate;
+        taskStatus = Enum.TryParse<VolunteerTaskStatus>(item.Status, out var parsedStatus) ? parsedStatus : VolunteerTaskStatus.Open;
+        procedureNotes = item.Notes;
+    }
+    private void ResetTaskForm()
+    {
+        editingTaskId = null;
+        taskTitle = string.Empty;
+        assignedTo = null;
+        taskDueDate = DateTime.UtcNow.AddHours(3).Date.AddDays(3);
+        taskStatus = VolunteerTaskStatus.Open;
+        procedureNotes = null;
+    }
+    private void EditAttendance(VolunteerAttendanceResponse item)
+    {
+        editingAttendanceId = item.Id;
+        selectedOpportunityId = item.VolunteerOpportunityId;
+        selectedVolunteerId = item.VolunteerUserId;
+        attendanceDate = item.AttendanceDate;
+        hours = item.Hours;
+        attendanceStatus = Enum.TryParse<VolunteerAttendanceStatus>(item.Status, out var parsedStatus) ? parsedStatus : VolunteerAttendanceStatus.Present;
+        reportSummary = item.Notes;
+    }
+    private void ResetAttendanceForm()
+    {
+        editingAttendanceId = null;
+        selectedVolunteerId = 0;
+        attendanceDate = DateTime.UtcNow.AddHours(3).Date;
+        hours = 1;
+        attendanceStatus = VolunteerAttendanceStatus.Present;
+        reportSummary = null;
+    }
 }

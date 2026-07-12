@@ -27,6 +27,9 @@ public class VolunteeringUiService(IVolunteeringService service)
     public async Task<(bool Success, string Message)> UpdateRequestStatusAsync(int id, VolunteerRequestStatus status, string? note = null, CancellationToken cancellationToken = default) =>
         ToUi(await service.UpdateRequestStatusAsync(id, new UpdateVolunteerRequestStatusRequest(status, note), cancellationToken), "تم تحديث طلب التطوع.");
 
+    public async Task<(bool Success, string Message)> ConvertRequestToVolunteerAsync(int id, ConvertVolunteerRequestRequest request, CancellationToken cancellationToken = default) =>
+        ToUi(await service.ConvertRequestToVolunteerAsync(id, request, cancellationToken), "تم تحويل الطلب إلى حساب متطوع وربطه بالفرصة.");
+
     public async Task<List<VolunteerOpportunityResponse>> GetOpportunitiesAsync(VolunteerOpportunityStatus? status = null, CancellationToken cancellationToken = default) =>
         ToList(await service.GetOpportunitiesAsync(status, cancellationToken));
 

@@ -23,7 +23,7 @@
         <label>الرابط الخارجي<input @bind="externalUrl" /></label>
         <label class="span-2">ملاحظات<input @bind="opportunityNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveOpportunityAsync">حفظ الفرصة</button><button class="secondary" @onclick="ResetOpportunity">تفريغ</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveOpportunityAsync">@(editingOpportunityId.HasValue ? "تحديث الفرصة" : "حفظ الفرصة")</button><button class="secondary" @onclick="ResetOpportunity">تفريغ</button></div>
 </section>
 
 <section class="panel" style="margin-top:14px">
@@ -41,17 +41,43 @@
         <label>اسم المهدى إليه<input @bind="giftRecipientName" /></label>
         <label>رقم الشهادة<input @bind="certificateNumber" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveContributionAsync">حفظ التبرع</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveContributionAsync">@(editingContributionId.HasValue ? "تحديث التبرع" : "حفظ التبرع")</button><button class="secondary" @onclick="ResetContribution">تفريغ</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-cart-shopping"></i><div><h2>السلال المتروكة</h2><p>متابعة تبرعات الموقع غير المكتملة وتحويل المسترد منها إلى تبرع فعلي.</p></div></div>
+    <div class="form-grid compact">
+        <label>الفرصة<select @bind="abandonedOpportunityId"><option value="">بدون</option>@foreach (var opportunity in opportunities){<option value="@opportunity.Id">@opportunity.Title</option>}</select></label>
+        <label>اسم الداعم<input @bind="abandonedSupporterName" /></label>
+        <label>الجوال<input @bind="abandonedMobile" /></label>
+        <label>المبلغ<input type="number" step="0.01" @bind="abandonedAmount" /></label>
+        <label>تاريخ السلة<input type="date" @bind="abandonedCartDate" /></label>
+        <label class="span-2">ملاحظات المتابعة<input @bind="abandonedNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAbandonedCartAsync">@(editingCartId.HasValue ? "تحديث السلة" : "حفظ سلة متروكة")</button><button class="secondary" @onclick="ResetCart">تفريغ</button></div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-chart-line"></i> فرص التسويق والتبرعات</span></div>
     <table>
-        <thead><tr><th>الفرصة</th><th>النوع</th><th>المستهدف/المحصل</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الفرصة</th><th>النوع</th><th>المستهدف/المحصل</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var opportunity in opportunities)
             {
-                <tr><td>@opportunity.Title<br />@opportunity.ReferenceNumber</td><td>@opportunity.OpportunityType</td><td>@opportunity.TargetAmount / @opportunity.CurrentAmount</td><td>@opportunity.Status</td></tr>
+                <tr>
+                    <td>@opportunity.Title<br />@opportunity.ReferenceNumber</td>
+                    <td>@opportunity.OpportunityType</td>
+                    <td>@opportunity.TargetAmount / @opportunity.CurrentAmount</td>
+                    <td>@opportunity.Status</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => EditOpportunity(opportunity))">تعديل</button>
+                        @if (opportunity.Status == nameof(FundraisingOpportunityStatus.Active) && opportunity.TargetAmount > 0 && opportunity.CurrentAmount >= opportunity.TargetAmount)
+                        {
+                            <button class="secondary" @onclick="@(() => CompleteOpportunityAsync(opportunity.Id))">إغلاق كمكتملة</button>
+                        }
+                        <button class="secondary" @onclick="@(() => ArchiveOpportunityAsync(opportunity))">أرشفة</button>
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
@@ -60,20 +86,73 @@
 <section class="table-section" style="margin-top:14px">
     <div class="table-title"><span><i class="fa-solid fa-receipt"></i> سجل التبرعات</span></div>
     <table>
-        <thead><tr><th>الداعم</th><th>الفرصة</th><th>المبلغ</th><th>المصدر</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الداعم</th><th>الفرصة</th><th>المبلغ</th><th>المصدر</th><th>الحالة</th><th>إجراءات</th></tr></thead>
         <tbody>
             @foreach (var contribution in contributions)
             {
-                <tr><td>@contribution.SupporterName</td><td>@contribution.OpportunityTitle</td><td>@contribution.Amount</td><td>@contribution.SourceChannel<br />@contribution.PaymentMethod</td><td>@contribution.Status</td></tr>
+                <tr>
+                    <td>@contribution.SupporterName</td>
+                    <td>@contribution.OpportunityTitle</td>
+                    <td>@contribution.Amount</td>
+                    <td>@contribution.SourceChannel<br />@contribution.PaymentMethod</td>
+                    <td><span class="status">@contribution.Status</span></td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => EditContribution(contribution))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => LoadContributionActivitiesAsync(contribution.Id))">السجل</button>
+                        <button class="secondary" @onclick="@(() => UpdateContributionStatusAsync(contribution.Id, DonationContributionStatus.Confirmed))">تأكيد</button>
+                        <button class="secondary" @onclick="@(() => UpdateContributionStatusAsync(contribution.Id, DonationContributionStatus.Refunded))">استرجاع</button>
+                        <button class="secondary" @onclick="@(() => UpdateContributionStatusAsync(contribution.Id, DonationContributionStatus.Cancelled))">إلغاء</button>
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
 </section>
 
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-cart-shopping"></i> السلال المتروكة</span></div>
+    <table>
+        <thead><tr><th>الداعم</th><th>الفرصة</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var cart in abandonedCarts)
+            {
+                <tr><td>@cart.SupporterName<br />@cart.Mobile</td><td>@cart.OpportunityTitle</td><td>@cart.Amount<br />@cart.CartDate.ToString("yyyy-MM-dd")</td><td>@cart.Status<br />@cart.FollowUpNotes</td><td><button class="secondary" @onclick="@(() => EditCart(cart))">تعديل</button><button class="secondary" @onclick="@(() => RecoverAbandonedCartAsync(cart.Id))">تحويل لتبرع</button><button class="secondary" @onclick="@(() => MarkCartContactedAsync(cart))">تم التواصل</button></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+@if (selectedContribution is not null)
+{
+    <section class="table-section" style="margin-top:14px">
+        <div class="table-title"><span><i class="fa-solid fa-clock-rotate-left"></i> سجل التبرع: @selectedContribution.Amount - @selectedContribution.SupporterName</span></div>
+        <table>
+            <thead><tr><th>الوقت</th><th>النوع</th><th>من</th><th>إلى</th><th>المبلغ</th><th>ملاحظات</th></tr></thead>
+            <tbody>
+                @foreach (var activity in contributionActivities)
+                {
+                    <tr>
+                        <td>@activity.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>@activity.Type</td>
+                        <td>@(activity.FromStatus ?? "-")</td>
+                        <td>@activity.ToStatus</td>
+                        <td>@activity.Amount</td>
+                        <td>@(activity.Notes ?? "-")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
 @code {
     private List<FinancialSupporterResponse> supporters = [];
     private List<FundraisingOpportunityResponse> opportunities = [];
     private List<DonationContributionResponse> contributions = [];
+    private List<AbandonedDonationCartResponse> abandonedCarts = [];
+    private List<DonationContributionActivityResponse> contributionActivities = [];
+    private DonationContributionResponse? selectedContribution;
+    private int? editingOpportunityId;
     private string opportunityTitle = string.Empty;
     private FundraisingOpportunityType opportunityType = FundraisingOpportunityType.General;
     private string? referenceNumber;
@@ -83,6 +162,7 @@
     private FundraisingOpportunityStatus opportunityStatus = FundraisingOpportunityStatus.Active;
     private string? externalUrl;
     private string? opportunityNotes;
+    private int? editingContributionId;
     private int? supporterId;
     private int? opportunityId;
     private decimal donationAmount;
@@ -94,6 +174,14 @@
     private string? giftRecipientName;
     private string? certificateNumber;
     private DonationContributionStatus contributionStatus = DonationContributionStatus.Confirmed;
+    private string? contributionNotes;
+    private int? editingCartId;
+    private int? abandonedOpportunityId;
+    private string abandonedSupporterName = string.Empty;
+    private string? abandonedMobile;
+    private decimal abandonedAmount;
+    private DateTime abandonedCartDate = DateTime.UtcNow.AddHours(3).Date;
+    private string? abandonedNotes;
     private bool success;
     private string? message;
 
@@ -104,11 +192,14 @@
         supporters = await FinancialDevelopment.GetSupportersAsync(FinancialSupporterStatus.Active);
         opportunities = await FinancialDevelopment.GetOpportunitiesAsync();
         contributions = await FinancialDevelopment.GetContributionsAsync();
+        abandonedCarts = await FinancialDevelopment.GetAbandonedCartsAsync();
+        if (selectedContribution is not null)
+            selectedContribution = contributions.FirstOrDefault(x => x.Id == selectedContribution.Id);
     }
 
     private async Task SaveOpportunityAsync()
     {
-        var result = await FinancialDevelopment.SaveOpportunityAsync(null, new SaveFundraisingOpportunityRequest(opportunityTitle, opportunityType, referenceNumber, targetAmount, startDate, endDate, opportunityStatus, externalUrl, opportunityNotes));
+        var result = await FinancialDevelopment.SaveOpportunityAsync(editingOpportunityId, new SaveFundraisingOpportunityRequest(opportunityTitle, opportunityType, referenceNumber, targetAmount, startDate, endDate, opportunityStatus, externalUrl, opportunityNotes));
         success = result.Success;
         message = result.Message;
         if (success) ResetOpportunity();
@@ -117,7 +208,119 @@
 
     private async Task SaveContributionAsync()
     {
-        var result = await FinancialDevelopment.SaveContributionAsync(null, new SaveDonationContributionRequest(supporterId, opportunityId, donationAmount, donationDate, sourceChannel, paymentMethod, transactionReference, isGift, giftRecipientName, certificateNumber, contributionStatus, null));
+        var result = await FinancialDevelopment.SaveContributionAsync(editingContributionId, new SaveDonationContributionRequest(supporterId, opportunityId, donationAmount, donationDate, sourceChannel, paymentMethod, transactionReference, isGift, giftRecipientName, certificateNumber, contributionStatus, contributionNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success) ResetContribution();
+        await LoadAsync();
+    }
+
+    private async Task CompleteOpportunityAsync(int id)
+    {
+        var result = await FinancialDevelopment.CompleteOpportunityAsync(id, "إغلاق من شاشة تنمية الموارد بعد بلوغ المستهدف");
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SaveAbandonedCartAsync()
+    {
+        var result = await FinancialDevelopment.SaveAbandonedCartAsync(editingCartId, new SaveAbandonedDonationCartRequest(abandonedOpportunityId, abandonedSupporterName, abandonedMobile, abandonedAmount, abandonedCartDate, AbandonedDonationCartStatus.Open, abandonedNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success) ResetCart();
+        await LoadAsync();
+    }
+
+    private async Task RecoverAbandonedCartAsync(int id)
+    {
+        var result = await FinancialDevelopment.RecoverAbandonedCartAsync(id, new RecoverAbandonedDonationCartRequest(supporterId, DateTime.UtcNow.AddHours(3), paymentMethod, transactionReference, DonationContributionStatus.Confirmed, "استرداد السلة المتروكة"));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task UpdateContributionStatusAsync(int id, DonationContributionStatus status)
+    {
+        var result = await FinancialDevelopment.UpdateContributionStatusAsync(id, status, $"تحديث من شاشة التبرعات إلى {status}");
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+        await LoadContributionActivitiesAsync(id);
+    }
+
+    private async Task LoadContributionActivitiesAsync(int contributionId)
+    {
+        selectedContribution = contributions.FirstOrDefault(x => x.Id == contributionId);
+        contributionActivities = await FinancialDevelopment.GetContributionActivitiesAsync(contributionId);
+    }
+
+    private void EditOpportunity(FundraisingOpportunityResponse opportunity)
+    {
+        editingOpportunityId = opportunity.Id;
+        opportunityTitle = opportunity.Title;
+        opportunityType = Enum.TryParse<FundraisingOpportunityType>(opportunity.OpportunityType, out var parsedType) ? parsedType : FundraisingOpportunityType.General;
+        referenceNumber = opportunity.ReferenceNumber;
+        targetAmount = opportunity.TargetAmount;
+        startDate = opportunity.StartDate;
+        endDate = opportunity.EndDate;
+        opportunityStatus = Enum.TryParse<FundraisingOpportunityStatus>(opportunity.Status, out var parsedStatus) ? parsedStatus : FundraisingOpportunityStatus.Active;
+        externalUrl = opportunity.ExternalUrl;
+        opportunityNotes = opportunity.Notes;
+        message = null;
+    }
+
+    private async Task ArchiveOpportunityAsync(FundraisingOpportunityResponse opportunity)
+    {
+        var result = await FinancialDevelopment.SaveOpportunityAsync(opportunity.Id, new SaveFundraisingOpportunityRequest(
+            opportunity.Title,
+            Enum.TryParse<FundraisingOpportunityType>(opportunity.OpportunityType, out var parsedType) ? parsedType : FundraisingOpportunityType.General,
+            opportunity.ReferenceNumber,
+            opportunity.TargetAmount,
+            opportunity.StartDate,
+            opportunity.EndDate,
+            FundraisingOpportunityStatus.Archived,
+            opportunity.ExternalUrl,
+            opportunity.Notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void EditContribution(DonationContributionResponse contribution)
+    {
+        editingContributionId = contribution.Id;
+        supporterId = contribution.FinancialSupporterId;
+        opportunityId = contribution.FundraisingOpportunityId;
+        donationAmount = contribution.Amount;
+        donationDate = contribution.DonationDate;
+        sourceChannel = contribution.SourceChannel;
+        paymentMethod = contribution.PaymentMethod;
+        transactionReference = contribution.TransactionReference;
+        isGift = contribution.IsGift;
+        giftRecipientName = contribution.GiftRecipientName;
+        certificateNumber = contribution.CertificateNumber;
+        contributionStatus = Enum.TryParse<DonationContributionStatus>(contribution.Status, out var parsedStatus) ? parsedStatus : DonationContributionStatus.Confirmed;
+        contributionNotes = contribution.Notes;
+        selectedContribution = contribution;
+        message = null;
+    }
+
+    private void EditCart(AbandonedDonationCartResponse cart)
+    {
+        editingCartId = cart.Id;
+        abandonedOpportunityId = cart.FundraisingOpportunityId;
+        abandonedSupporterName = cart.SupporterName;
+        abandonedMobile = cart.Mobile;
+        abandonedAmount = cart.Amount;
+        abandonedCartDate = cart.CartDate;
+        abandonedNotes = cart.FollowUpNotes;
+        message = null;
+    }
+
+    private async Task MarkCartContactedAsync(AbandonedDonationCartResponse cart)
+    {
+        var result = await FinancialDevelopment.SaveAbandonedCartAsync(cart.Id, new SaveAbandonedDonationCartRequest(cart.FundraisingOpportunityId, cart.SupporterName, cart.Mobile, cart.Amount, cart.CartDate, AbandonedDonationCartStatus.Contacted, cart.FollowUpNotes));
         success = result.Success;
         message = result.Message;
         await LoadAsync();
@@ -125,6 +328,7 @@
 
     private void ResetOpportunity()
     {
+        editingOpportunityId = null;
         opportunityTitle = string.Empty;
         opportunityType = FundraisingOpportunityType.General;
         referenceNumber = null;
@@ -134,5 +338,33 @@
         opportunityStatus = FundraisingOpportunityStatus.Active;
         externalUrl = null;
         opportunityNotes = null;
+    }
+
+    private void ResetContribution()
+    {
+        editingContributionId = null;
+        supporterId = null;
+        opportunityId = null;
+        donationAmount = 0;
+        donationDate = DateTime.UtcNow.AddHours(3).Date;
+        sourceChannel = "Website";
+        paymentMethod = null;
+        transactionReference = null;
+        isGift = false;
+        giftRecipientName = null;
+        certificateNumber = null;
+        contributionStatus = DonationContributionStatus.Confirmed;
+        contributionNotes = null;
+    }
+
+    private void ResetCart()
+    {
+        editingCartId = null;
+        abandonedOpportunityId = null;
+        abandonedSupporterName = string.Empty;
+        abandonedMobile = null;
+        abandonedAmount = 0;
+        abandonedCartDate = DateTime.UtcNow.AddHours(3).Date;
+        abandonedNotes = null;
     }
 }

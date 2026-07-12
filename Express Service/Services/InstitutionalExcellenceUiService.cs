@@ -38,6 +38,7 @@ public class InstitutionalExcellenceUiService(IInstitutionalExcellenceService se
     public async Task<List<StrategicVariableResponse>> GetStrategicVariablesAsync(int? planId = null, CancellationToken cancellationToken = default) => ToList(await service.GetStrategicVariablesAsync(planId, cancellationToken));
     public async Task<(bool Success, string Message)> SaveStrategicVariableAsync(int? id, SaveStrategicVariableRequest request, CancellationToken cancellationToken = default) => ToUi(await service.SaveStrategicVariableAsync(id, request, cancellationToken), "تم حفظ متغير الخطة.");
     public async Task<List<StrategicVariableResponse>> FetchAutomatedStrategicVariablesAsync(int planId, CancellationToken cancellationToken = default) => ToList(await service.FetchAutomatedStrategicVariablesAsync(planId, cancellationToken));
+    public async Task<(bool Success, string Message)> ApplyStrategicVariablesAsync(int planId, ApplyStrategicVariablesRequest request, CancellationToken cancellationToken = default) => ToUi(await service.ApplyStrategicVariablesAsync(planId, request, cancellationToken), "تم تطبيق متغيرات الخطة على المؤشرات.");
 
     private static (bool Success, string Message) ToUi<T>(Application.Abstraction.Result<T> result, string successMessage) =>
         result.IsSuccess ? (true, successMessage) : (false, result.Error.Description);

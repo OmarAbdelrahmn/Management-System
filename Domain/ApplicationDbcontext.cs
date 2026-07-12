@@ -79,6 +79,7 @@ public class ApplicationDbcontext(
     public DbSet<HrSafetyInspection> HrSafetyInspections => Set<HrSafetyInspection>();
     public DbSet<RecruitmentRequest> RecruitmentRequests => Set<RecruitmentRequest>();
     public DbSet<EmployeeAdministrativeRequest> EmployeeAdministrativeRequests => Set<EmployeeAdministrativeRequest>();
+    public DbSet<HumanResourceActivity> HumanResourceActivities => Set<HumanResourceActivity>();
     public DbSet<ProgramProject> ProgramProjects => Set<ProgramProject>();
     public DbSet<ProgramProjectTask> ProgramProjectTasks => Set<ProgramProjectTask>();
     public DbSet<ProgramProjectMilestone> ProgramProjectMilestones => Set<ProgramProjectMilestone>();
@@ -88,6 +89,7 @@ public class ApplicationDbcontext(
     public DbSet<ProgramProjectReport> ProgramProjectReports => Set<ProgramProjectReport>();
     public DbSet<ProgramProjectActivity> ProgramProjectActivities => Set<ProgramProjectActivity>();
     public DbSet<ProgramSupplier> ProgramSuppliers => Set<ProgramSupplier>();
+    public DbSet<ProgramSupplierProposal> ProgramSupplierProposals => Set<ProgramSupplierProposal>();
     public DbSet<ProgramIdea> ProgramIdeas => Set<ProgramIdea>();
     public DbSet<ProgramApproval> ProgramApprovals => Set<ProgramApproval>();
     public DbSet<ProgramRegistration> ProgramRegistrations => Set<ProgramRegistration>();
@@ -145,6 +147,7 @@ public class ApplicationDbcontext(
     public DbSet<FinancialSupporter> FinancialSupporters => Set<FinancialSupporter>();
     public DbSet<FundraisingOpportunity> FundraisingOpportunities => Set<FundraisingOpportunity>();
     public DbSet<DonationContribution> DonationContributions => Set<DonationContribution>();
+    public DbSet<DonationContributionActivity> DonationContributionActivities => Set<DonationContributionActivity>();
     public DbSet<DigitalMarketingCampaign> DigitalMarketingCampaigns => Set<DigitalMarketingCampaign>();
     public DbSet<AbandonedDonationCart> AbandonedDonationCarts => Set<AbandonedDonationCart>();
     public DbSet<EndowmentAsset> EndowmentAssets => Set<EndowmentAsset>();

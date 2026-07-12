@@ -11,27 +11,54 @@
 }
 
 <section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-handshake"></i><div><h2>الشركاء والفعاليات والزيارات</h2><p>إضافة وتحديث سجلات العلاقات العامة مع حالات التخطيط والتنفيذ والأرشفة.</p></div></div>
     <div class="form-grid compact">
         <label>شريك إعلامي<input @bind="partnerName" /></label>
         <label>مسؤول التواصل<input @bind="contactPerson" /></label>
         <label>الجوال<input @bind="mobile" /></label>
+        <label>البريد<input @bind="partnerEmail" /></label>
+        <label>حالة الشريك<select @bind="partnerStatus">@foreach (var value in Enum.GetValues<PublicRelationRecordStatus>()){<option value="@value">@value</option>}</select></label>
+        <label>ملاحظات الشريك<input @bind="partnerNotes" /></label>
         <label>عنوان الفعالية<input @bind="eventTitle" /></label>
         <label>تاريخ الفعالية<input type="date" @bind="eventDate" /></label>
         <label>الموقع<input @bind="location" /></label>
+        <label>حالة الفعالية<select @bind="eventStatus">@foreach (var value in Enum.GetValues<PublicRelationRecordStatus>()){<option value="@value">@value</option>}</select></label>
+        <label>وصف الفعالية<input @bind="eventDescription" /></label>
         <label>الزائر<input @bind="visitorName" /></label>
         <label>الجهة<input @bind="organization" /></label>
+        <label>تاريخ الزيارة<input type="date" @bind="visitDate" /></label>
+        <label>حالة الزيارة<select @bind="visitStatus">@foreach (var value in Enum.GetValues<PublicRelationRecordStatus>()){<option value="@value">@value</option>}</select></label>
+        <label>غرض الزيارة<input @bind="visitPurpose" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SavePartnerAsync">حفظ شريك</button><button class="secondary" @onclick="SaveEventAsync">حفظ فعالية</button><button class="secondary" @onclick="SaveVisitAsync">حفظ زيارة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SavePartnerAsync">@(editingPartnerId.HasValue ? "تحديث شريك" : "حفظ شريك")</button>
+        <button class="secondary" @onclick="SaveEventAsync">@(editingEventId.HasValue ? "تحديث فعالية" : "حفظ فعالية")</button>
+        <button class="secondary" @onclick="SaveVisitAsync">@(editingVisitId.HasValue ? "تحديث زيارة" : "حفظ زيارة")</button>
+        @if (editingPartnerId.HasValue || editingEventId.HasValue || editingVisitId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForms">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-table"></i> سجلات العلاقات العامة</span></div>
     <table>
-        <thead><tr><th>النوع</th><th>الاسم/العنوان</th><th>التفاصيل</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>النوع</th><th>الاسم/العنوان</th><th>التفاصيل</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
-            @foreach (var item in partners){<tr><td>شريك</td><td>@item.Name</td><td>@item.ContactPerson<br />@item.Mobile</td><td>@item.Status</td></tr>}
-            @foreach (var item in events){<tr><td>فعالية</td><td>@item.Title</td><td>@item.EventDate.ToString("yyyy-MM-dd")<br />@item.Location</td><td>@item.Status</td></tr>}
-            @foreach (var item in visits){<tr><td>زيارة</td><td>@item.VisitorName</td><td>@item.Organization<br />@item.VisitDate.ToString("yyyy-MM-dd")</td><td>@item.Status</td></tr>}
+            @foreach (var item in partners)
+            {
+                <tr><td>شريك</td><td>@item.Name</td><td>@item.ContactPerson<br />@item.Mobile</td><td>@item.Status</td><td><button class="secondary" @onclick="@(() => EditPartner(item))">تعديل</button><button class="secondary" @onclick="@(() => UpdatePartnerStatusAsync(item, PublicRelationRecordStatus.Archived))">أرشفة</button></td></tr>
+            }
+            @foreach (var item in events)
+            {
+                <tr><td>فعالية</td><td>@item.Title</td><td>@item.EventDate.ToString("yyyy-MM-dd")<br />@item.Location</td><td>@item.Status</td><td><button class="secondary" @onclick="@(() => EditEvent(item))">تعديل</button><button class="secondary" @onclick="@(() => UpdateEventStatusAsync(item, PublicRelationRecordStatus.Completed))">إنجاز</button></td></tr>
+            }
+            @foreach (var item in visits)
+            {
+                <tr><td>زيارة</td><td>@item.VisitorName</td><td>@item.Organization<br />@item.VisitDate.ToString("yyyy-MM-dd")</td><td>@item.Status</td><td><button class="secondary" @onclick="@(() => EditVisit(item))">تعديل</button><button class="secondary" @onclick="@(() => UpdateVisitStatusAsync(item, PublicRelationRecordStatus.Completed))">إنجاز</button></td></tr>
+            }
         </tbody>
     </table>
 </section>
@@ -40,20 +67,160 @@
     private List<MediaPartnerResponse> partners = [];
     private List<MediaEventResponse> events = [];
     private List<MediaVisitResponse> visits = [];
+    private int? editingPartnerId;
+    private int? editingEventId;
+    private int? editingVisitId;
     private string partnerName = string.Empty;
     private string? contactPerson;
     private string? mobile;
+    private string? partnerEmail;
+    private PublicRelationRecordStatus partnerStatus = PublicRelationRecordStatus.Active;
+    private string? partnerNotes;
     private string eventTitle = string.Empty;
     private DateTime eventDate = DateTime.UtcNow.AddHours(3).Date;
     private string? location;
+    private string? eventDescription;
+    private PublicRelationRecordStatus eventStatus = PublicRelationRecordStatus.Planned;
     private string visitorName = string.Empty;
     private string? organization;
+    private DateTime visitDate = DateTime.UtcNow.AddHours(3).Date;
+    private string? visitPurpose = "زيارة إعلامية";
+    private PublicRelationRecordStatus visitStatus = PublicRelationRecordStatus.Planned;
     private bool success;
     private string? message;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
-    private async Task LoadAsync(){ partners = await PrMedia.GetPartnersAsync(); events = await PrMedia.GetEventsAsync(); visits = await PrMedia.GetVisitsAsync(); }
-    private async Task SavePartnerAsync(){ var r = await PrMedia.SavePartnerAsync(null, new SaveMediaPartnerRequest(partnerName, contactPerson, mobile, null, PublicRelationRecordStatus.Active, null)); success = r.Success; message = r.Message; await LoadAsync(); }
-    private async Task SaveEventAsync(){ var r = await PrMedia.SaveEventAsync(null, new SaveMediaEventRequest(eventTitle, eventDate, location, null, PublicRelationRecordStatus.Planned)); success = r.Success; message = r.Message; await LoadAsync(); }
-    private async Task SaveVisitAsync(){ var r = await PrMedia.SaveVisitAsync(null, new SaveMediaVisitRequest(visitorName, organization, DateTime.UtcNow.AddHours(3), "زيارة إعلامية", PublicRelationRecordStatus.Planned)); success = r.Success; message = r.Message; await LoadAsync(); }
+
+    private async Task LoadAsync()
+    {
+        partners = await PrMedia.GetPartnersAsync();
+        events = await PrMedia.GetEventsAsync();
+        visits = await PrMedia.GetVisitsAsync();
+    }
+
+    private async Task SavePartnerAsync()
+    {
+        var result = await PrMedia.SavePartnerAsync(editingPartnerId, new SaveMediaPartnerRequest(partnerName, contactPerson, mobile, partnerEmail, partnerStatus, partnerNotes));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetPartnerForm();
+        await LoadAsync();
+    }
+
+    private async Task SaveEventAsync()
+    {
+        var result = await PrMedia.SaveEventAsync(editingEventId, new SaveMediaEventRequest(eventTitle, eventDate, location, eventDescription, eventStatus));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetEventForm();
+        await LoadAsync();
+    }
+
+    private async Task SaveVisitAsync()
+    {
+        var result = await PrMedia.SaveVisitAsync(editingVisitId, new SaveMediaVisitRequest(visitorName, organization, visitDate, visitPurpose, visitStatus));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetVisitForm();
+        await LoadAsync();
+    }
+
+    private void EditPartner(MediaPartnerResponse item)
+    {
+        editingPartnerId = item.Id;
+        partnerName = item.Name;
+        contactPerson = item.ContactPerson;
+        mobile = item.Mobile;
+        partnerEmail = item.Email;
+        partnerStatus = Enum.TryParse<PublicRelationRecordStatus>(item.Status, out var parsedStatus) ? parsedStatus : PublicRelationRecordStatus.Active;
+        partnerNotes = item.Notes;
+        message = null;
+    }
+
+    private void EditEvent(MediaEventResponse item)
+    {
+        editingEventId = item.Id;
+        eventTitle = item.Title;
+        eventDate = item.EventDate;
+        location = item.Location;
+        eventDescription = item.Description;
+        eventStatus = Enum.TryParse<PublicRelationRecordStatus>(item.Status, out var parsedStatus) ? parsedStatus : PublicRelationRecordStatus.Planned;
+        message = null;
+    }
+
+    private void EditVisit(MediaVisitResponse item)
+    {
+        editingVisitId = item.Id;
+        visitorName = item.VisitorName;
+        organization = item.Organization;
+        visitDate = item.VisitDate;
+        visitPurpose = item.Purpose;
+        visitStatus = Enum.TryParse<PublicRelationRecordStatus>(item.Status, out var parsedStatus) ? parsedStatus : PublicRelationRecordStatus.Planned;
+        message = null;
+    }
+
+    private async Task UpdatePartnerStatusAsync(MediaPartnerResponse item, PublicRelationRecordStatus status)
+    {
+        var result = await PrMedia.SavePartnerAsync(item.Id, new SaveMediaPartnerRequest(item.Name, item.ContactPerson, item.Mobile, item.Email, status, item.Notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task UpdateEventStatusAsync(MediaEventResponse item, PublicRelationRecordStatus status)
+    {
+        var result = await PrMedia.SaveEventAsync(item.Id, new SaveMediaEventRequest(item.Title, item.EventDate, item.Location, item.Description, status));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task UpdateVisitStatusAsync(MediaVisitResponse item, PublicRelationRecordStatus status)
+    {
+        var result = await PrMedia.SaveVisitAsync(item.Id, new SaveMediaVisitRequest(item.VisitorName, item.Organization, item.VisitDate, item.Purpose, status));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void ResetForms()
+    {
+        ResetPartnerForm();
+        ResetEventForm();
+        ResetVisitForm();
+    }
+
+    private void ResetPartnerForm()
+    {
+        editingPartnerId = null;
+        partnerName = string.Empty;
+        contactPerson = null;
+        mobile = null;
+        partnerEmail = null;
+        partnerStatus = PublicRelationRecordStatus.Active;
+        partnerNotes = null;
+    }
+
+    private void ResetEventForm()
+    {
+        editingEventId = null;
+        eventTitle = string.Empty;
+        eventDate = DateTime.UtcNow.AddHours(3).Date;
+        location = null;
+        eventDescription = null;
+        eventStatus = PublicRelationRecordStatus.Planned;
+    }
+
+    private void ResetVisitForm()
+    {
+        editingVisitId = null;
+        visitorName = string.Empty;
+        organization = null;
+        visitDate = DateTime.UtcNow.AddHours(3).Date;
+        visitPurpose = "زيارة إعلامية";
+        visitStatus = PublicRelationRecordStatus.Planned;
+    }
 }

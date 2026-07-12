@@ -25,7 +25,7 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-file-lines"></i> الخطابات</span></div>
     <table>
-        <thead><tr><th>النوع</th><th>الموظف</th><th>الموضوع</th><th>الحالة</th><th>الإصدار</th><th>قرار</th></tr></thead>
+        <thead><tr><th>النوع</th><th>الموظف</th><th>الموضوع</th><th>الحالة</th><th>الإصدار</th><th>قرار</th><th>السجل</th></tr></thead>
         <tbody>
             @foreach (var item in letters)
             {
@@ -36,15 +36,34 @@
                     <td><span class="status">@item.Status</span></td>
                     <td>@item.IssuedAt?.ToString("yyyy-MM-dd")</td>
                     <td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved))">إصدار</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Rejected))">رفض</button></td>
+                    <td><button class="secondary" @onclick="@(() => LoadActivityAsync(item))">السجل</button></td>
                 </tr>
             }
         </tbody>
     </table>
 </section>
 
+@if (activities.Count > 0)
+{
+    <section class="table-section" style="margin-top:14px">
+        <div class="table-title"><span><i class="fa-solid fa-clock-rotate-left"></i> سجل @activityTitle</span></div>
+        <table>
+            <thead><tr><th>الوقت</th><th>الإجراء</th><th>من</th><th>إلى</th><th>ملاحظات</th></tr></thead>
+            <tbody>
+                @foreach (var item in activities)
+                {
+                    <tr><td>@item.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td><td>@item.Action</td><td>@item.FromStatus</td><td>@item.ToStatus</td><td>@item.Notes</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
 @code {
     private List<EmployeeResponse> employees = [];
     private List<EmployeeLetterRequestResponse> letters = [];
+    private List<HumanResourceActivityResponse> activities = [];
+    private string? activityTitle;
     private string letterType = "خطاب شخصي";
     private string employeeIdText = string.Empty;
     private string subject = string.Empty;
@@ -83,5 +102,11 @@
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private async Task LoadActivityAsync(EmployeeLetterRequestResponse item)
+    {
+        activityTitle = item.Subject;
+        activities = await HR.GetActivitiesAsync(HumanResourceActivityEntityType.LetterRequest, item.Id);
     }
 }

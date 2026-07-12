@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-palette"></i><div><h2>قالب بصري</h2><p>ثيم لوحة التحكم، قوالب المطبوعات، كروت الإهداء، المعايدات، المستندات، وشهادات التبرع.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-palette"></i><div><h2>@(editingId.HasValue ? "تعديل قالب بصري" : "قالب بصري")</h2><p>ثيم لوحة التحكم، قوالب المطبوعات، كروت الإهداء، المعايدات، المستندات، وشهادات التبرع.</p></div></div>
     <div class="form-grid compact">
         <label>الاسم<input @bind="name" /></label>
         <label>النوع<select @bind="assetType"><option value="@VisualAssetType.DashboardTheme">ثيم لوحة التحكم</option><option value="@VisualAssetType.PrintTemplate">مطبوعات</option><option value="@VisualAssetType.GiftCard">كرت إهداء</option><option value="@VisualAssetType.Greeting">معايدة</option><option value="@VisualAssetType.PdfDocument">مستند PDF</option><option value="@VisualAssetType.Certificate">شهادة</option></select></label>
@@ -20,17 +20,37 @@
         <label class="span-2">تصميم JSON<input @bind="designJson" /></label>
         <label class="span-2">ملاحظات<input @bind="notes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ القالب</button><button class="secondary" @onclick="LoadCertificatesAsync">الشهادات</button><button class="secondary" @onclick="LoadActiveAsync">النشطة</button><button class="secondary" @onclick="LoadAsync">كل القوالب</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingId.HasValue ? "حفظ التعديل" : "حفظ القالب")</button>
+        @if (editingId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadCertificatesAsync">الشهادات</button>
+        <button class="secondary" @onclick="LoadActiveAsync">النشطة</button>
+        <button class="secondary" @onclick="LoadAsync">كل القوالب</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-database"></i> قوالب التصميمات</span></div>
     <table>
-        <thead><tr><th>الاسم</th><th>النوع</th><th>الملف</th><th>نشط</th><th>ملاحظات</th></tr></thead>
+        <thead><tr><th>الاسم</th><th>النوع</th><th>الملف</th><th>نشط</th><th>ملاحظات</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var item in assets)
             {
-                <tr><td>@item.Name</td><td>@item.AssetType</td><td>@item.FileUrl<br />@item.DesignJson</td><td>@(item.IsActive ? "نعم" : "لا")</td><td>@item.Notes</td></tr>
+                <tr>
+                    <td>@item.Name</td>
+                    <td>@item.AssetType</td>
+                    <td>@item.FileUrl<br />@item.DesignJson</td>
+                    <td>@(item.IsActive ? "نعم" : "لا")</td>
+                    <td>@item.Notes</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => Edit(item))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => ToggleActiveAsync(item, true))">تفعيل</button>
+                        <button class="secondary" @onclick="@(() => ToggleActiveAsync(item, false))">إيقاف</button>
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
@@ -38,6 +58,7 @@
 
 @code {
     private List<VisualAssetTemplateResponse> assets = [];
+    private int? editingId;
     private string name = string.Empty;
     private VisualAssetType assetType = VisualAssetType.PrintTemplate;
     private string? fileUrl;
@@ -51,5 +72,33 @@
     private async Task LoadAsync() => assets = await Tech.GetVisualAssetsAsync();
     private async Task LoadActiveAsync() => assets = await Tech.GetVisualAssetsAsync(isActive: true);
     private async Task LoadCertificatesAsync() => assets = await Tech.GetVisualAssetsAsync(VisualAssetType.Certificate);
-    private async Task SaveAsync(){ var result = await Tech.SaveVisualAssetAsync(null, new SaveVisualAssetTemplateRequest(name, assetType, fileUrl, designJson, isActive, notes)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task SaveAsync(){ var result = await Tech.SaveVisualAssetAsync(editingId, new SaveVisualAssetTemplateRequest(name, assetType, fileUrl, designJson, isActive, notes)); success = result.Success; message = result.Message; if (success) ResetForm(); await LoadAsync(); }
+    private async Task ToggleActiveAsync(VisualAssetTemplateResponse item, bool active)
+    {
+        var parsedType = Enum.TryParse<VisualAssetType>(item.AssetType, out var type) ? type : VisualAssetType.PrintTemplate;
+        var result = await Tech.SaveVisualAssetAsync(item.Id, new SaveVisualAssetTemplateRequest(item.Name, parsedType, item.FileUrl, item.DesignJson, active, item.Notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+    private void Edit(VisualAssetTemplateResponse item)
+    {
+        editingId = item.Id;
+        name = item.Name;
+        assetType = Enum.TryParse<VisualAssetType>(item.AssetType, out var parsedType) ? parsedType : VisualAssetType.PrintTemplate;
+        fileUrl = item.FileUrl;
+        designJson = item.DesignJson;
+        isActive = item.IsActive;
+        notes = item.Notes;
+    }
+    private void ResetForm()
+    {
+        editingId = null;
+        name = string.Empty;
+        assetType = VisualAssetType.PrintTemplate;
+        fileUrl = null;
+        designJson = null;
+        isActive = true;
+        notes = null;
+    }
 }

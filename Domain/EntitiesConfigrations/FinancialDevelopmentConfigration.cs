@@ -56,6 +56,19 @@ public class DonationContributionConfigration : IEntityTypeConfiguration<Donatio
     }
 }
 
+public class DonationContributionActivityConfigration : IEntityTypeConfiguration<DonationContributionActivity>
+{
+    public void Configure(EntityTypeBuilder<DonationContributionActivity> entity)
+    {
+        entity.HasKey(x => x.Id);
+        entity.Property(x => x.Amount).HasPrecision(18, 2);
+        entity.Property(x => x.Notes).HasMaxLength(1000);
+        entity.HasIndex(x => new { x.DonationContributionId, x.OccurredAt });
+        entity.HasIndex(x => x.Type);
+        entity.HasOne(x => x.DonationContribution).WithMany(x => x.Activities).HasForeignKey(x => x.DonationContributionId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 public class DigitalMarketingCampaignConfigration : IEntityTypeConfiguration<DigitalMarketingCampaign>
 {
     public void Configure(EntityTypeBuilder<DigitalMarketingCampaign> entity)

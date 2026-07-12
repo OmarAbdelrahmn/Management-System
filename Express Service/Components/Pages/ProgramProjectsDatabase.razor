@@ -14,16 +14,40 @@
     <div class="panel-heading"><i class="fa-solid fa-magnifying-glass"></i><div><h2>بحث المشاريع والبرامج</h2><p>تحديث الحالة ومتابعة سجل النشاط من نفس قاعدة البيانات.</p></div></div>
     <div class="form-grid compact">
         <label>بحث<input @bind="search" /></label>
-        <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="Draft">مسودة</option><option value="Planning">تخطيط</option><option value="Active">نشط</option><option value="Completed">مكتمل</option><option value="Deleted">محذوف</option></select></label>
+        <label>الحالة<select @bind="statusText"><option value="">الكل</option><option value="Draft">مسودة</option><option value="Planning">تخطيط</option><option value="Active">نشط</option><option value="OnHold">معلق</option><option value="Completed">مكتمل</option><option value="Cancelled">ملغى</option><option value="Deleted">محذوف</option></select></label>
         <label>النوع<input @bind="projectType" /></label>
+        <label class="span-2">ملاحظات تغيير الحالة أو النشر<input @bind="statusNotes" /></label>
+        <label class="span-2">ملخص التقرير الختامي<textarea @bind="closeSummary" placeholder="مطلوب عند إكمال المشروع"></textarea></label>
+        <label class="span-2">مسار ملف التقرير الختامي<input @bind="closeFilePath" /></label>
     </div>
     <div class="actions-row"><button class="primary" @onclick="LoadAsync">بحث</button><a class="secondary" href="/programs-projects/create">إضافة مشروع</a></div>
 </section>
 
+@if (editingProjectId.HasValue)
+{
+    <section class="panel" style="margin-top:14px">
+        <div class="panel-heading"><i class="fa-solid fa-pen-to-square"></i><div><h2>تعديل بيانات المشروع</h2><p>تصحيح البيانات الأساسية دون مغادرة قاعدة المشاريع.</p></div></div>
+        <div class="form-grid">
+            <label>الاسم<input @bind="editName" /></label>
+            <label>الكود<input @bind="editProjectCode" /></label>
+            <label>النوع<select @bind="editProjectType"><option>Project</option><option>Program</option><option>Qualification</option><option>Design</option></select></label>
+            <label>المدير<input @bind="editManagerName" /></label>
+            <label>من<input type="date" @bind="editStartsAt" /></label>
+            <label>إلى<input type="date" @bind="editEndsAt" /></label>
+            <label>الحالة<select @bind="editStatus"><option value="@ProgramProjectStatus.Draft">مسودة</option><option value="@ProgramProjectStatus.Planning">تخطيط</option><option value="@ProgramProjectStatus.Active">نشط</option><option value="@ProgramProjectStatus.OnHold">معلق</option><option value="@ProgramProjectStatus.Cancelled">ملغى</option><option value="@ProgramProjectStatus.Deleted">محذوف</option></select></label>
+            <label>الميزانية<input type="number" step="0.01" @bind="editBudget" /></label>
+            <label>المستهدفون<input type="number" step="1" @bind="editTargetBeneficiaries" /></label>
+            <label class="span-2">الوصف<textarea @bind="editDescription"></textarea></label>
+            <label class="span-2">ملاحظات<textarea @bind="editNotes"></textarea></label>
+        </div>
+        <div class="actions-row"><button class="primary" @onclick="SaveProjectAsync">حفظ التعديل</button><button class="secondary" @onclick="ResetEditForm">إلغاء التعديل</button></div>
+    </section>
+}
+
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-table"></i> المشاريع</span></div>
     <table>
-        <thead><tr><th>الكود</th><th>الاسم</th><th>النوع</th><th>الحالة</th><th>المهام</th><th>الرصيد</th><th>إجراء</th></tr></thead>
+        <thead><tr><th>الكود</th><th>الاسم</th><th>النوع</th><th>الحالة</th><th>النشر</th><th>المهام</th><th>الرصيد</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var project in projects)
             {
@@ -32,12 +56,21 @@
                     <td>@project.Name</td>
                     <td>@project.ProjectType</td>
                     <td><span class="status">@project.Status</span></td>
+                    <td>
+                        <span class="status">@(project.IsPublished ? "منشور" : "غير منشور")</span>
+                        <br />@project.PublishedAt?.ToString("yyyy-MM-dd")
+                    </td>
                     <td>@project.CompletedTasksCount / @project.TasksCount</td>
                     <td>@project.Balance</td>
                     <td>
+                        <button class="secondary" @onclick="@(() => EditProject(project))">تعديل</button>
                         <button class="secondary" @onclick="@(() => LoadActivitiesAsync(project.Id))">السجل</button>
-                        <button class="secondary" @onclick="@(() => StatusAsync(project.Id, ProgramProjectStatus.Completed))">إكمال</button>
+                        <button class="secondary" @onclick="@(() => StatusAsync(project.Id, ProgramProjectStatus.Planning))">تخطيط</button>
                         <button class="secondary" @onclick="@(() => StatusAsync(project.Id, ProgramProjectStatus.Active))">فتح</button>
+                        <button class="secondary" @onclick="@(() => StatusAsync(project.Id, ProgramProjectStatus.OnHold))">تعليق</button>
+                        <button class="secondary" @onclick="@(() => PublishAsync(project.Id, !project.IsPublished))">@(project.IsPublished ? "إلغاء النشر" : "نشر")</button>
+                        <button class="secondary" @onclick="@(() => CloseAsync(project.Id))">إكمال</button>
+                        <button class="secondary" @onclick="@(() => StatusAsync(project.Id, ProgramProjectStatus.Cancelled))">إلغاء</button>
                         <button class="secondary" @onclick="@(() => StatusAsync(project.Id, ProgramProjectStatus.Deleted))">حذف</button>
                     </td>
                 </tr>
@@ -77,6 +110,21 @@
     private string? search;
     private string statusText = string.Empty;
     private string? projectType;
+    private string? statusNotes;
+    private string closeSummary = string.Empty;
+    private string? closeFilePath;
+    private int? editingProjectId;
+    private string editName = string.Empty;
+    private string? editProjectCode;
+    private string editProjectType = "Project";
+    private string? editDescription;
+    private string? editManagerName;
+    private DateTime? editStartsAt;
+    private DateTime? editEndsAt;
+    private ProgramProjectStatus editStatus = ProgramProjectStatus.Draft;
+    private decimal editBudget;
+    private decimal editTargetBeneficiaries;
+    private string? editNotes;
     private bool success;
     private string? message;
 
@@ -92,9 +140,39 @@
 
     private async Task StatusAsync(int id, ProgramProjectStatus status)
     {
-        var result = await ProgramsProjects.UpdateProjectStatusAsync(id, status);
+        var result = await ProgramsProjects.UpdateProjectStatusAsync(id, status, statusNotes);
         success = result.Success;
         message = result.Message;
+        if (success)
+            statusNotes = null;
+        await LoadAsync();
+        if (selectedProject?.Id == id)
+            await LoadActivitiesAsync(id);
+    }
+
+    private async Task PublishAsync(int id, bool isPublished)
+    {
+        var result = await ProgramsProjects.PublishProjectAsync(id, isPublished, statusNotes);
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            statusNotes = null;
+        await LoadAsync();
+        if (selectedProject?.Id == id)
+            await LoadActivitiesAsync(id);
+    }
+
+    private async Task CloseAsync(int id)
+    {
+        var result = await ProgramsProjects.CloseProjectAsync(id, new CloseProgramProjectRequest(DateTime.UtcNow.AddHours(3), closeSummary, closeFilePath, statusNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            closeSummary = string.Empty;
+            closeFilePath = null;
+            statusNotes = null;
+        }
         await LoadAsync();
         if (selectedProject?.Id == id)
             await LoadActivitiesAsync(id);
@@ -104,5 +182,50 @@
     {
         selectedProject = projects.FirstOrDefault(x => x.Id == projectId);
         activities = await ProgramsProjects.GetProjectActivitiesAsync(projectId);
+    }
+
+    private void EditProject(ProgramProjectResponse project)
+    {
+        editingProjectId = project.Id;
+        editName = project.Name;
+        editProjectCode = project.ProjectCode;
+        editProjectType = project.ProjectType;
+        editDescription = project.Description;
+        editManagerName = project.ManagerName;
+        editStartsAt = project.StartsAt;
+        editEndsAt = project.EndsAt;
+        editStatus = Enum.TryParse<ProgramProjectStatus>(project.Status, out var parsedStatus) ? parsedStatus : ProgramProjectStatus.Draft;
+        editBudget = project.Budget;
+        editTargetBeneficiaries = project.TargetBeneficiaries;
+        editNotes = project.Notes;
+    }
+
+    private async Task SaveProjectAsync()
+    {
+        if (!editingProjectId.HasValue)
+            return;
+
+        var result = await ProgramsProjects.SaveProjectAsync(editingProjectId, new SaveProgramProjectRequest(editName, editProjectCode, editProjectType, editDescription, editManagerName, editStartsAt, editEndsAt, editStatus, editBudget, editTargetBeneficiaries, editNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetEditForm();
+        await LoadAsync();
+    }
+
+    private void ResetEditForm()
+    {
+        editingProjectId = null;
+        editName = string.Empty;
+        editProjectCode = null;
+        editProjectType = "Project";
+        editDescription = null;
+        editManagerName = null;
+        editStartsAt = null;
+        editEndsAt = null;
+        editStatus = ProgramProjectStatus.Draft;
+        editBudget = 0;
+        editTargetBeneficiaries = 0;
+        editNotes = null;
     }
 }

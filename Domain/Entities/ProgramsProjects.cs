@@ -57,7 +57,11 @@ public enum ProgramProjectActivityType
     AttendanceSaved = 14,
     SurveySaved = 15,
     CertificateIssued = 16,
-    QualificationStatusChanged = 17
+    QualificationStatusChanged = 17,
+    SupplierProposalSaved = 18,
+    SupplierProposalDecided = 19,
+    SupplierProposalConverted = 20,
+    CertificateCancelled = 21
 }
 
 public enum ProgramIdeaStatus
@@ -86,6 +90,17 @@ public enum ProgramSupplierStatus
     Active = 0,
     Inactive = 1,
     Archived = 2
+}
+
+public enum ProgramSupplierProposalStatus
+{
+    Draft = 0,
+    Submitted = 1,
+    UnderReview = 2,
+    Approved = 3,
+    Rejected = 4,
+    Converted = 5,
+    Cancelled = 6
 }
 
 public enum ProgramRegistrationStatus
@@ -168,6 +183,7 @@ public class ProgramProject : IAuditable
     public ICollection<ProgramProjectAssignment> Assignments { get; set; } = new List<ProgramProjectAssignment>();
     public ICollection<ProgramProjectReport> Reports { get; set; } = new List<ProgramProjectReport>();
     public ICollection<ProgramProjectActivity> Activities { get; set; } = new List<ProgramProjectActivity>();
+    public ICollection<ProgramSupplierProposal> SupplierProposals { get; set; } = new List<ProgramSupplierProposal>();
 }
 
 public class ProgramProjectTask : IAuditable
@@ -312,6 +328,33 @@ public class ProgramSupplier : IAuditable
     public string? UpdatedByUserId { get; set; }
 
     public ICollection<ProgramProjectContract> Contracts { get; set; } = new List<ProgramProjectContract>();
+    public ICollection<ProgramSupplierProposal> Proposals { get; set; } = new List<ProgramSupplierProposal>();
+}
+
+public class ProgramSupplierProposal : IAuditable
+{
+    public int Id { get; set; }
+    public int ProgramProjectId { get; set; }
+    public int ProgramSupplierId { get; set; }
+    public string ProposalNumber { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string? Scope { get; set; }
+    public decimal Amount { get; set; }
+    public DateTime SubmittedAt { get; set; } = DateTime.UtcNow.AddHours(3);
+    public DateTime? ValidUntil { get; set; }
+    public ProgramSupplierProposalStatus Status { get; set; } = ProgramSupplierProposalStatus.Submitted;
+    public string? DecisionNotes { get; set; }
+    public DateTime? DecidedAt { get; set; }
+    public int? ConvertedContractId { get; set; }
+    public string? Notes { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
+    public string? CreatedByUserId { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedByUserId { get; set; }
+
+    public ProgramProject? ProgramProject { get; set; }
+    public ProgramSupplier? ProgramSupplier { get; set; }
+    public ProgramProjectContract? ConvertedContract { get; set; }
 }
 
 public class ProgramIdea : IAuditable
@@ -325,12 +368,14 @@ public class ProgramIdea : IAuditable
     public ProgramIdeaStatus Status { get; set; } = ProgramIdeaStatus.Pending;
     public string? DecisionNotes { get; set; }
     public DateTime? DecidedAt { get; set; }
+    public int? ConvertedProjectId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
     public string? CreatedByUserId { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string? UpdatedByUserId { get; set; }
 
     public ICollection<ProgramApproval> Approvals { get; set; } = new List<ProgramApproval>();
+    public ProgramProject? ConvertedProject { get; set; }
 }
 
 public class ProgramApproval : IAuditable

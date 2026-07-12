@@ -5,6 +5,20 @@
 
 <h1 class="page-title">إدارة مهام الموظفين</h1>
 
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-gears"></i><div><h2>إجراءات إدارة المهام</h2><p>تطبيق سريع على المهمة المحددة من الجدول.</p></div></div>
+    <div class="form-grid compact">
+        <label>تحويل إلى<select @bind="redirectAssigneeUserId"><option value="">اختر مستخدم</option>@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
+        <label>نسبة الإنجاز<input type="number" min="0" max="100" @bind="progress" /></label>
+        <label class="span-2">ملاحظة<input @bind="note" /></label>
+    </div>
+</section>
+
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-people-arrows"></i> مهام الموظفين النشطة</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
     <table>
@@ -18,7 +32,7 @@
                     <td><span class="status">@item.Status</span></td>
                     <td>@item.Priority</td>
                     <td>@item.DueAt?.ToString("yyyy-MM-dd")</td>
-                    <td><a class="secondary" href="/tasks/redirect">تحويل</a> <a class="secondary" href="/tasks/complete">إنجاز</a> <a class="danger" href="/tasks/delete">حذف</a></td>
+                    <td><button class="secondary" @onclick="@(() => StartAsync(item.Id))">بدء</button> <button class="secondary" @onclick="@(() => RedirectAsync(item))">تحويل</button> <button class="secondary" @onclick="@(() => CompleteAsync(item.Id))">إنجاز</button> <button class="danger" @onclick="@(() => DeleteAsync(item.Id))">حذف</button></td>
                 </tr>
             }
         </tbody>
@@ -27,6 +41,48 @@
 
 @code {
     private List<ManagementTaskResponse> items = [];
-    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private List<UserPickerResponse> users = [];
+    private string? redirectAssigneeUserId;
+    private int progress = 100;
+    private string? note;
+    private bool success;
+    private string? message;
+    protected override async Task OnInitializedAsync()
+    {
+        users = await Tasks.GetUsersAsync();
+        redirectAssigneeUserId = users.FirstOrDefault()?.Id;
+        await LoadAsync();
+    }
     private async Task LoadAsync() => items = await Tasks.SearchTasksAsync(status: null, includeDeleted: false);
+    private async Task StartAsync(int id)
+    {
+        var task = items.First(x => x.Id == id);
+        var parsedPriority = Enum.TryParse<ManagementTaskPriority>(task.Priority, out var priority) ? priority : ManagementTaskPriority.Normal;
+        var result = await Tasks.UpdateTaskAsync(id, new UpdateManagementTaskRequest(task.Title, task.Description, task.AssigneeUserId, task.DueAt, parsedPriority, ManagementTaskStatus.InProgress, Math.Max(task.ProgressPercentage, 1)));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+    private async Task CompleteAsync(int id)
+    {
+        var result = await Tasks.CompleteTaskAsync(id, new CompleteTaskRequest(Math.Clamp(progress, 0, 100), note));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+    private async Task RedirectAsync(ManagementTaskResponse task)
+    {
+        var assignee = string.IsNullOrWhiteSpace(redirectAssigneeUserId) ? task.AssigneeUserId : redirectAssigneeUserId;
+        var result = await Tasks.RedirectTaskAsync(task.Id, new RedirectTaskRequest(assignee!, note ?? "تحويل من إدارة المهام"));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+    private async Task DeleteAsync(int id)
+    {
+        var result = await Tasks.DeleteTaskAsync(id, new DeleteTaskRequest(note ?? "حذف من إدارة المهام"));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
 }

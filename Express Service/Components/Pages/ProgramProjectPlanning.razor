@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-list-check"></i><div><h2>مهمة مشروع</h2><p>إدارة مهام المشروع وأنشطته وعقوده.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-list-check"></i><div><h2>@(editingTaskId.HasValue ? "تعديل مهمة مشروع" : "مهمة مشروع")</h2><p>إدارة مهام المشروع وأنشطته وعقوده.</p></div></div>
     <div class="form-grid compact">
         <label>المشروع<select @bind="projectId">@foreach (var project in projects){<option value="@project.Id">@project.Name</option>}</select></label>
         <label>عنوان المهمة<input @bind="taskTitle" /></label>
@@ -19,12 +19,19 @@
         <label>تاريخ الاستحقاق<input type="date" @bind="dueDate" /></label>
         <label>الحالة<select @bind="taskStatus"><option value="@ProgramProjectTaskStatus.New">جديدة</option><option value="@ProgramProjectTaskStatus.Running">جارية</option><option value="@ProgramProjectTaskStatus.Blocked">متعثرة</option><option value="@ProgramProjectTaskStatus.Completed">منجزة</option></select></label>
         <label>نسبة الإنجاز<input type="number" step="1" @bind="progressPercent" /></label>
+        <label class="span-2">ملاحظات<input @bind="taskNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveTaskAsync">حفظ المهمة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveTaskAsync">@(editingTaskId.HasValue ? "حفظ التعديل" : "حفظ المهمة")</button>
+        @if (editingTaskId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetTaskForm">إلغاء التعديل</button>
+        }
+    </div>
 </section>
 
 <section class="panel" style="margin-top:14px">
-    <div class="panel-heading"><i class="fa-solid fa-calendar-check"></i><div><h2>نشاط مشروع</h2><p>تسجيل الأنشطة والمراحل الزمنية.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-calendar-check"></i><div><h2>@(editingMilestoneId.HasValue ? "تعديل نشاط مشروع" : "نشاط مشروع")</h2><p>تسجيل وتصحيح الأنشطة والمراحل الزمنية.</p></div></div>
     <div class="form-grid compact">
         <label>العنوان<input @bind="milestoneTitle" /></label>
         <label>من<input type="date" @bind="milestoneStart" /></label>
@@ -32,11 +39,17 @@
         <label>نسبة الإنجاز<input type="number" step="1" @bind="milestoneProgress" /></label>
         <label class="span-2">ملاحظات<input @bind="milestoneNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveMilestoneAsync">حفظ النشاط</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveMilestoneAsync">@(editingMilestoneId.HasValue ? "حفظ التعديل" : "حفظ النشاط")</button>
+        @if (editingMilestoneId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetMilestoneForm">إلغاء التعديل</button>
+        }
+    </div>
 </section>
 
 <section class="panel" style="margin-top:14px">
-    <div class="panel-heading"><i class="fa-solid fa-file-contract"></i><div><h2>عقد ودفعات</h2><p>ربط العقد بالمشروع والمورد عند توفره.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-file-contract"></i><div><h2>@(editingContractId.HasValue ? "تعديل عقد" : "عقد ودفعات")</h2><p>ربط العقد بالمشروع والمورد عند توفره.</p></div></div>
     <div class="form-grid compact">
         <label>المورد<select @bind="supplierIdText"><option value="">بدون مورد</option>@foreach (var supplier in suppliers){<option value="@supplier.Id">@supplier.Name</option>}</select></label>
         <label>رقم العقد<input @bind="contractNumber" placeholder="يولد تلقائياً عند تركه فارغاً" /></label>
@@ -44,26 +57,34 @@
         <label>المبلغ<input type="number" step="0.01" @bind="contractAmount" /></label>
         <label>تاريخ التوقيع<input type="date" @bind="signedAt" /></label>
         <label>تاريخ النهاية<input type="date" @bind="contractEndsAt" /></label>
+        <label class="span-2">ملاحظات<input @bind="contractNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveContractAsync">حفظ العقد</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveContractAsync">@(editingContractId.HasValue ? "حفظ التعديل" : "حفظ العقد")</button>
+        @if (editingContractId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetContractForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-timeline"></i> التخطيط الحالي</span></div>
     <table>
-        <thead><tr><th>النوع</th><th>المشروع</th><th>العنوان</th><th>تفاصيل</th><th>الحالة/الإنجاز</th></tr></thead>
+        <thead><tr><th>النوع</th><th>المشروع</th><th>العنوان</th><th>تفاصيل</th><th>الحالة/الإنجاز</th><th>إجراءات</th></tr></thead>
         <tbody>
             @foreach (var task in tasks)
             {
-                <tr><td>مهمة</td><td>@task.ProjectName</td><td>@task.Title</td><td>@task.OwnerName / @task.DueDate?.ToString("yyyy-MM-dd")</td><td>@task.Status - @task.ProgressPercent%</td></tr>
+                <tr><td>مهمة</td><td>@task.ProjectName</td><td>@task.Title</td><td>@task.OwnerName / @task.DueDate?.ToString("yyyy-MM-dd")</td><td>@task.Status - @task.ProgressPercent%</td><td><button class="secondary small" @onclick="() => EditTask(task)">تعديل</button></td></tr>
             }
             @foreach (var milestone in milestones)
             {
-                <tr><td>نشاط</td><td>@milestone.ProjectName</td><td>@milestone.Title</td><td>@milestone.StartsAt.ToString("yyyy-MM-dd") - @milestone.EndsAt.ToString("yyyy-MM-dd")</td><td>@milestone.ProgressPercent%</td></tr>
+                <tr><td>نشاط</td><td>@milestone.ProjectName</td><td>@milestone.Title</td><td>@milestone.StartsAt.ToString("yyyy-MM-dd") - @milestone.EndsAt.ToString("yyyy-MM-dd")</td><td>@milestone.ProgressPercent%</td><td><button class="secondary small" @onclick="() => EditMilestone(milestone)">تعديل</button></td></tr>
             }
             @foreach (var contract in contracts)
             {
-                <tr><td>عقد</td><td>@contract.ProjectName</td><td>@contract.Title</td><td>@contract.ContractNumber / @contract.SupplierName</td><td>@contract.Amount</td></tr>
+                <tr><td>عقد</td><td>@contract.ProjectName</td><td>@contract.Title</td><td>@contract.ContractNumber / @contract.SupplierName</td><td>@contract.Amount</td><td><button class="secondary small" @onclick="() => EditContract(contract)">تعديل</button></td></tr>
             }
         </tbody>
     </table>
@@ -81,17 +102,22 @@
     private DateTime? dueDate = DateTime.UtcNow.AddHours(3).Date.AddDays(7);
     private ProgramProjectTaskStatus taskStatus = ProgramProjectTaskStatus.New;
     private decimal progressPercent;
+    private string? taskNotes;
+    private int? editingTaskId;
     private string milestoneTitle = string.Empty;
     private DateTime milestoneStart = DateTime.UtcNow.AddHours(3).Date;
     private DateTime milestoneEnd = DateTime.UtcNow.AddHours(3).Date.AddDays(7);
     private decimal milestoneProgress;
     private string? milestoneNotes;
+    private int? editingMilestoneId;
     private string supplierIdText = string.Empty;
     private string? contractNumber;
     private string contractTitle = string.Empty;
     private decimal contractAmount;
     private DateTime signedAt = DateTime.UtcNow.AddHours(3).Date;
     private DateTime? contractEndsAt = DateTime.UtcNow.AddHours(3).Date.AddMonths(1);
+    private string? contractNotes;
+    private int? editingContractId;
     private bool success;
     private string? message;
 
@@ -112,26 +138,104 @@
 
     private async Task SaveTaskAsync()
     {
-        var result = await ProgramsProjects.SaveTaskAsync(null, new SaveProgramProjectTaskRequest(projectId, taskTitle, ownerName, dueDate, taskStatus, progressPercent, null));
+        var result = await ProgramsProjects.SaveTaskAsync(editingTaskId, new SaveProgramProjectTaskRequest(projectId, taskTitle, ownerName, dueDate, taskStatus, progressPercent, taskNotes));
         success = result.Success;
         message = result.Message;
+        if (success)
+            ResetTaskForm();
         await LoadAsync();
     }
 
     private async Task SaveMilestoneAsync()
     {
-        var result = await ProgramsProjects.SaveMilestoneAsync(null, new SaveProgramProjectMilestoneRequest(projectId, milestoneTitle, milestoneStart, milestoneEnd, milestoneProgress, milestoneNotes));
+        var result = await ProgramsProjects.SaveMilestoneAsync(editingMilestoneId, new SaveProgramProjectMilestoneRequest(projectId, milestoneTitle, milestoneStart, milestoneEnd, milestoneProgress, milestoneNotes));
         success = result.Success;
         message = result.Message;
+        if (success)
+            ResetMilestoneForm();
         await LoadAsync();
     }
 
     private async Task SaveContractAsync()
     {
         var supplierId = int.TryParse(supplierIdText, out var value) ? value : (int?)null;
-        var result = await ProgramsProjects.SaveContractAsync(null, new SaveProgramProjectContractRequest(projectId, supplierId, contractNumber, contractTitle, contractAmount, signedAt, contractEndsAt, null));
+        var result = await ProgramsProjects.SaveContractAsync(editingContractId, new SaveProgramProjectContractRequest(projectId, supplierId, contractNumber, contractTitle, contractAmount, signedAt, contractEndsAt, contractNotes));
         success = result.Success;
         message = result.Message;
+        if (success)
+            ResetContractForm();
         await LoadAsync();
+    }
+
+    private void EditTask(ProgramProjectTaskResponse task)
+    {
+        editingTaskId = task.Id;
+        projectId = task.ProgramProjectId;
+        taskTitle = task.Title;
+        ownerName = task.OwnerName;
+        dueDate = task.DueDate;
+        taskStatus = Enum.TryParse<ProgramProjectTaskStatus>(task.Status, out var parsedStatus) ? parsedStatus : ProgramProjectTaskStatus.New;
+        progressPercent = task.ProgressPercent;
+        taskNotes = task.Notes;
+    }
+
+    private void ResetTaskForm()
+    {
+        editingTaskId = null;
+        projectId = projects.FirstOrDefault()?.Id ?? 0;
+        taskTitle = string.Empty;
+        ownerName = null;
+        dueDate = DateTime.UtcNow.AddHours(3).Date.AddDays(7);
+        taskStatus = ProgramProjectTaskStatus.New;
+        progressPercent = 0;
+        taskNotes = null;
+    }
+
+    private void EditMilestone(ProgramProjectMilestoneResponse milestone)
+    {
+        editingMilestoneId = milestone.Id;
+        projectId = milestone.ProgramProjectId;
+        milestoneTitle = milestone.Title;
+        milestoneStart = milestone.StartsAt;
+        milestoneEnd = milestone.EndsAt;
+        milestoneProgress = milestone.ProgressPercent;
+        milestoneNotes = milestone.Notes;
+    }
+
+    private void ResetMilestoneForm()
+    {
+        editingMilestoneId = null;
+        projectId = projects.FirstOrDefault()?.Id ?? 0;
+        milestoneTitle = string.Empty;
+        milestoneStart = DateTime.UtcNow.AddHours(3).Date;
+        milestoneEnd = DateTime.UtcNow.AddHours(3).Date.AddDays(7);
+        milestoneProgress = 0;
+        milestoneNotes = null;
+    }
+
+    private void EditContract(ProgramProjectContractResponse contract)
+    {
+        editingContractId = contract.Id;
+        projectId = contract.ProgramProjectId;
+        supplierIdText = contract.ProgramSupplierId?.ToString() ?? string.Empty;
+        contractNumber = contract.ContractNumber;
+        contractTitle = contract.Title;
+        contractAmount = contract.Amount;
+        signedAt = contract.SignedAt;
+        contractEndsAt = contract.EndsAt;
+        contractNotes = contract.Notes;
+    }
+
+    private void ResetContractForm()
+    {
+        editingContractId = null;
+        projectId = projects.FirstOrDefault()?.Id ?? 0;
+        supplierIdText = string.Empty;
+        contractNumber = null;
+        contractTitle = string.Empty;
+        contractAmount = 0;
+        signedAt = DateTime.UtcNow.AddHours(3).Date;
+        contractEndsAt = DateTime.UtcNow.AddHours(3).Date.AddMonths(1);
+        contractNotes = null;
     }
 }

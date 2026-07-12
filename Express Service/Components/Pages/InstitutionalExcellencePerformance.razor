@@ -23,17 +23,17 @@
         <label>الحالة<select @bind="status"><option value="@ExcellenceRecordStatus.Draft">مسودة</option><option value="@ExcellenceRecordStatus.Active">نشط</option><option value="@ExcellenceRecordStatus.Completed">مكتمل</option><option value="@ExcellenceRecordStatus.Archived">مؤرشف</option></select></label>
         <label class="span-2">ملاحظات<input @bind="notes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المقياس</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingMeasureId.HasValue ? "تحديث المقياس" : "حفظ المقياس")</button><button class="secondary" @onclick="ResetForm">تفريغ</button></div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-chart-column"></i> إحصائيات مقياس الأداء</span></div>
     <table>
-        <thead><tr><th>الكود</th><th>المقياس</th><th>النوع</th><th>المستهدف/المتحقق</th><th>الإنجاز</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الكود</th><th>المقياس</th><th>النوع</th><th>المستهدف/المتحقق</th><th>الإنجاز</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var item in measures)
             {
-                <tr><td>@item.Code</td><td>@item.Title<br />@item.ReportingPeriod</td><td>@item.MeasureType</td><td>@item.TargetValue / @item.ActualValue @item.Unit</td><td>@item.AchievementPercent%</td><td>@item.Status</td></tr>
+                <tr><td>@item.Code</td><td>@item.Title<br />@item.ReportingPeriod</td><td>@item.MeasureType</td><td>@item.TargetValue / @item.ActualValue @item.Unit</td><td>@item.AchievementPercent%</td><td>@item.Status</td><td><button class="secondary" @onclick="@(() => EditMeasure(item))">تعديل</button><button class="secondary" @onclick="@(() => ChangeStatusAsync(item, ExcellenceRecordStatus.Completed))">إكمال</button><button class="secondary" @onclick="@(() => ChangeStatusAsync(item, ExcellenceRecordStatus.Archived))">أرشفة</button></td></tr>
             }
         </tbody>
     </table>
@@ -41,6 +41,7 @@
 
 @code {
     private List<PerformanceMeasureResponse> measures = [];
+    private int? editingMeasureId;
     private string code = string.Empty;
     private string title = string.Empty;
     private PerformanceMeasureType measureType = PerformanceMeasureType.Quantitative;
@@ -57,9 +58,57 @@
     private async Task LoadAsync() => measures = await Excellence.GetPerformanceMeasuresAsync();
     private async Task SaveAsync()
     {
-        var result = await Excellence.SavePerformanceMeasureAsync(null, new SavePerformanceMeasureRequest(code, title, measureType, targetValue, actualValue, unit, reportingPeriod, status, notes));
+        var result = await Excellence.SavePerformanceMeasureAsync(editingMeasureId, new SavePerformanceMeasureRequest(code, title, measureType, targetValue, actualValue, unit, reportingPeriod, status, notes));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetForm();
+        await LoadAsync();
+    }
+
+    private void EditMeasure(PerformanceMeasureResponse item)
+    {
+        editingMeasureId = item.Id;
+        code = item.Code;
+        title = item.Title;
+        measureType = Enum.TryParse<PerformanceMeasureType>(item.MeasureType, out var parsedType) ? parsedType : PerformanceMeasureType.Quantitative;
+        targetValue = item.TargetValue;
+        actualValue = item.ActualValue;
+        unit = item.Unit;
+        reportingPeriod = item.ReportingPeriod;
+        status = Enum.TryParse<ExcellenceRecordStatus>(item.Status, out var parsedStatus) ? parsedStatus : ExcellenceRecordStatus.Active;
+        notes = item.Notes;
+        message = null;
+    }
+
+    private async Task ChangeStatusAsync(PerformanceMeasureResponse item, ExcellenceRecordStatus nextStatus)
+    {
+        var result = await Excellence.SavePerformanceMeasureAsync(item.Id, new SavePerformanceMeasureRequest(
+            item.Code,
+            item.Title,
+            Enum.TryParse<PerformanceMeasureType>(item.MeasureType, out var parsedType) ? parsedType : PerformanceMeasureType.Quantitative,
+            item.TargetValue,
+            item.ActualValue,
+            item.Unit,
+            item.ReportingPeriod,
+            nextStatus,
+            item.Notes));
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private void ResetForm()
+    {
+        editingMeasureId = null;
+        code = string.Empty;
+        title = string.Empty;
+        measureType = PerformanceMeasureType.Quantitative;
+        targetValue = 0;
+        actualValue = 0;
+        unit = "%";
+        reportingPeriod = DateTime.UtcNow.AddHours(3).Year.ToString();
+        status = ExcellenceRecordStatus.Active;
+        notes = null;
     }
 }

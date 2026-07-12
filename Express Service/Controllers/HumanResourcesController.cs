@@ -18,6 +18,17 @@ public class HumanResourcesController(IHumanResourceService humanResources) : Co
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpGet("activities")]
+    public async Task<IActionResult> Activities(
+        [FromQuery] HumanResourceActivityEntityType? entityType,
+        [FromQuery] int? entityId,
+        [FromQuery] int? employeeId,
+        CancellationToken cancellationToken)
+    {
+        var result = await humanResources.GetActivitiesAsync(entityType, entityId, employeeId, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("departments")]
     public async Task<IActionResult> Departments(CancellationToken cancellationToken)
     {
@@ -122,6 +133,13 @@ public class HumanResourcesController(IHumanResourceService humanResources) : Co
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("attendance/{id:int}")]
+    public async Task<IActionResult> UpdateAttendance(int id, [FromBody] RecordEmployeeAttendanceRequest request, CancellationToken cancellationToken)
+    {
+        var result = await humanResources.UpdateAttendanceAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("leave-requests")]
     public async Task<IActionResult> LeaveRequests([FromQuery] int? employeeId, CancellationToken cancellationToken)
     {
@@ -154,6 +172,13 @@ public class HumanResourcesController(IHumanResourceService humanResources) : Co
     public async Task<IActionResult> AddDocument([FromBody] AddEmployeeDocumentRequest request, CancellationToken cancellationToken)
     {
         var result = await humanResources.AddDocumentAsync(request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("documents/{id:int}")]
+    public async Task<IActionResult> UpdateDocument(int id, [FromBody] AddEmployeeDocumentRequest request, CancellationToken cancellationToken)
+    {
+        var result = await humanResources.UpdateDocumentAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -220,6 +245,13 @@ public class HumanResourcesController(IHumanResourceService humanResources) : Co
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPost("evaluations/{id:int}/decision")]
+    public async Task<IActionResult> DecideEvaluation(int id, [FromBody] DecideEmployeeEvaluationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await humanResources.DecideEvaluationAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("cards")]
     public async Task<IActionResult> Cards([FromQuery] int? employeeId, [FromQuery] string? cardType, CancellationToken cancellationToken)
     {
@@ -231,6 +263,13 @@ public class HumanResourcesController(IHumanResourceService humanResources) : Co
     public async Task<IActionResult> IssueCard([FromBody] IssueEmployeeCardRequest request, CancellationToken cancellationToken)
     {
         var result = await humanResources.IssueCardAsync(request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("cards/{id:int}/decision")]
+    public async Task<IActionResult> DecideCard(int id, [FromBody] DecideEmployeeCardIssueRequest request, CancellationToken cancellationToken)
+    {
+        var result = await humanResources.DecideCardIssueAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -276,6 +315,13 @@ public class HumanResourcesController(IHumanResourceService humanResources) : Co
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPost("payroll/{id:int}/decision")]
+    public async Task<IActionResult> DecidePayrollRecord(int id, [FromBody] DecidePayrollRecordRequest request, CancellationToken cancellationToken)
+    {
+        var result = await humanResources.DecidePayrollRecordAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("attendance-policies")]
     public async Task<IActionResult> AttendancePolicies(CancellationToken cancellationToken)
     {
@@ -311,6 +357,13 @@ public class HumanResourcesController(IHumanResourceService humanResources) : Co
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("attendance-locations/{id:int}")]
+    public async Task<IActionResult> UpdateAttendanceLocation(int id, [FromBody] SaveAttendanceLocationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await humanResources.SaveAttendanceLocationAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("official-vacations")]
     public async Task<IActionResult> OfficialVacations([FromQuery] int? year, CancellationToken cancellationToken)
     {
@@ -322,6 +375,13 @@ public class HumanResourcesController(IHumanResourceService humanResources) : Co
     public async Task<IActionResult> CreateOfficialVacation([FromBody] SaveOfficialVacationRequest request, CancellationToken cancellationToken)
     {
         var result = await humanResources.SaveOfficialVacationAsync(null, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("official-vacations/{id:int}")]
+    public async Task<IActionResult> UpdateOfficialVacation(int id, [FromBody] SaveOfficialVacationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await humanResources.SaveOfficialVacationAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -367,6 +427,13 @@ public class HumanResourcesController(IHumanResourceService humanResources) : Co
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("safety/categories/{id:int}")]
+    public async Task<IActionResult> UpdateSafetyCategory(int id, [FromBody] SaveSafetyCategoryRequest request, CancellationToken cancellationToken)
+    {
+        var result = await humanResources.SaveSafetyCategoryAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("safety/procedures")]
     public async Task<IActionResult> SafetyProcedures(CancellationToken cancellationToken)
     {
@@ -381,6 +448,13 @@ public class HumanResourcesController(IHumanResourceService humanResources) : Co
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("safety/procedures/{id:int}")]
+    public async Task<IActionResult> UpdateSafetyProcedure(int id, [FromBody] SaveSafetyProcedureRequest request, CancellationToken cancellationToken)
+    {
+        var result = await humanResources.SaveSafetyProcedureAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("safety/inspections")]
     public async Task<IActionResult> SafetyInspections([FromQuery] SafetyRecordStatus? status, CancellationToken cancellationToken)
     {
@@ -392,6 +466,13 @@ public class HumanResourcesController(IHumanResourceService humanResources) : Co
     public async Task<IActionResult> SaveSafetyInspection([FromBody] SaveSafetyInspectionRequest request, CancellationToken cancellationToken)
     {
         var result = await humanResources.SaveSafetyInspectionAsync(null, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("safety/inspections/{id:int}")]
+    public async Task<IActionResult> UpdateSafetyInspection(int id, [FromBody] SaveSafetyInspectionRequest request, CancellationToken cancellationToken)
+    {
+        var result = await humanResources.SaveSafetyInspectionAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -420,6 +501,13 @@ public class HumanResourcesController(IHumanResourceService humanResources) : Co
     public async Task<IActionResult> UpdateRecruitmentStatus(int id, [FromBody] UpdateRecruitmentStatusRequest request, CancellationToken cancellationToken)
     {
         var result = await humanResources.UpdateRecruitmentStatusAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("recruitment/{id:int}/convert-employee")]
+    public async Task<IActionResult> ConvertRecruitmentToEmployee(int id, [FromBody] ConvertRecruitmentToEmployeeRequest request, CancellationToken cancellationToken)
+    {
+        var result = await humanResources.ConvertRecruitmentToEmployeeAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 

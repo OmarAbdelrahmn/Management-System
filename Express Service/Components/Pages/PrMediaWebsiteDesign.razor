@@ -11,24 +11,52 @@
 }
 
 <section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-palette"></i><div><h2>إدارة الواجهة والتنبيهات</h2><p>تحديث إعدادات التصميم والتنقل ومشتركي التنبيهات الفورية.</p></div></div>
     <div class="form-grid compact">
         <label>الثيم<input @bind="themeName" /></label>
         <label>اللون<input @bind="primaryColor" /></label>
         <label>الخط<input @bind="fontFamily" /></label>
         <label>القالب<input @bind="templateName" /></label>
+        <label>التصميم فعال<select @bind="designActiveText"><option value="true">نعم</option><option value="false">لا</option></select></label>
+        <label class="span-2">CSS مخصص<input @bind="customCss" /></label>
         <label>عنوان القائمة<input @bind="label" /></label>
         <label>الرابط<input @bind="url" /></label>
+        <label>الموضع<input @bind="placement" /></label>
+        <label>الترتيب<input type="number" @bind="sortOrder" /></label>
+        <label>التنقل فعال<select @bind="navActiveText"><option value="true">نعم</option><option value="false">لا</option></select></label>
+        <label>اسم المشترك<input @bind="subscriberName" /></label>
+        <label class="span-2">Endpoint<input @bind="subscriberEndpoint" /></label>
+        <label>المشترك فعال<select @bind="subscriberActiveText"><option value="true">نعم</option><option value="false">لا</option></select></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveDesignAsync">حفظ تصميم</button><button class="secondary" @onclick="SaveNavAsync">حفظ تنقل</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveDesignAsync">@(editingDesignId.HasValue ? "تحديث تصميم" : "حفظ تصميم")</button>
+        <button class="secondary" @onclick="SaveNavAsync">@(editingNavId.HasValue ? "تحديث تنقل" : "حفظ تنقل")</button>
+        <button class="secondary" @onclick="SaveSubscriberAsync">@(editingSubscriberId.HasValue ? "تحديث مشترك" : "حفظ مشترك")</button>
+        @if (editingDesignId.HasValue || editingNavId.HasValue || editingSubscriberId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForms">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
 </section>
 
 <section class="table-section">
-    <div class="table-title"><span><i class="fa-solid fa-palette"></i> التصميم والتنقل</span></div>
+    <div class="table-title"><span><i class="fa-solid fa-palette"></i> التصميم والتنقل والتنبيهات</span></div>
     <table>
-        <thead><tr><th>النوع</th><th>العنوان</th><th>التفاصيل</th><th>فعال</th></tr></thead>
+        <thead><tr><th>النوع</th><th>العنوان</th><th>التفاصيل</th><th>فعال</th><th>إجراء</th></tr></thead>
         <tbody>
-            @foreach (var item in designs){<tr><td>تصميم</td><td>@item.ThemeName</td><td>@item.PrimaryColor / @item.FontFamily / @item.TemplateName</td><td>@item.IsActive</td></tr>}
-            @foreach (var item in navItems){<tr><td>تنقل</td><td>@item.Label</td><td>@item.Url / @item.Placement</td><td>@item.IsActive</td></tr>}
+            @foreach (var item in designs)
+            {
+                <tr><td>تصميم</td><td>@item.ThemeName</td><td>@item.PrimaryColor / @item.FontFamily / @item.TemplateName</td><td>@(item.IsActive ? "نعم" : "لا")</td><td><button class="secondary" @onclick="@(() => EditDesign(item))">تعديل</button><button class="secondary" @onclick="@(() => SetDesignActiveAsync(item, false))">تعطيل</button><button class="secondary" @onclick="@(() => SetDesignActiveAsync(item, true))">تفعيل</button></td></tr>
+            }
+            @foreach (var item in navItems)
+            {
+                <tr><td>تنقل</td><td>@item.Label</td><td>@item.Url / @item.Placement / @item.SortOrder</td><td>@(item.IsActive ? "نعم" : "لا")</td><td><button class="secondary" @onclick="@(() => EditNav(item))">تعديل</button><button class="secondary" @onclick="@(() => SetNavActiveAsync(item, false))">تعطيل</button><button class="secondary" @onclick="@(() => SetNavActiveAsync(item, true))">تفعيل</button></td></tr>
+            }
+            @foreach (var item in subscribers)
+            {
+                <tr><td>تنبيه</td><td>@item.DisplayName</td><td>@item.Endpoint</td><td>@(item.IsActive ? "نعم" : "لا")</td><td><button class="secondary" @onclick="@(() => EditSubscriber(item))">تعديل</button><button class="secondary" @onclick="@(() => SetSubscriberActiveAsync(item, false))">تعطيل</button><button class="secondary" @onclick="@(() => SetSubscriberActiveAsync(item, true))">تفعيل</button></td></tr>
+            }
         </tbody>
     </table>
 </section>
@@ -36,16 +64,156 @@
 @code {
     private List<WebsiteDesignSettingResponse> designs = [];
     private List<WebsiteNavigationItemResponse> navItems = [];
+    private List<PushSubscriberResponse> subscribers = [];
+    private int? editingDesignId;
+    private int? editingNavId;
+    private int? editingSubscriberId;
     private string themeName = string.Empty;
     private string primaryColor = "#0f766e";
     private string fontFamily = "Tajawal";
     private string templateName = "Default";
+    private string? customCss;
+    private string designActiveText = "true";
     private string label = string.Empty;
     private string url = "/";
+    private string placement = "Menu";
+    private int sortOrder = 1;
+    private string navActiveText = "true";
+    private string subscriberName = string.Empty;
+    private string subscriberEndpoint = string.Empty;
+    private string subscriberActiveText = "true";
     private bool success;
     private string? message;
+
     protected override async Task OnInitializedAsync() => await LoadAsync();
-    private async Task LoadAsync(){ designs = await PrMedia.GetDesignSettingsAsync(); navItems = await PrMedia.GetNavigationItemsAsync(); }
-    private async Task SaveDesignAsync(){ var r = await PrMedia.SaveDesignSettingAsync(null, new SaveWebsiteDesignSettingRequest(themeName, primaryColor, fontFamily, templateName, null, true)); success = r.Success; message = r.Message; await LoadAsync(); }
-    private async Task SaveNavAsync(){ var r = await PrMedia.SaveNavigationItemAsync(null, new SaveWebsiteNavigationItemRequest(label, url, "Menu", navItems.Count + 1, true)); success = r.Success; message = r.Message; await LoadAsync(); }
+
+    private async Task LoadAsync()
+    {
+        designs = await PrMedia.GetDesignSettingsAsync();
+        navItems = await PrMedia.GetNavigationItemsAsync();
+        subscribers = await PrMedia.GetPushSubscribersAsync();
+        sortOrder = navItems.Count + 1;
+    }
+
+    private async Task SaveDesignAsync()
+    {
+        var result = await PrMedia.SaveDesignSettingAsync(editingDesignId, new SaveWebsiteDesignSettingRequest(themeName, primaryColor, fontFamily, templateName, customCss, designActiveText == "true"));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetDesignForm();
+        await LoadAsync();
+    }
+
+    private async Task SaveNavAsync()
+    {
+        var result = await PrMedia.SaveNavigationItemAsync(editingNavId, new SaveWebsiteNavigationItemRequest(label, url, placement, sortOrder, navActiveText == "true"));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetNavForm();
+        await LoadAsync();
+    }
+
+    private async Task SaveSubscriberAsync()
+    {
+        var result = await PrMedia.SavePushSubscriberAsync(editingSubscriberId, new SavePushSubscriberRequest(subscriberName, subscriberEndpoint, subscriberActiveText == "true"));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetSubscriberForm();
+        await LoadAsync();
+    }
+
+    private void EditDesign(WebsiteDesignSettingResponse item)
+    {
+        editingDesignId = item.Id;
+        themeName = item.ThemeName;
+        primaryColor = item.PrimaryColor;
+        fontFamily = item.FontFamily;
+        templateName = item.TemplateName;
+        customCss = item.CustomCss;
+        designActiveText = item.IsActive ? "true" : "false";
+        message = null;
+    }
+
+    private void EditNav(WebsiteNavigationItemResponse item)
+    {
+        editingNavId = item.Id;
+        label = item.Label;
+        url = item.Url;
+        placement = item.Placement;
+        sortOrder = item.SortOrder;
+        navActiveText = item.IsActive ? "true" : "false";
+        message = null;
+    }
+
+    private void EditSubscriber(PushSubscriberResponse item)
+    {
+        editingSubscriberId = item.Id;
+        subscriberName = item.DisplayName;
+        subscriberEndpoint = item.Endpoint;
+        subscriberActiveText = item.IsActive ? "true" : "false";
+        message = null;
+    }
+
+    private async Task SetDesignActiveAsync(WebsiteDesignSettingResponse item, bool isActive)
+    {
+        var result = await PrMedia.SaveDesignSettingAsync(item.Id, new SaveWebsiteDesignSettingRequest(item.ThemeName, item.PrimaryColor, item.FontFamily, item.TemplateName, item.CustomCss, isActive));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SetNavActiveAsync(WebsiteNavigationItemResponse item, bool isActive)
+    {
+        var result = await PrMedia.SaveNavigationItemAsync(item.Id, new SaveWebsiteNavigationItemRequest(item.Label, item.Url, item.Placement, item.SortOrder, isActive));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SetSubscriberActiveAsync(PushSubscriberResponse item, bool isActive)
+    {
+        var result = await PrMedia.SavePushSubscriberAsync(item.Id, new SavePushSubscriberRequest(item.DisplayName, item.Endpoint, isActive));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void ResetForms()
+    {
+        ResetDesignForm();
+        ResetNavForm();
+        ResetSubscriberForm();
+    }
+
+    private void ResetDesignForm()
+    {
+        editingDesignId = null;
+        themeName = string.Empty;
+        primaryColor = "#0f766e";
+        fontFamily = "Tajawal";
+        templateName = "Default";
+        customCss = null;
+        designActiveText = "true";
+    }
+
+    private void ResetNavForm()
+    {
+        editingNavId = null;
+        label = string.Empty;
+        url = "/";
+        placement = "Menu";
+        sortOrder = navItems.Count + 1;
+        navActiveText = "true";
+    }
+
+    private void ResetSubscriberForm()
+    {
+        editingSubscriberId = null;
+        subscriberName = string.Empty;
+        subscriberEndpoint = string.Empty;
+        subscriberActiveText = "true";
+    }
 }

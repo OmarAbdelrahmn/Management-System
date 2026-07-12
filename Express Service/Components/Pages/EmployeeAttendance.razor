@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-clock"></i><div><h2>تسجيل حضور</h2><p>تسجيل حالة يومية للموظف.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-clock"></i><div><h2>@(editingAttendanceId.HasValue ? "تعديل سجل حضور" : "تسجيل حضور")</h2><p>تسجيل أو تصحيح حالة يومية للموظف.</p></div></div>
     <div class="form-grid">
         <label>الموظف<select @bind="employeeId">@foreach (var employee in employees){<option value="@employee.Id">@employee.FullName</option>}</select></label>
         <label>اليوم<input type="date" @bind="workDate" /></label>
@@ -20,17 +20,24 @@
         <label>الحالة<select @bind="attendanceStatus"><option value="@AttendanceStatus.Present">حاضر</option><option value="@AttendanceStatus.Late">متأخر</option><option value="@AttendanceStatus.Absent">غائب</option><option value="@AttendanceStatus.Remote">عن بعد</option></select></label>
         <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">تسجيل</button><button class="secondary" @onclick="LoadAsync">تحديث القائمة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingAttendanceId.HasValue ? "حفظ التعديل" : "تسجيل")</button>
+        @if (editingAttendanceId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadAsync">تحديث القائمة</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-list"></i> سجلات الحضور</span></div>
     <table>
-        <thead><tr><th>الموظف</th><th>اليوم</th><th>الدخول</th><th>الخروج</th><th>الحالة</th><th>ملاحظات</th></tr></thead>
+        <thead><tr><th>الموظف</th><th>اليوم</th><th>الدخول</th><th>الخروج</th><th>الحالة</th><th>ملاحظات</th><th>إجراءات</th></tr></thead>
         <tbody>
             @foreach (var item in records)
             {
-                <tr><td>@item.EmployeeName</td><td>@item.WorkDate.ToString("yyyy-MM-dd")</td><td>@item.CheckIn</td><td>@item.CheckOut</td><td><span class="status">@item.Status</span></td><td>@item.Notes</td></tr>
+                <tr><td>@item.EmployeeName</td><td>@item.WorkDate.ToString("yyyy-MM-dd")</td><td>@item.CheckIn</td><td>@item.CheckOut</td><td><span class="status">@item.Status</span></td><td>@item.Notes</td><td><button class="secondary small" @onclick="() => Edit(item)">تعديل</button></td></tr>
             }
         </tbody>
     </table>
@@ -45,6 +52,7 @@
     private TimeOnly? checkOut;
     private AttendanceStatus attendanceStatus = AttendanceStatus.Present;
     private string? notes;
+    private int? editingAttendanceId;
     private bool success;
     private string? message;
 
@@ -59,9 +67,36 @@
 
     private async Task SaveAsync()
     {
-        var result = await HR.RecordAttendanceAsync(new RecordEmployeeAttendanceRequest(employeeId, workDate, checkIn?.ToTimeSpan(), checkOut?.ToTimeSpan(), attendanceStatus, notes));
+        var request = new RecordEmployeeAttendanceRequest(employeeId, workDate, checkIn?.ToTimeSpan(), checkOut?.ToTimeSpan(), attendanceStatus, notes);
+        var result = editingAttendanceId.HasValue
+            ? await HR.UpdateAttendanceAsync(editingAttendanceId.Value, request)
+            : await HR.RecordAttendanceAsync(request);
         success = result.Success;
         message = result.Message;
+        if (success)
+            ResetForm();
         await LoadAsync();
+    }
+
+    private void Edit(EmployeeAttendanceResponse item)
+    {
+        editingAttendanceId = item.Id;
+        employeeId = item.EmployeeProfileId;
+        workDate = item.WorkDate;
+        checkIn = item.CheckIn.HasValue ? TimeOnly.FromTimeSpan(item.CheckIn.Value) : null;
+        checkOut = item.CheckOut.HasValue ? TimeOnly.FromTimeSpan(item.CheckOut.Value) : null;
+        attendanceStatus = Enum.TryParse<AttendanceStatus>(item.Status, out var parsedStatus) ? parsedStatus : AttendanceStatus.Present;
+        notes = item.Notes;
+    }
+
+    private void ResetForm()
+    {
+        editingAttendanceId = null;
+        employeeId = employees.FirstOrDefault()?.Id ?? 0;
+        workDate = DateTime.UtcNow.AddHours(3).Date;
+        checkIn = new(8, 0);
+        checkOut = null;
+        attendanceStatus = AttendanceStatus.Present;
+        notes = null;
     }
 }

@@ -21,7 +21,7 @@
         <label>المدير<input @bind="managerName" /></label>
         <label>الحالة<select @bind="assetStatus"><option value="@EndowmentAssetStatus.Draft">مسودة</option><option value="@EndowmentAssetStatus.Active">نشط</option><option value="@EndowmentAssetStatus.Suspended">معلق</option><option value="@EndowmentAssetStatus.Closed">مغلق</option></select></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveEndowmentAsync">حفظ الوقف</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveEndowmentAsync">@(editingEndowmentId.HasValue ? "تحديث الوقف" : "حفظ الوقف")</button><button class="secondary" @onclick="ResetEndowment">تفريغ</button></div>
 </section>
 
 <section class="panel" style="margin-top:14px">
@@ -35,7 +35,7 @@
         <label>المبلغ السنوي<input type="number" step="0.01" @bind="annualAmount" /></label>
         <label>الحالة<select @bind="contractStatus"><option value="@EndowmentContractStatus.Draft">مسودة</option><option value="@EndowmentContractStatus.Active">نشط</option><option value="@EndowmentContractStatus.Expiring">قريب الانتهاء</option><option value="@EndowmentContractStatus.Closed">مغلق</option><option value="@EndowmentContractStatus.Cancelled">ملغى</option></select></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveContractAsync">حفظ العقد</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveContractAsync">@(editingContractId.HasValue ? "تحديث العقد" : "حفظ العقد")</button><button class="secondary" @onclick="ResetContract">تفريغ</button></div>
 </section>
 
 <section class="panel" style="margin-top:14px">
@@ -49,17 +49,31 @@
         <label>المدفوع<input type="number" step="0.01" @bind="paidAmount" /></label>
         <label>الحالة<select @bind="invoiceStatus"><option value="@EndowmentInvoiceStatus.Due">مستحقة</option><option value="@EndowmentInvoiceStatus.Paid">مدفوعة</option><option value="@EndowmentInvoiceStatus.Overdue">متأخرة</option><option value="@EndowmentInvoiceStatus.Cancelled">ملغاة</option></select></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveInvoiceAsync">حفظ الدفعة</button><button class="secondary" @onclick="LoadDueSoonAsync">المستحقة قريباً</button><button class="secondary" @onclick="LoadAsync">كل الدفعات</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveInvoiceAsync">@(editingInvoiceId.HasValue ? "تحديث الدفعة" : "حفظ الدفعة")</button><button class="secondary" @onclick="ResetInvoice">تفريغ</button><button class="secondary" @onclick="LoadDueSoonAsync">المستحقة قريباً</button><button class="secondary" @onclick="LoadAsync">كل الدفعات</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-cash-register"></i><div><h2>تحصيل دفعة وقف</h2><p>تسجيل تحصيل جزئي أو كامل مع إنشاء سند قبض محاسبي.</p></div></div>
+    <div class="form-grid compact">
+        <label>الدفعة<select @bind="paymentInvoiceId"><option value="0">اختر الدفعة</option>@foreach (var invoice in invoices.Where(x => x.Status != nameof(EndowmentInvoiceStatus.Paid) && x.Status != nameof(EndowmentInvoiceStatus.Cancelled))){<option value="@invoice.Id">@invoice.InvoiceNumber - @invoice.EndowmentName - متبقي @(invoice.Amount - invoice.PaidAmount)</option>}</select></label>
+        <label>مبلغ التحصيل<input type="number" step="0.01" @bind="paymentAmount" /></label>
+        <label>تاريخ التحصيل<input type="date" @bind="paymentDate" /></label>
+        <label>حالة السند<select @bind="receiptStatus"><option value="@AccountingRecordStatus.Posted">مرحّل</option><option value="@AccountingRecordStatus.Approved">معتمد</option></select></label>
+        <label>طريقة السداد<input @bind="paymentMethod" /></label>
+        <label>رقم المرجع<input @bind="paymentReference" /></label>
+        <label>ملاحظات<input @bind="paymentNotes" /></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="PayInvoiceAsync">تحصيل وإنشاء سند قبض</button></div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-database"></i> قاعدة بيانات الأوقاف</span></div>
     <table>
-        <thead><tr><th>الوقف</th><th>النوع</th><th>القيمة</th><th>العائد</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الوقف</th><th>النوع</th><th>القيمة</th><th>العائد</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var asset in endowments)
             {
-                <tr><td>@asset.Name<br />@asset.EndowmentNumber</td><td>@asset.AssetType</td><td>@asset.EstimatedValue</td><td>@asset.AnnualReturnEstimate</td><td>@asset.Status</td></tr>
+                <tr><td>@asset.Name<br />@asset.EndowmentNumber</td><td>@asset.AssetType</td><td>@asset.EstimatedValue</td><td>@asset.AnnualReturnEstimate</td><td>@asset.Status</td><td><button class="secondary" @onclick="@(() => EditEndowment(asset))">تعديل</button><button class="secondary" @onclick="@(() => ChangeEndowmentStatusAsync(asset, EndowmentAssetStatus.Suspended))">تعليق</button><button class="secondary" @onclick="@(() => ChangeEndowmentStatusAsync(asset, EndowmentAssetStatus.Closed))">إغلاق</button></td></tr>
             }
         </tbody>
     </table>
@@ -68,15 +82,29 @@
 <section class="table-section" style="margin-top:14px">
     <div class="table-title"><span><i class="fa-solid fa-table"></i> العقود والدفعات</span></div>
     <table>
-        <thead><tr><th>النوع</th><th>الوقف</th><th>الرقم</th><th>المبلغ/المدفوع</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>النوع</th><th>الوقف</th><th>الرقم</th><th>المبلغ/المدفوع</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var contract in contracts)
             {
-                <tr><td>عقد</td><td>@contract.EndowmentName</td><td>@contract.ContractNumber<br />@contract.LesseeName</td><td>@contract.AnnualAmount</td><td>@contract.Status</td></tr>
+                <tr><td>عقد</td><td>@contract.EndowmentName</td><td>@contract.ContractNumber<br />@contract.LesseeName</td><td>@contract.AnnualAmount</td><td>@contract.Status</td><td><button class="secondary" @onclick="@(() => EditContract(contract))">تعديل</button><button class="secondary" @onclick="@(() => ChangeContractStatusAsync(contract, EndowmentContractStatus.Closed))">إغلاق</button><button class="secondary" @onclick="@(() => ChangeContractStatusAsync(contract, EndowmentContractStatus.Cancelled))">إلغاء</button></td></tr>
             }
             @foreach (var invoice in invoices)
             {
-                <tr><td>دفعة</td><td>@invoice.EndowmentName</td><td>@invoice.InvoiceNumber<br />@invoice.DueDate.ToString("yyyy-MM-dd")</td><td>@invoice.Amount / @invoice.PaidAmount</td><td>@invoice.Status</td></tr>
+                <tr>
+                    <td>دفعة</td>
+                    <td>@invoice.EndowmentName</td>
+                    <td>@invoice.InvoiceNumber<br />@invoice.DueDate.ToString("yyyy-MM-dd")</td>
+                    <td>@invoice.Amount / @invoice.PaidAmount</td>
+                    <td>@invoice.Status</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => EditInvoice(invoice))">تعديل</button>
+                        @if (invoice.Status != nameof(EndowmentInvoiceStatus.Paid) && invoice.Status != nameof(EndowmentInvoiceStatus.Cancelled))
+                        {
+                            <button class="secondary" @onclick="@(() => SelectInvoiceForPayment(invoice))">تحصيل</button>
+                        }
+                        <button class="secondary" @onclick="@(() => ChangeInvoiceStatusAsync(invoice, EndowmentInvoiceStatus.Cancelled))">إلغاء</button>
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
@@ -86,6 +114,7 @@
     private List<EndowmentAssetResponse> endowments = [];
     private List<EndowmentContractResponse> contracts = [];
     private List<EndowmentInvoiceResponse> invoices = [];
+    private int? editingEndowmentId;
     private string endowmentName = string.Empty;
     private string? endowmentNumber;
     private string assetType = "RealEstate";
@@ -93,6 +122,8 @@
     private decimal annualReturnEstimate;
     private string? managerName;
     private EndowmentAssetStatus assetStatus = EndowmentAssetStatus.Active;
+    private string? endowmentNotes;
+    private int? editingContractId;
     private int contractEndowmentId;
     private string contractNumber = string.Empty;
     private string lesseeName = string.Empty;
@@ -100,6 +131,8 @@
     private DateTime contractEndDate = DateTime.UtcNow.AddHours(3).Date.AddYears(1);
     private decimal annualAmount;
     private EndowmentContractStatus contractStatus = EndowmentContractStatus.Active;
+    private string? contractNotes;
+    private int? editingInvoiceId;
     private int invoiceEndowmentId;
     private int? invoiceContractId;
     private string invoiceNumber = string.Empty;
@@ -107,6 +140,14 @@
     private decimal invoiceAmount;
     private decimal paidAmount;
     private EndowmentInvoiceStatus invoiceStatus = EndowmentInvoiceStatus.Due;
+    private string? invoiceNotes;
+    private int paymentInvoiceId;
+    private decimal paymentAmount;
+    private DateTime paymentDate = DateTime.UtcNow.AddHours(3).Date;
+    private AccountingRecordStatus receiptStatus = AccountingRecordStatus.Posted;
+    private string? paymentMethod;
+    private string? paymentReference;
+    private string? paymentNotes;
     private bool success;
     private string? message;
 
@@ -123,25 +164,148 @@
 
     private async Task SaveEndowmentAsync()
     {
-        var result = await FinancialDevelopment.SaveEndowmentAsync(null, new SaveEndowmentAssetRequest(endowmentName, endowmentNumber, assetType, estimatedValue, annualReturnEstimate, assetStatus, managerName, null));
+        var result = await FinancialDevelopment.SaveEndowmentAsync(editingEndowmentId, new SaveEndowmentAssetRequest(endowmentName, endowmentNumber, assetType, estimatedValue, annualReturnEstimate, assetStatus, managerName, endowmentNotes));
         success = result.Success;
         message = result.Message;
+        if (result.Success) ResetEndowment();
         await LoadAsync();
     }
 
     private async Task SaveContractAsync()
     {
-        var result = await FinancialDevelopment.SaveEndowmentContractAsync(null, new SaveEndowmentContractRequest(contractEndowmentId, contractNumber, lesseeName, contractStartDate, contractEndDate, annualAmount, contractStatus, null));
+        var result = await FinancialDevelopment.SaveEndowmentContractAsync(editingContractId, new SaveEndowmentContractRequest(contractEndowmentId, contractNumber, lesseeName, contractStartDate, contractEndDate, annualAmount, contractStatus, contractNotes));
         success = result.Success;
         message = result.Message;
+        if (result.Success) ResetContract();
         await LoadAsync();
     }
 
     private async Task SaveInvoiceAsync()
     {
-        var result = await FinancialDevelopment.SaveEndowmentInvoiceAsync(null, new SaveEndowmentInvoiceRequest(invoiceEndowmentId, invoiceContractId, invoiceNumber, dueDate, invoiceAmount, paidAmount, invoiceStatus, null));
+        var result = await FinancialDevelopment.SaveEndowmentInvoiceAsync(editingInvoiceId, new SaveEndowmentInvoiceRequest(invoiceEndowmentId, invoiceContractId, invoiceNumber, dueDate, invoiceAmount, paidAmount, invoiceStatus, invoiceNotes));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success) ResetInvoice();
+        await LoadAsync();
+    }
+
+    private void EditEndowment(EndowmentAssetResponse asset)
+    {
+        editingEndowmentId = asset.Id;
+        endowmentName = asset.Name;
+        endowmentNumber = asset.EndowmentNumber;
+        assetType = asset.AssetType;
+        estimatedValue = asset.EstimatedValue;
+        annualReturnEstimate = asset.AnnualReturnEstimate;
+        assetStatus = Enum.TryParse<EndowmentAssetStatus>(asset.Status, out var parsedStatus) ? parsedStatus : EndowmentAssetStatus.Active;
+        managerName = asset.ManagerName;
+        endowmentNotes = asset.Notes;
+        message = null;
+    }
+
+    private async Task ChangeEndowmentStatusAsync(EndowmentAssetResponse asset, EndowmentAssetStatus status)
+    {
+        var result = await FinancialDevelopment.SaveEndowmentAsync(asset.Id, new SaveEndowmentAssetRequest(asset.Name, asset.EndowmentNumber, asset.AssetType, asset.EstimatedValue, asset.AnnualReturnEstimate, status, asset.ManagerName, asset.Notes));
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private void EditContract(EndowmentContractResponse contract)
+    {
+        editingContractId = contract.Id;
+        contractEndowmentId = contract.EndowmentAssetId;
+        contractNumber = contract.ContractNumber;
+        lesseeName = contract.LesseeName;
+        contractStartDate = contract.StartDate;
+        contractEndDate = contract.EndDate;
+        annualAmount = contract.AnnualAmount;
+        contractStatus = Enum.TryParse<EndowmentContractStatus>(contract.Status, out var parsedStatus) ? parsedStatus : EndowmentContractStatus.Active;
+        contractNotes = contract.Notes;
+        message = null;
+    }
+
+    private async Task ChangeContractStatusAsync(EndowmentContractResponse contract, EndowmentContractStatus status)
+    {
+        var result = await FinancialDevelopment.SaveEndowmentContractAsync(contract.Id, new SaveEndowmentContractRequest(contract.EndowmentAssetId, contract.ContractNumber, contract.LesseeName, contract.StartDate, contract.EndDate, contract.AnnualAmount, status, contract.Notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void EditInvoice(EndowmentInvoiceResponse invoice)
+    {
+        editingInvoiceId = invoice.Id;
+        invoiceEndowmentId = invoice.EndowmentAssetId;
+        invoiceContractId = invoice.EndowmentContractId;
+        invoiceNumber = invoice.InvoiceNumber;
+        dueDate = invoice.DueDate;
+        invoiceAmount = invoice.Amount;
+        paidAmount = invoice.PaidAmount;
+        invoiceStatus = Enum.TryParse<EndowmentInvoiceStatus>(invoice.Status, out var parsedStatus) ? parsedStatus : EndowmentInvoiceStatus.Due;
+        invoiceNotes = invoice.Notes;
+        message = null;
+    }
+
+    private async Task ChangeInvoiceStatusAsync(EndowmentInvoiceResponse invoice, EndowmentInvoiceStatus status)
+    {
+        var result = await FinancialDevelopment.SaveEndowmentInvoiceAsync(invoice.Id, new SaveEndowmentInvoiceRequest(invoice.EndowmentAssetId, invoice.EndowmentContractId, invoice.InvoiceNumber, invoice.DueDate, invoice.Amount, invoice.PaidAmount, status, invoice.Notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void SelectInvoiceForPayment(EndowmentInvoiceResponse invoice)
+    {
+        paymentInvoiceId = invoice.Id;
+        paymentAmount = invoice.Amount - invoice.PaidAmount;
+        paymentReference = invoice.InvoiceNumber;
+    }
+
+    private async Task PayInvoiceAsync()
+    {
+        var result = await FinancialDevelopment.PayEndowmentInvoiceAsync(paymentInvoiceId, new PayEndowmentInvoiceRequest(paymentAmount, paymentDate, receiptStatus, paymentMethod, paymentReference, paymentNotes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void ResetEndowment()
+    {
+        editingEndowmentId = null;
+        endowmentName = string.Empty;
+        endowmentNumber = null;
+        assetType = "RealEstate";
+        estimatedValue = 0;
+        annualReturnEstimate = 0;
+        managerName = null;
+        assetStatus = EndowmentAssetStatus.Active;
+        endowmentNotes = null;
+    }
+
+    private void ResetContract()
+    {
+        editingContractId = null;
+        contractEndowmentId = 0;
+        contractNumber = string.Empty;
+        lesseeName = string.Empty;
+        contractStartDate = DateTime.UtcNow.AddHours(3).Date;
+        contractEndDate = DateTime.UtcNow.AddHours(3).Date.AddYears(1);
+        annualAmount = 0;
+        contractStatus = EndowmentContractStatus.Active;
+        contractNotes = null;
+    }
+
+    private void ResetInvoice()
+    {
+        editingInvoiceId = null;
+        invoiceEndowmentId = 0;
+        invoiceContractId = null;
+        invoiceNumber = string.Empty;
+        dueDate = DateTime.UtcNow.AddHours(3).Date.AddMonths(1);
+        invoiceAmount = 0;
+        paidAmount = 0;
+        invoiceStatus = EndowmentInvoiceStatus.Due;
+        invoiceNotes = null;
     }
 }

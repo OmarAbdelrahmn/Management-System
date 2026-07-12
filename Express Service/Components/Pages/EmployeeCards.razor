@@ -19,6 +19,7 @@
         <label>تاريخ الإصدار<input type="date" @bind="issuedAt" /></label>
         <label>تاريخ الانتهاء<input type="date" @bind="expiresAt" /></label>
         <label class="span-2">ملاحظات<input @bind="notes" /></label>
+        <label class="span-2">ملاحظات القرار أو الإلغاء<input @bind="decisionNotes" /></label>
     </div>
     <div class="actions-row"><button class="primary" @onclick="SaveAsync">إصدار البطاقة</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
 </section>
@@ -26,11 +27,25 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-address-card"></i> البطاقات الصادرة</span></div>
     <table>
-        <thead><tr><th>الموظف</th><th>النوع</th><th>الرقم</th><th>الإصدار</th><th>الانتهاء</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الموظف</th><th>النوع</th><th>الرقم</th><th>الإصدار</th><th>الانتهاء</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var item in cards)
             {
-                <tr><td>@item.EmployeeName</td><td>@item.CardType</td><td>@item.CardNumber</td><td>@item.IssuedAt.ToString("yyyy-MM-dd")</td><td>@item.ExpiresAt?.ToString("yyyy-MM-dd")</td><td><span class="status">@item.Status</span></td></tr>
+                <tr>
+                    <td>@item.EmployeeName</td>
+                    <td>@item.CardType</td>
+                    <td>@item.CardNumber</td>
+                    <td>@item.IssuedAt.ToString("yyyy-MM-dd")</td>
+                    <td>@item.ExpiresAt?.ToString("yyyy-MM-dd")</td>
+                    <td><span class="status">@item.Status</span><br />@item.Notes</td>
+                    <td>
+                        @if (CanDecide(item))
+                        {
+                            <button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Completed))">إرجاع/إغلاق</button>
+                            <button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Cancelled))">إلغاء</button>
+                        }
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
@@ -45,6 +60,7 @@
     private DateTime? issuedAt = DateTime.UtcNow.AddHours(3).Date;
     private DateTime? expiresAt = DateTime.UtcNow.AddHours(3).Date.AddYears(1);
     private string? notes;
+    private string? decisionNotes;
     private bool success;
     private string? message;
 
@@ -68,4 +84,19 @@
             await LoadAsync();
         }
     }
+
+    private async Task DecideAsync(int id, HumanResourceRequestStatus status)
+    {
+        var result = await HR.DecideCardIssueAsync(id, status, decisionNotes);
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            decisionNotes = null;
+        await LoadAsync();
+    }
+
+    private static bool CanDecide(EmployeeCardIssueResponse item) =>
+        item.Status != HumanResourceRequestStatus.Completed.ToString() &&
+        item.Status != HumanResourceRequestStatus.Cancelled.ToString() &&
+        item.Status != HumanResourceRequestStatus.Rejected.ToString();
 }

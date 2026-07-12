@@ -234,6 +234,36 @@ public class BeneficiaryService(ApplicationDbcontext dbcontext) : IBeneficiarySe
         return Result.Success(MapDependent(dependent));
     }
 
+    public async Task<Result<BeneficiaryDependentResponse>> UpdateDependentAsync(int id, UpdateBeneficiaryDependentRequest request, CancellationToken cancellationToken = default)
+    {
+        var dependent = await dbcontext.BeneficiaryDependents
+            .Include(x => x.BeneficiaryProfile)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (dependent is null)
+            return Result.Failure<BeneficiaryDependentResponse>(BeneficiaryErrors.DependentNotFound);
+
+        var profile = await dbcontext.BeneficiaryProfiles.FirstOrDefaultAsync(x => x.Id == request.BeneficiaryProfileId, cancellationToken);
+        if (profile is null)
+            return Result.Failure<BeneficiaryDependentResponse>(BeneficiaryErrors.ProfileNotFound);
+
+        if (string.IsNullOrWhiteSpace(request.FullName) || string.IsNullOrWhiteSpace(request.Relationship))
+            return Result.Failure<BeneficiaryDependentResponse>(BeneficiaryErrors.InvalidRequest);
+
+        dependent.BeneficiaryProfileId = request.BeneficiaryProfileId;
+        dependent.BeneficiaryProfile = profile;
+        dependent.FullName = request.FullName.Trim();
+        dependent.NationalId = request.NationalId?.Trim();
+        dependent.Relationship = request.Relationship.Trim();
+        dependent.BirthDate = request.BirthDate?.Date;
+        dependent.Category = request.Category?.Trim();
+        dependent.Grade = request.Grade?.Trim();
+        dependent.IsActive = request.IsActive;
+        dependent.Notes = request.Notes?.Trim();
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapDependent(dependent));
+    }
+
     public async Task<Result<IEnumerable<BeneficiaryGuardianResponse>>> GetGuardiansAsync(int? beneficiaryProfileId = null, CancellationToken cancellationToken = default)
     {
         var query = dbcontext.BeneficiaryGuardians
@@ -289,6 +319,57 @@ public class BeneficiaryService(ApplicationDbcontext dbcontext) : IBeneficiarySe
         dbcontext.BeneficiaryGuardians.Add(created);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapGuardian(created));
+    }
+
+    public async Task<Result<BeneficiaryGuardianResponse>> UpdateGuardianAsync(int id, UpdateBeneficiaryGuardianRequest request, CancellationToken cancellationToken = default)
+    {
+        var guardian = await dbcontext.BeneficiaryGuardians
+            .Include(x => x.BeneficiaryProfile)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (guardian is null)
+            return Result.Failure<BeneficiaryGuardianResponse>(BeneficiaryErrors.GuardianNotFound);
+
+        var profile = await dbcontext.BeneficiaryProfiles.FirstOrDefaultAsync(x => x.Id == request.BeneficiaryProfileId, cancellationToken);
+        if (profile is null)
+            return Result.Failure<BeneficiaryGuardianResponse>(BeneficiaryErrors.ProfileNotFound);
+
+        if (string.IsNullOrWhiteSpace(request.FullName) || string.IsNullOrWhiteSpace(request.Relationship))
+            return Result.Failure<BeneficiaryGuardianResponse>(BeneficiaryErrors.InvalidRequest);
+
+        if (request.IsPrimary)
+        {
+            var existingPrimaryGuardians = await dbcontext.BeneficiaryGuardians
+                .Where(x => x.BeneficiaryProfileId == request.BeneficiaryProfileId && x.Id != id && x.IsPrimary)
+                .ToListAsync(cancellationToken);
+
+            foreach (var existingGuardian in existingPrimaryGuardians)
+                existingGuardian.IsPrimary = false;
+        }
+
+        guardian.BeneficiaryProfileId = request.BeneficiaryProfileId;
+        guardian.BeneficiaryProfile = profile;
+        guardian.FullName = request.FullName.Trim();
+        guardian.NationalId = request.NationalId?.Trim();
+        guardian.Mobile = request.Mobile?.Trim();
+        guardian.Relationship = request.Relationship.Trim();
+        guardian.IsPrimary = request.IsPrimary;
+        guardian.Notes = request.Notes?.Trim();
+
+        if (request.IsDeleted)
+        {
+            guardian.IsDeleted = true;
+            guardian.DeletedAt ??= DateTime.UtcNow.AddHours(3);
+            guardian.DeleteReason = request.DeleteReason?.Trim();
+        }
+        else
+        {
+            guardian.IsDeleted = false;
+            guardian.DeletedAt = null;
+            guardian.DeleteReason = null;
+        }
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapGuardian(guardian));
     }
 
     public async Task<Result<IEnumerable<BeneficiaryUpdateRequestResponse>>> GetUpdateRequestsAsync(int? beneficiaryProfileId = null, BeneficiaryUpdateRequestStatus? status = null, CancellationToken cancellationToken = default)
@@ -518,6 +599,62 @@ public class BeneficiaryService(ApplicationDbcontext dbcontext) : IBeneficiarySe
 
         artifact.Status = request.Status;
         artifact.Notes = request.Notes?.Trim() ?? artifact.Notes;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapAccountArtifact(artifact));
+    }
+
+    public async Task<Result<BeneficiaryAccountArtifactResponse>> UpdateAccountArtifactAsync(
+        int id,
+        UpdateBeneficiaryAccountArtifactRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var artifact = await dbcontext.BeneficiaryAccountArtifacts
+            .Include(x => x.BeneficiaryProfile)
+            .Include(x => x.BeneficiaryDependent)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (artifact is null)
+            return Result.Failure<BeneficiaryAccountArtifactResponse>(BeneficiaryErrors.AccountArtifactNotFound);
+
+        BeneficiaryProfile? profile = null;
+        BeneficiaryDependent? dependent = null;
+
+        if (request.BeneficiaryProfileId.HasValue)
+        {
+            profile = await dbcontext.BeneficiaryProfiles.FirstOrDefaultAsync(x => x.Id == request.BeneficiaryProfileId.Value, cancellationToken);
+            if (profile is null)
+                return Result.Failure<BeneficiaryAccountArtifactResponse>(BeneficiaryErrors.ProfileNotFound);
+        }
+
+        if (request.BeneficiaryDependentId.HasValue)
+        {
+            dependent = await dbcontext.BeneficiaryDependents
+                .Include(x => x.BeneficiaryProfile)
+                .FirstOrDefaultAsync(x => x.Id == request.BeneficiaryDependentId.Value, cancellationToken);
+            if (dependent is null)
+                return Result.Failure<BeneficiaryAccountArtifactResponse>(BeneficiaryErrors.DependentNotFound);
+
+            if (profile is not null && dependent.BeneficiaryProfileId != profile.Id)
+                return Result.Failure<BeneficiaryAccountArtifactResponse>(BeneficiaryErrors.InvalidRequest);
+        }
+
+        var holderName = request.HolderName?.Trim();
+        if (string.IsNullOrWhiteSpace(holderName))
+            holderName = dependent?.FullName ?? profile?.FullName;
+
+        if (string.IsNullOrWhiteSpace(holderName))
+            return Result.Failure<BeneficiaryAccountArtifactResponse>(BeneficiaryErrors.InvalidRequest);
+
+        artifact.Type = request.Type;
+        artifact.Status = request.Status;
+        artifact.BeneficiaryProfileId = profile?.Id ?? dependent?.BeneficiaryProfileId;
+        artifact.BeneficiaryDependentId = dependent?.Id;
+        artifact.HolderName = holderName;
+        artifact.Source = request.Source?.Trim();
+        artifact.Payload = request.Payload?.Trim();
+        artifact.Notes = request.Notes?.Trim();
+        artifact.BeneficiaryProfile = profile ?? dependent?.BeneficiaryProfile;
+        artifact.BeneficiaryDependent = dependent;
+
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapAccountArtifact(artifact));
     }

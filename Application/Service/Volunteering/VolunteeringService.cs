@@ -121,6 +121,104 @@ public class VolunteeringService(ApplicationDbcontext dbcontext) : IVolunteering
         return Result.Success();
     }
 
+    public async Task<Result<VolunteerRequestConversionResponse>> ConvertRequestToVolunteerAsync(int id, ConvertVolunteerRequestRequest request, CancellationToken cancellationToken = default)
+    {
+        var entity = await dbcontext.VolunteerRequests
+            .Include(x => x.VolunteerUser)
+            .Include(x => x.VolunteerOpportunity)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (entity is null)
+            return Result.Failure<VolunteerRequestConversionResponse>(VolunteeringErrors.VolunteerRequestNotFound);
+        if (entity.Status == VolunteerRequestStatus.Rejected)
+            return Result.Failure<VolunteerRequestConversionResponse>(VolunteeringErrors.InvalidRequest);
+
+        VolunteerOpportunity? opportunity = null;
+        var opportunityId = request.VolunteerOpportunityId ?? entity.VolunteerOpportunityId;
+        if (opportunityId.HasValue)
+        {
+            opportunity = await dbcontext.VolunteerOpportunities.FirstOrDefaultAsync(x => x.Id == opportunityId.Value, cancellationToken);
+            if (opportunity is null)
+                return Result.Failure<VolunteerRequestConversionResponse>(VolunteeringErrors.OpportunityNotFound);
+            if (opportunity.Status is not (VolunteerOpportunityStatus.Open or VolunteerOpportunityStatus.InProgress))
+                return Result.Failure<VolunteerRequestConversionResponse>(VolunteeringErrors.OpportunityNotOpen);
+            if (await IsOpportunityFullAsync(opportunity.Id, opportunity.Seats, entity.Id, cancellationToken))
+                return Result.Failure<VolunteerRequestConversionResponse>(VolunteeringErrors.OpportunityCapacityReached);
+        }
+
+        var volunteer = entity.VolunteerUser;
+        if (volunteer is null)
+            volunteer = await dbcontext.VolunteerUsers.FirstOrDefaultAsync(x => x.Mobile == entity.Mobile, cancellationToken);
+
+        if (volunteer is null)
+        {
+            var volunteerNumber = string.IsNullOrWhiteSpace(request.VolunteerNumber)
+                ? await GenerateVolunteerNumberAsync(cancellationToken)
+                : request.VolunteerNumber.Trim();
+
+            if (await dbcontext.VolunteerUsers.AnyAsync(x => x.VolunteerNumber == volunteerNumber, cancellationToken))
+                return Result.Failure<VolunteerRequestConversionResponse>(VolunteeringErrors.DuplicateVolunteerNumber);
+
+            volunteer = new VolunteerUser
+            {
+                VolunteerNumber = volunteerNumber,
+                FullName = entity.ApplicantName,
+                Mobile = entity.Mobile,
+                Skills = TrimOrNull(request.Skills),
+                Status = VolunteerUserStatus.Active,
+                JoinedAt = (request.JoinedAt ?? DateTime.UtcNow.AddHours(3)).Date,
+                Notes = TrimOrNull(request.Notes)
+            };
+            dbcontext.VolunteerUsers.Add(volunteer);
+        }
+        else
+        {
+            if (volunteer.Status == VolunteerUserStatus.Suspended)
+                return Result.Failure<VolunteerRequestConversionResponse>(VolunteeringErrors.InvalidRequest);
+
+            volunteer.Status = VolunteerUserStatus.Active;
+            volunteer.Skills = TrimOrNull(request.Skills) ?? volunteer.Skills;
+            volunteer.Notes = TrimOrNull(request.Notes) ?? volunteer.Notes;
+        }
+
+        entity.VolunteerUser = volunteer;
+        if (volunteer.Id > 0)
+            entity.VolunteerUserId = volunteer.Id;
+
+        if (opportunity is not null)
+        {
+            entity.VolunteerOpportunity = opportunity;
+            entity.VolunteerOpportunityId = opportunity.Id;
+            entity.OpportunityTitle = TrimOrNull(entity.OpportunityTitle) ?? opportunity.Title;
+        }
+
+        entity.Status = VolunteerRequestStatus.Approved;
+        entity.DecisionNote = TrimOrNull(request.DecisionNote) ?? entity.DecisionNote ?? "Converted to volunteer account.";
+        entity.Notes = TrimOrNull(request.Notes) ?? entity.Notes;
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+
+        var savedRequest = await dbcontext.VolunteerRequests
+            .AsNoTracking()
+            .Include(x => x.VolunteerUser)
+            .Include(x => x.VolunteerOpportunity)
+            .FirstAsync(x => x.Id == entity.Id, cancellationToken);
+        var savedVolunteer = await dbcontext.VolunteerUsers.AsNoTracking().FirstAsync(x => x.Id == savedRequest.VolunteerUserId!.Value, cancellationToken);
+        VolunteerOpportunityResponse? savedOpportunity = null;
+        if (savedRequest.VolunteerOpportunityId.HasValue)
+        {
+            var savedOpportunityEntity = await dbcontext.VolunteerOpportunities
+                .AsNoTracking()
+                .Include(x => x.Requests)
+                .Include(x => x.Tasks)
+                .Include(x => x.AttendanceRecords)
+                .FirstAsync(x => x.Id == savedRequest.VolunteerOpportunityId.Value, cancellationToken);
+            savedOpportunity = MapOpportunity(savedOpportunityEntity);
+        }
+
+        return Result.Success(new VolunteerRequestConversionResponse(MapRequest(savedRequest), MapUser(savedVolunteer), savedOpportunity));
+    }
+
     public async Task<Result<IEnumerable<VolunteerOpportunityResponse>>> GetOpportunitiesAsync(VolunteerOpportunityStatus? status = null, CancellationToken cancellationToken = default)
     {
         var query = dbcontext.VolunteerOpportunities
@@ -170,6 +268,25 @@ public class VolunteeringService(ApplicationDbcontext dbcontext) : IVolunteering
         var entity = await dbcontext.VolunteerOpportunities.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (entity is null)
             return Result.Failure(VolunteeringErrors.OpportunityNotFound);
+
+        if (request.Status == VolunteerOpportunityStatus.Completed)
+        {
+            var hasOpenTasks = await dbcontext.VolunteerOpportunityTasks.AnyAsync(x =>
+                x.VolunteerOpportunityId == id &&
+                x.Status != VolunteerTaskStatus.Completed &&
+                x.Status != VolunteerTaskStatus.Cancelled,
+                cancellationToken);
+            if (hasOpenTasks)
+                return Result.Failure(VolunteeringErrors.OpportunityHasOpenTasks);
+
+            var hasPresentAttendance = await dbcontext.VolunteerAttendanceRecords.AnyAsync(x =>
+                x.VolunteerOpportunityId == id &&
+                x.Status == VolunteerAttendanceStatus.Present &&
+                x.Hours > 0,
+                cancellationToken);
+            if (!hasPresentAttendance)
+                return Result.Failure(VolunteeringErrors.OpportunityAttendanceRequired);
+        }
 
         entity.ProcedureNotes = TrimOrNull(request.ProcedureNotes) ?? entity.ProcedureNotes;
         entity.ReportSummary = TrimOrNull(request.ReportSummary) ?? entity.ReportSummary;
@@ -226,12 +343,39 @@ public class VolunteeringService(ApplicationDbcontext dbcontext) : IVolunteering
 
     public async Task<Result<VolunteerAttendanceResponse>> SaveAttendanceAsync(int? id, SaveVolunteerAttendanceRequest request, CancellationToken cancellationToken = default)
     {
-        if (request.VolunteerOpportunityId <= 0 || request.VolunteerUserId <= 0 || request.Hours < 0)
+        if (request.VolunteerOpportunityId <= 0 || request.VolunteerUserId <= 0 || request.Hours < 0 || request.Status == VolunteerAttendanceStatus.Present && request.Hours <= 0)
             return Result.Failure<VolunteerAttendanceResponse>(VolunteeringErrors.InvalidRequest);
-        if (!await dbcontext.VolunteerOpportunities.AnyAsync(x => x.Id == request.VolunteerOpportunityId, cancellationToken))
+
+        var opportunity = await dbcontext.VolunteerOpportunities.FirstOrDefaultAsync(x => x.Id == request.VolunteerOpportunityId, cancellationToken);
+        if (opportunity is null)
             return Result.Failure<VolunteerAttendanceResponse>(VolunteeringErrors.OpportunityNotFound);
-        if (!await dbcontext.VolunteerUsers.AnyAsync(x => x.Id == request.VolunteerUserId, cancellationToken))
+        if (opportunity.Status is not (VolunteerOpportunityStatus.Open or VolunteerOpportunityStatus.InProgress))
+            return Result.Failure<VolunteerAttendanceResponse>(VolunteeringErrors.OpportunityNotOpen);
+
+        var volunteer = await dbcontext.VolunteerUsers.FirstOrDefaultAsync(x => x.Id == request.VolunteerUserId, cancellationToken);
+        if (volunteer is null)
             return Result.Failure<VolunteerAttendanceResponse>(VolunteeringErrors.VolunteerUserNotFound);
+        if (volunteer.Status != VolunteerUserStatus.Active)
+            return Result.Failure<VolunteerAttendanceResponse>(VolunteeringErrors.VolunteerUserNotActive);
+
+        var isApprovedForOpportunity = await dbcontext.VolunteerRequests.AnyAsync(x =>
+            x.VolunteerOpportunityId == request.VolunteerOpportunityId &&
+            x.VolunteerUserId == request.VolunteerUserId &&
+            (x.Status == VolunteerRequestStatus.Approved || x.Status == VolunteerRequestStatus.Completed),
+            cancellationToken);
+        if (!isApprovedForOpportunity)
+            return Result.Failure<VolunteerAttendanceResponse>(VolunteeringErrors.VolunteerNotApprovedForOpportunity);
+
+        var attendanceDate = request.AttendanceDate.Date;
+        var nextDate = attendanceDate.AddDays(1);
+        if (await dbcontext.VolunteerAttendanceRecords.AnyAsync(x =>
+                x.VolunteerOpportunityId == request.VolunteerOpportunityId &&
+                x.VolunteerUserId == request.VolunteerUserId &&
+                x.AttendanceDate >= attendanceDate &&
+                x.AttendanceDate < nextDate &&
+                (!id.HasValue || x.Id != id.Value),
+                cancellationToken))
+            return Result.Failure<VolunteerAttendanceResponse>(VolunteeringErrors.DuplicateAttendance);
 
         var entity = id.HasValue
             ? await dbcontext.VolunteerAttendanceRecords.Include(x => x.VolunteerOpportunity).Include(x => x.VolunteerUser).FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken)
@@ -248,8 +392,8 @@ public class VolunteeringService(ApplicationDbcontext dbcontext) : IVolunteering
         entity.Notes = TrimOrNull(request.Notes);
 
         await dbcontext.SaveChangesAsync(cancellationToken);
-        entity.VolunteerOpportunity ??= await dbcontext.VolunteerOpportunities.FirstOrDefaultAsync(x => x.Id == entity.VolunteerOpportunityId, cancellationToken);
-        entity.VolunteerUser ??= await dbcontext.VolunteerUsers.FirstOrDefaultAsync(x => x.Id == entity.VolunteerUserId, cancellationToken);
+        entity.VolunteerOpportunity ??= opportunity;
+        entity.VolunteerUser ??= volunteer;
         return Result.Success(MapAttendance(entity));
     }
 
@@ -267,6 +411,37 @@ public class VolunteeringService(ApplicationDbcontext dbcontext) : IVolunteering
 
     private static VolunteerAttendanceResponse MapAttendance(VolunteerAttendanceRecord x) =>
         new(x.Id, x.VolunteerOpportunityId, x.VolunteerOpportunity?.Title ?? string.Empty, x.VolunteerUserId, x.VolunteerUser?.FullName ?? string.Empty, x.AttendanceDate, x.Hours, x.Status.ToString(), x.Notes);
+
+    private async Task<bool> IsOpportunityFullAsync(int opportunityId, int seats, int ignoredRequestId, CancellationToken cancellationToken)
+    {
+        if (seats <= 0)
+            return false;
+
+        var acceptedCount = await dbcontext.VolunteerRequests.CountAsync(x =>
+            x.Id != ignoredRequestId &&
+            x.VolunteerOpportunityId == opportunityId &&
+            x.VolunteerUserId.HasValue &&
+            (x.Status == VolunteerRequestStatus.Approved || x.Status == VolunteerRequestStatus.Completed),
+            cancellationToken);
+
+        return acceptedCount >= seats;
+    }
+
+    private async Task<string> GenerateVolunteerNumberAsync(CancellationToken cancellationToken)
+    {
+        var year = DateTime.UtcNow.AddHours(3).Year;
+        var token = $"VOL-{year}-";
+        var count = await dbcontext.VolunteerUsers.CountAsync(x => x.VolunteerNumber.StartsWith(token), cancellationToken);
+        string volunteerNumber;
+        do
+        {
+            count++;
+            volunteerNumber = $"{token}{count:0000}";
+        }
+        while (await dbcontext.VolunteerUsers.AnyAsync(x => x.VolunteerNumber == volunteerNumber, cancellationToken));
+
+        return volunteerNumber;
+    }
 
     private static string? TrimOrNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

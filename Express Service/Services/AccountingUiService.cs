@@ -72,6 +72,18 @@ public class AccountingUiService(IAccountingService service)
         return result.IsSuccess ? (true, "تم حفظ سند القبض.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> DecideReceiptAsync(int id, AccountingRecordStatus status, string? notes, CancellationToken cancellationToken = default)
+    {
+        var result = await service.DecideReceiptAsync(id, new DecideAccountingRecordRequest(status, notes), cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث حالة سند القبض.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> CreateLedgerFromReceiptAsync(int id, CreateVoucherLedgerEntryRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await service.CreateLedgerFromReceiptAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم إنشاء قيد اليومية من سند القبض.") : (false, result.Error.Description);
+    }
+
     public async Task<List<DeferredReceivableResponse>> GetDeferredReceivablesAsync(DeferredReceivableKind? kind = null, AccountingRecordStatus? status = null, CancellationToken cancellationToken = default)
     {
         var result = await service.GetDeferredReceivablesAsync(kind, status, cancellationToken);
@@ -90,6 +102,12 @@ public class AccountingUiService(IAccountingService service)
         return result.IsSuccess ? (true, "تم تسجيل استلام المطالبة.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> ReceiveDeferredReceivableWithReceiptAsync(int id, ReceiveDeferredReceivableWithReceiptRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await service.ReceiveDeferredReceivableWithReceiptAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, $"تم إنشاء سند قبض {result.Value.Receipt.ReceiptNumber} وتحديث المطالبة.") : (false, result.Error.Description);
+    }
+
     public async Task<List<ExpenseVoucherResponse>> GetExpensesAsync(ExpenseVoucherKind? kind = null, AccountingRecordStatus? status = null, CancellationToken cancellationToken = default)
     {
         var result = await service.GetExpensesAsync(kind, status, cancellationToken);
@@ -102,6 +120,18 @@ public class AccountingUiService(IAccountingService service)
         return result.IsSuccess ? (true, "تم حفظ سند الصرف.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> DecideExpenseAsync(int id, AccountingRecordStatus status, string? notes, CancellationToken cancellationToken = default)
+    {
+        var result = await service.DecideExpenseAsync(id, new DecideAccountingRecordRequest(status, notes), cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث حالة سند الصرف.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> CreateLedgerFromExpenseAsync(int id, CreateVoucherLedgerEntryRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await service.CreateLedgerFromExpenseAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم إنشاء قيد اليومية من سند الصرف.") : (false, result.Error.Description);
+    }
+
     public async Task<List<SalaryDisbursementResponse>> GetSalaryDisbursementsAsync(AccountingRecordStatus? status = null, CancellationToken cancellationToken = default)
     {
         var result = await service.GetSalaryDisbursementsAsync(status, cancellationToken);
@@ -112,6 +142,18 @@ public class AccountingUiService(IAccountingService service)
     {
         var result = await service.SaveSalaryDisbursementAsync(id, request, cancellationToken);
         return result.IsSuccess ? (true, "تم حفظ صرف الرواتب.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> DecideSalaryDisbursementAsync(int id, AccountingRecordStatus status, string? notes, CancellationToken cancellationToken = default)
+    {
+        var result = await service.DecideSalaryDisbursementAsync(id, new DecideAccountingRecordRequest(status, notes), cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث صرف الرواتب.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> CreateExpenseFromSalaryDisbursementAsync(int id, CreateSalaryExpenseVoucherRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await service.CreateExpenseFromSalaryDisbursementAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, $"تم إنشاء سند صرف الرواتب {result.Value.ExpenseNumber}.") : (false, result.Error.Description);
     }
 
     public async Task<List<FinancialReviewItemResponse>> GetReviewItemsAsync(FinancialReviewKind? kind = null, AccountingRecordStatus? status = null, CancellationToken cancellationToken = default)

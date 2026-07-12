@@ -26,7 +26,7 @@
         <label><input type="checkbox" @bind="isActive" /> تفعيل الدورة</label>
         <label class="span-2">خارطة الطريق<input @bind="roadmapNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveCycleAsync">حفظ الدورة</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveCycleAsync">@(editingCycleId.HasValue ? "تحديث الدورة" : "حفظ الدورة")</button><button class="secondary" @onclick="ResetCycle">تفريغ</button></div>
 </section>
 
 <section class="panel" style="margin-top:14px">
@@ -44,7 +44,7 @@
         <label>اسم المرفق<input @bind="attachmentName" /></label>
         <label>رابط المرفق<input @bind="attachmentUrl" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveCriterionAsync">حفظ المعيار</button><button class="secondary" @onclick="SaveAttachmentAsync">حفظ مرفق لأول معيار</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveCriterionAsync">@(editingCriterionId.HasValue ? "تحديث المعيار" : "حفظ المعيار")</button><button class="secondary" @onclick="SaveAttachmentAsync">@(editingAttachmentId.HasValue ? "تحديث مرفق" : "حفظ مرفق")</button><button class="secondary" @onclick="ResetCriterionAttachment">تفريغ</button></div>
 </section>
 
 <section class="panel" style="margin-top:14px">
@@ -57,17 +57,49 @@
         <label>الحالة<select @bind="taskStatus"><option value="@GovernanceTaskStatus.Pending">معلقة</option><option value="@GovernanceTaskStatus.InProgress">قيد العمل</option><option value="@GovernanceTaskStatus.Completed">مكتملة</option><option value="@GovernanceTaskStatus.Overdue">متأخرة</option></select></label>
         <label>نسبة الإنجاز<input type="number" @bind="progressPercent" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveTaskAsync">حفظ المهمة</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveTaskAsync">@(editingTaskId.HasValue ? "تحديث المهمة" : "حفظ المهمة")</button><button class="secondary" @onclick="ResetTask">تفريغ</button></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-toggle-on"></i> دورات الحوكمة</span></div>
+    <table>
+        <thead><tr><th>الدورة</th><th>السنة</th><th>الدرجة</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var cycle in cycles)
+            {
+                <tr>
+                    <td>@cycle.Title<br />@cycle.RoadmapNotes</td>
+                    <td>@cycle.Year</td>
+                    <td>@cycle.Score</td>
+                    <td>@cycle.Status / @(cycle.IsActive ? "مفعلة" : "غير مفعلة")</td>
+                    <td><button class="secondary" @onclick="@(() => EditCycle(cycle))">تعديل</button><button class="secondary" @onclick="@(() => ChangeCycleStatusAsync(cycle, ExcellenceRecordStatus.Completed))">إكمال</button><button class="secondary" @onclick="@(() => ChangeCycleStatusAsync(cycle, ExcellenceRecordStatus.Archived))">أرشفة</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-table"></i> نموذج تقييم الحوكمة</span></div>
     <table>
-        <thead><tr><th>المعيار</th><th>الدورة</th><th>الدرجة</th><th>الحالة</th><th>مرفقات</th></tr></thead>
+        <thead><tr><th>المعيار</th><th>الدورة</th><th>الدرجة</th><th>الحالة</th><th>مرفقات</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var criterion in criteria)
             {
-                <tr><td>@criterion.Code - @criterion.Title<br />@criterion.Answer</td><td>@criterion.CycleTitle</td><td>@criterion.ActualScore / @criterion.TargetScore</td><td>@criterion.Status</td><td>@criterion.AttachmentsCount</td></tr>
+                <tr><td>@criterion.Code - @criterion.Title<br />@criterion.Answer</td><td>@criterion.CycleTitle</td><td>@criterion.ActualScore / @criterion.TargetScore</td><td>@criterion.Status</td><td>@criterion.AttachmentsCount</td><td><button class="secondary" @onclick="@(() => EditCriterion(criterion))">تعديل</button><button class="secondary" @onclick="@(() => ChangeCriterionStatusAsync(criterion, GovernanceCriterionStatus.Met))">محقق</button><button class="secondary" @onclick="@(() => ChangeCriterionStatusAsync(criterion, GovernanceCriterionStatus.NotMet))">غير محقق</button></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-paperclip"></i> مرفقات التحقق</span></div>
+    <table>
+        <thead><tr><th>المعيار</th><th>الملف</th><th>الرابط</th><th>تاريخ الرفع</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var attachment in attachments)
+            {
+                <tr><td>@attachment.CriterionTitle</td><td>@attachment.FileName</td><td>@attachment.FileUrl</td><td>@attachment.UploadedAt.ToString("yyyy-MM-dd")</td><td><button class="secondary" @onclick="@(() => EditAttachment(attachment))">تعديل</button></td></tr>
             }
         </tbody>
     </table>
@@ -76,11 +108,11 @@
 <section class="table-section" style="margin-top:14px">
     <div class="table-title"><span><i class="fa-solid fa-bars-progress"></i> مهام الحوكمة</span></div>
     <table>
-        <thead><tr><th>المهمة</th><th>الدورة</th><th>المسؤول</th><th>الاستحقاق</th><th>التقدم</th></tr></thead>
+        <thead><tr><th>المهمة</th><th>الدورة</th><th>المسؤول</th><th>الاستحقاق</th><th>التقدم</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var task in tasks)
             {
-                <tr><td>@task.Title</td><td>@task.CycleTitle</td><td>@task.OwnerName</td><td>@task.DueDate?.ToString("yyyy-MM-dd")</td><td>@task.ProgressPercent% - @task.Status</td></tr>
+                <tr><td>@task.Title</td><td>@task.CycleTitle</td><td>@task.OwnerName</td><td>@task.DueDate?.ToString("yyyy-MM-dd")</td><td>@task.ProgressPercent% - @task.Status</td><td><button class="secondary" @onclick="@(() => EditTask(task))">تعديل</button><button class="secondary" @onclick="@(() => CompleteTaskAsync(task))">إكمال</button></td></tr>
             }
         </tbody>
     </table>
@@ -89,13 +121,16 @@
 @code {
     private List<GovernanceCycleResponse> cycles = [];
     private List<GovernanceCriterionResponse> criteria = [];
+    private List<GovernanceAttachmentResponse> attachments = [];
     private List<GovernanceTaskResponse> tasks = [];
     private GovernanceReportResponse? report;
+    private int? editingCycleId;
     private string cycleTitle = "حوكمة 2025";
     private int year = 2025;
     private bool isActive = true;
     private ExcellenceRecordStatus cycleStatus = ExcellenceRecordStatus.Active;
     private string? roadmapNotes;
+    private int? editingCriterionId;
     private int cycleId;
     private string criterionCode = string.Empty;
     private string criterionTitle = string.Empty;
@@ -105,8 +140,12 @@
     private GovernanceCriterionStatus criterionStatus = GovernanceCriterionStatus.InProgress;
     private string? answer;
     private decimal? financialIndicatorValue;
+    private int? editingAttachmentId;
+    private int? attachmentCriterionId;
     private string attachmentName = string.Empty;
     private string attachmentUrl = string.Empty;
+    private string? attachmentNotes;
+    private int? editingTaskId;
     private int? taskCycleId;
     private string taskTitle = string.Empty;
     private string? ownerName;
@@ -122,41 +161,173 @@
     {
         cycles = await Excellence.GetGovernanceCyclesAsync();
         criteria = await Excellence.GetGovernanceCriteriaAsync();
+        attachments = await Excellence.GetGovernanceAttachmentsAsync();
         tasks = await Excellence.GetGovernanceTasksAsync();
         report = await Excellence.GetGovernanceReportAsync();
     }
 
     private async Task SaveCycleAsync()
     {
-        var result = await Excellence.SaveGovernanceCycleAsync(null, new SaveGovernanceCycleRequest(cycleTitle, year, isActive, cycleStatus, roadmapNotes));
+        var result = await Excellence.SaveGovernanceCycleAsync(editingCycleId, new SaveGovernanceCycleRequest(cycleTitle, year, isActive, cycleStatus, roadmapNotes));
         success = result.Success;
         message = result.Message;
+        if (result.Success)
+            ResetCycle();
         await LoadAsync();
     }
 
     private async Task SaveCriterionAsync()
     {
-        var result = await Excellence.SaveGovernanceCriterionAsync(null, new SaveGovernanceCriterionRequest(cycleId, criterionCode, criterionTitle, weight, targetScore, actualScore, criterionStatus, answer, null, financialIndicatorValue));
+        var result = await Excellence.SaveGovernanceCriterionAsync(editingCriterionId, new SaveGovernanceCriterionRequest(cycleId, criterionCode, criterionTitle, weight, targetScore, actualScore, criterionStatus, answer, null, financialIndicatorValue));
         success = result.Success;
         message = result.Message;
+        if (result.Success)
+            ResetCriterion();
         await LoadAsync();
     }
 
     private async Task SaveAttachmentAsync()
     {
-        var criterion = criteria.FirstOrDefault();
+        var criterion = attachmentCriterionId.HasValue ? criteria.FirstOrDefault(x => x.Id == attachmentCriterionId.Value) : criteria.FirstOrDefault();
         if (criterion is null) { success = false; message = "لا يوجد معيار لإرفاق الملف."; return; }
-        var result = await Excellence.SaveGovernanceAttachmentAsync(null, new SaveGovernanceAttachmentRequest(criterion.Id, attachmentName, attachmentUrl, null, DateTime.UtcNow.AddHours(3)));
+        var result = await Excellence.SaveGovernanceAttachmentAsync(editingAttachmentId, new SaveGovernanceAttachmentRequest(criterion.Id, attachmentName, attachmentUrl, attachmentNotes, DateTime.UtcNow.AddHours(3)));
         success = result.Success;
         message = result.Message;
+        if (result.Success)
+            ResetAttachment();
         await LoadAsync();
     }
 
     private async Task SaveTaskAsync()
     {
-        var result = await Excellence.SaveGovernanceTaskAsync(null, new SaveGovernanceTaskRequest(taskCycleId, taskTitle, ownerName, dueDate, taskStatus, progressPercent, null));
+        var result = await Excellence.SaveGovernanceTaskAsync(editingTaskId, new SaveGovernanceTaskRequest(taskCycleId, taskTitle, ownerName, dueDate, taskStatus, progressPercent, null));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetTask();
+        await LoadAsync();
+    }
+
+    private void EditCycle(GovernanceCycleResponse cycle)
+    {
+        editingCycleId = cycle.Id;
+        cycleTitle = cycle.Title;
+        year = cycle.Year;
+        isActive = cycle.IsActive;
+        cycleStatus = Enum.TryParse<ExcellenceRecordStatus>(cycle.Status, out var parsedStatus) ? parsedStatus : ExcellenceRecordStatus.Active;
+        roadmapNotes = cycle.RoadmapNotes;
+        message = null;
+    }
+
+    private async Task ChangeCycleStatusAsync(GovernanceCycleResponse cycle, ExcellenceRecordStatus status)
+    {
+        var result = await Excellence.SaveGovernanceCycleAsync(cycle.Id, new SaveGovernanceCycleRequest(cycle.Title, cycle.Year, cycle.IsActive, status, cycle.RoadmapNotes));
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private void EditCriterion(GovernanceCriterionResponse criterion)
+    {
+        editingCriterionId = criterion.Id;
+        cycleId = criterion.GovernanceCycleId;
+        criterionCode = criterion.Code;
+        criterionTitle = criterion.Title;
+        weight = criterion.Weight;
+        targetScore = criterion.TargetScore;
+        actualScore = criterion.ActualScore;
+        criterionStatus = Enum.TryParse<GovernanceCriterionStatus>(criterion.Status, out var parsedStatus) ? parsedStatus : GovernanceCriterionStatus.InProgress;
+        answer = criterion.Answer;
+        financialIndicatorValue = criterion.FinancialIndicatorValue;
+        attachmentCriterionId = criterion.Id;
+        message = null;
+    }
+
+    private async Task ChangeCriterionStatusAsync(GovernanceCriterionResponse criterion, GovernanceCriterionStatus status)
+    {
+        var result = await Excellence.SaveGovernanceCriterionAsync(criterion.Id, new SaveGovernanceCriterionRequest(criterion.GovernanceCycleId, criterion.Code, criterion.Title, criterion.Weight, criterion.TargetScore, criterion.ActualScore, status, criterion.Answer, criterion.VerificationNotes, criterion.FinancialIndicatorValue));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void EditAttachment(GovernanceAttachmentResponse attachment)
+    {
+        editingAttachmentId = attachment.Id;
+        attachmentCriterionId = attachment.GovernanceCriterionId;
+        attachmentName = attachment.FileName;
+        attachmentUrl = attachment.FileUrl;
+        attachmentNotes = attachment.Notes;
+        message = null;
+    }
+
+    private void EditTask(GovernanceTaskResponse task)
+    {
+        editingTaskId = task.Id;
+        taskCycleId = task.GovernanceCycleId;
+        taskTitle = task.Title;
+        ownerName = task.OwnerName;
+        dueDate = task.DueDate;
+        taskStatus = Enum.TryParse<GovernanceTaskStatus>(task.Status, out var parsedStatus) ? parsedStatus : GovernanceTaskStatus.Pending;
+        progressPercent = task.ProgressPercent;
+        message = null;
+    }
+
+    private async Task CompleteTaskAsync(GovernanceTaskResponse task)
+    {
+        var result = await Excellence.SaveGovernanceTaskAsync(task.Id, new SaveGovernanceTaskRequest(task.GovernanceCycleId, task.Title, task.OwnerName, task.DueDate, GovernanceTaskStatus.Completed, 100, task.Notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void ResetCycle()
+    {
+        editingCycleId = null;
+        cycleTitle = $"حوكمة {DateTime.UtcNow.AddHours(3).Year}";
+        year = DateTime.UtcNow.AddHours(3).Year;
+        isActive = true;
+        cycleStatus = ExcellenceRecordStatus.Active;
+        roadmapNotes = null;
+    }
+
+    private void ResetCriterionAttachment()
+    {
+        ResetCriterion();
+        ResetAttachment();
+    }
+
+    private void ResetCriterion()
+    {
+        editingCriterionId = null;
+        cycleId = 0;
+        criterionCode = string.Empty;
+        criterionTitle = string.Empty;
+        weight = 1;
+        targetScore = 100;
+        actualScore = 0;
+        criterionStatus = GovernanceCriterionStatus.InProgress;
+        answer = null;
+        financialIndicatorValue = null;
+    }
+
+    private void ResetAttachment()
+    {
+        editingAttachmentId = null;
+        attachmentCriterionId = null;
+        attachmentName = string.Empty;
+        attachmentUrl = string.Empty;
+        attachmentNotes = null;
+    }
+
+    private void ResetTask()
+    {
+        editingTaskId = null;
+        taskCycleId = null;
+        taskTitle = string.Empty;
+        ownerName = null;
+        dueDate = DateTime.UtcNow.AddHours(3).Date.AddDays(7);
+        taskStatus = GovernanceTaskStatus.Pending;
+        progressPercent = 0;
     }
 }

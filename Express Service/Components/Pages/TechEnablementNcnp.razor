@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-cloud-arrow-up"></i><div><h2>سجل دعم للمركز الوطني</h2><p>المساعدات التي تحتاج تحديث، تحديث التواريخ والتكاليف، الجاهزة للإرسال، المعلقة والمحذوفة، الأرشيف السابق، والمسجلة بمنصة تبين.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-cloud-arrow-up"></i><div><h2>@(editingId.HasValue ? "تعديل سجل المركز الوطني" : "سجل دعم للمركز الوطني")</h2><p>المساعدات التي تحتاج تحديث، تحديث التواريخ والتكاليف، الجاهزة للإرسال، المعلقة والمحذوفة، الأرشيف السابق، والمسجلة بمنصة تبين.</p></div></div>
     <div class="form-grid compact">
         <label>رقم المرجع<input @bind="referenceNumber" /></label>
         <label>المستفيد<input @bind="beneficiaryName" /></label>
@@ -22,7 +22,17 @@
         <label>مرجع المنصة<input @bind="platformReference" /></label>
         <label class="span-2">ملاحظات<input @bind="notes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ السجل</button><button class="secondary" @onclick="LoadNeedsUpdateAsync">بحاجة تحديث</button><button class="secondary" @onclick="LoadReadyAsync">جاهزة</button><button class="secondary" @onclick="LoadRegisteredAsync">مسجلة</button><button class="secondary" @onclick="LoadAsync">كل السجلات</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingId.HasValue ? "حفظ التعديل" : "حفظ السجل")</button>
+        @if (editingId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadNeedsUpdateAsync">بحاجة تحديث</button>
+        <button class="secondary" @onclick="LoadReadyAsync">جاهزة</button>
+        <button class="secondary" @onclick="LoadRegisteredAsync">مسجلة</button>
+        <button class="secondary" @onclick="LoadAsync">كل السجلات</button>
+    </div>
 </section>
 
 <section class="table-section">
@@ -34,7 +44,13 @@
             {
                 <tr>
                     <td>@item.ReferenceNumber<br />@item.PlatformReference</td><td>@item.BeneficiaryName</td><td>@item.SupportType<br />@item.SupportDate?.ToString("yyyy-MM-dd")</td><td>@item.Cost</td><td>@item.Status<br />@item.Notes</td>
-                    <td><button class="secondary" @onclick="@(() => UpdateStatusAsync(item.Id, NcnpDataStatus.ReadyToRegister))">تجهيز</button><button class="secondary" @onclick="@(() => UpdateStatusAsync(item.Id, NcnpDataStatus.Registered))">تسجيل</button><button class="secondary" @onclick="@(() => UpdateStatusAsync(item.Id, NcnpDataStatus.RemovedOrSuspended))">تعليق</button></td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => Edit(item))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => UpdateStatusAsync(item, NcnpDataStatus.ReadyToRegister))">تجهيز</button>
+                        <button class="secondary" @onclick="@(() => UpdateStatusAsync(item, NcnpDataStatus.Registered))">تسجيل</button>
+                        <button class="secondary" @onclick="@(() => UpdateStatusAsync(item, NcnpDataStatus.RemovedOrSuspended))">تعليق</button>
+                        <button class="secondary" @onclick="@(() => UpdateStatusAsync(item, NcnpDataStatus.ArchivedExternalSupport))">أرشفة</button>
+                    </td>
                 </tr>
             }
         </tbody>
@@ -43,6 +59,7 @@
 
 @code {
     private List<NcnpDataRecordResponse> records = [];
+    private int? editingId;
     private string referenceNumber = $"NCNP-{DateTime.UtcNow:yyyyMMddHHmm}";
     private string beneficiaryName = string.Empty;
     private string supportType = string.Empty;
@@ -59,6 +76,36 @@
     private async Task LoadNeedsUpdateAsync() => records = await Tech.GetNcnpDataAsync(NcnpDataStatus.NeedsUpdate);
     private async Task LoadReadyAsync() => records = await Tech.GetNcnpDataAsync(NcnpDataStatus.ReadyToRegister);
     private async Task LoadRegisteredAsync() => records = await Tech.GetNcnpDataAsync(NcnpDataStatus.Registered);
-    private async Task SaveAsync(){ var result = await Tech.SaveNcnpDataAsync(null, new SaveNcnpDataRecordRequest(referenceNumber, beneficiaryName, supportType, supportDate, cost, status, platformReference, notes)); success = result.Success; message = result.Message; if (success) referenceNumber = $"NCNP-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
-    private async Task UpdateStatusAsync(int id, NcnpDataStatus nextStatus){ var result = await Tech.UpdateNcnpStatusAsync(id, nextStatus, platformReference, notes); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task SaveAsync(){ var result = await Tech.SaveNcnpDataAsync(editingId, new SaveNcnpDataRecordRequest(referenceNumber, beneficiaryName, supportType, supportDate, cost, status, platformReference, notes)); success = result.Success; message = result.Message; if (success) ResetForm(); await LoadAsync(); }
+    private async Task UpdateStatusAsync(NcnpDataRecordResponse item, NcnpDataStatus nextStatus)
+    {
+        var result = await Tech.UpdateNcnpStatusAsync(item.Id, nextStatus, platformReference ?? item.PlatformReference, notes ?? item.Notes);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+    private void Edit(NcnpDataRecordResponse item)
+    {
+        editingId = item.Id;
+        referenceNumber = item.ReferenceNumber;
+        beneficiaryName = item.BeneficiaryName;
+        supportType = item.SupportType;
+        supportDate = item.SupportDate;
+        cost = item.Cost;
+        status = Enum.TryParse<NcnpDataStatus>(item.Status, out var parsedStatus) ? parsedStatus : NcnpDataStatus.NeedsUpdate;
+        platformReference = item.PlatformReference;
+        notes = item.Notes;
+    }
+    private void ResetForm()
+    {
+        editingId = null;
+        referenceNumber = $"NCNP-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        beneficiaryName = string.Empty;
+        supportType = string.Empty;
+        supportDate = DateTime.UtcNow.AddHours(3).Date;
+        cost = 0;
+        status = NcnpDataStatus.NeedsUpdate;
+        platformReference = null;
+        notes = null;
+    }
 }

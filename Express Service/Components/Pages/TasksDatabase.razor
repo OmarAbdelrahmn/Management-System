@@ -21,14 +21,61 @@
     <div class="actions-row"><button class="primary" @onclick="LoadAsync">بحث</button></div>
 </section>
 
+@if (editingTaskId.HasValue)
+{
+    <section class="panel" style="margin-top:14px">
+        <div class="panel-heading"><i class="fa-solid fa-pen-to-square"></i><div><h2>تعديل المهمة</h2><p>تصحيح بيانات المهمة أو تغيير الحالة والتقدم والمكلف.</p></div></div>
+        <div class="form-grid compact">
+            <label>العنوان<input @bind="editTitle" /></label>
+            <label>المكلف<select @bind="editAssigneeUserId">@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
+            <label>الأولوية<select @bind="editPriority"><option value="@ManagementTaskPriority.Low">منخفضة</option><option value="@ManagementTaskPriority.Normal">عادية</option><option value="@ManagementTaskPriority.High">عالية</option><option value="@ManagementTaskPriority.Urgent">عاجلة</option></select></label>
+            <label>الحالة<select @bind="editStatus"><option value="@ManagementTaskStatus.New">جديدة</option><option value="@ManagementTaskStatus.InProgress">قيد العمل</option><option value="@ManagementTaskStatus.Blocked">متعثرة</option><option value="@ManagementTaskStatus.Completed">منجزة</option><option value="@ManagementTaskStatus.Deleted">محذوفة</option></select></label>
+            <label>الاستحقاق<input type="datetime-local" @bind="editDueAt" /></label>
+            <label>نسبة الإنجاز<input type="number" min="0" max="100" @bind="editProgressPercentage" /></label>
+            <label class="span-2">الوصف<textarea @bind="editDescription"></textarea></label>
+        </div>
+        <div class="actions-row"><button class="primary" @onclick="SaveEditAsync">حفظ التعديل</button><button class="secondary" @onclick="ResetEditForm">إلغاء التعديل</button></div>
+    </section>
+}
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-gears"></i><div><h2>إجراءات سريعة</h2><p>تستخدم عند الإنجاز أو التحويل أو الحذف من جدول المهام.</p></div></div>
+    <div class="form-grid compact">
+        <label>تحويل إلى<select @bind="redirectAssigneeUserId"><option value="">اختر مستخدم</option>@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
+        <label>نسبة الإنجاز<input type="number" min="0" max="100" @bind="completeProgress" /></label>
+        <label class="span-2">ملاحظة الإجراء<input @bind="actionNote" /></label>
+    </div>
+</section>
+
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-list"></i> المهام</span></div>
     <table>
-        <thead><tr><th>العنوان</th><th>المكلف</th><th>الأولوية</th><th>الحالة</th><th>الاستحقاق</th><th>الإنجاز</th><th>السجل</th></tr></thead>
+        <thead><tr><th>العنوان</th><th>المكلف</th><th>الأولوية</th><th>الحالة</th><th>الاستحقاق</th><th>الإنجاز</th><th>إجراءات</th></tr></thead>
         <tbody>
             @foreach (var item in items)
             {
-                <tr><td>@item.Title</td><td>@item.AssigneeName</td><td>@item.Priority</td><td><span class="status">@item.Status</span></td><td>@item.DueAt?.ToString("yyyy-MM-dd")</td><td>@item.ProgressPercentage%</td><td><button class="secondary" @onclick="@(() => LoadActivitiesAsync(item))">عرض السجل</button></td></tr>
+                <tr>
+                    <td>@item.Title</td>
+                    <td>@item.AssigneeName</td>
+                    <td>@item.Priority</td>
+                    <td><span class="status">@item.Status</span></td>
+                    <td>@item.DueAt?.ToString("yyyy-MM-dd")</td>
+                    <td>@item.ProgressPercentage%</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => EditTask(item))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => CompleteAsync(item))">إنجاز</button>
+                        <button class="secondary" @onclick="@(() => RedirectAsync(item))">تحويل</button>
+                        @if (item.Status == ManagementTaskStatus.Deleted.ToString())
+                        {
+                            <button class="secondary" @onclick="@(() => RestoreAsync(item.Id))">استعادة</button>
+                        }
+                        else
+                        {
+                            <button class="danger" @onclick="@(() => DeleteAsync(item.Id))">حذف</button>
+                        }
+                        <button class="secondary" @onclick="@(() => LoadActivitiesAsync(item))">السجل</button>
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
@@ -76,12 +123,24 @@
     private string? assigneeUserId;
     private bool includeDeleted;
     private string? comment;
+    private int? editingTaskId;
+    private string editTitle = string.Empty;
+    private string? editDescription;
+    private string editAssigneeUserId = string.Empty;
+    private DateTime? editDueAt;
+    private ManagementTaskPriority editPriority = ManagementTaskPriority.Normal;
+    private ManagementTaskStatus editStatus = ManagementTaskStatus.New;
+    private int editProgressPercentage;
+    private string? redirectAssigneeUserId;
+    private int completeProgress = 100;
+    private string? actionNote;
     private bool success;
     private string? message;
 
     protected override async Task OnInitializedAsync()
     {
         users = await Tasks.GetUsersAsync();
+        redirectAssigneeUserId = users.FirstOrDefault()?.Id;
         await LoadAsync();
     }
 
@@ -110,5 +169,76 @@
             comment = null;
             await LoadActivitiesAsync(selectedTask);
         }
+    }
+
+    private void EditTask(ManagementTaskResponse task)
+    {
+        editingTaskId = task.Id;
+        editTitle = task.Title;
+        editDescription = task.Description;
+        editAssigneeUserId = task.AssigneeUserId;
+        editDueAt = task.DueAt;
+        editPriority = Enum.TryParse<ManagementTaskPriority>(task.Priority, out var parsedPriority) ? parsedPriority : ManagementTaskPriority.Normal;
+        editStatus = Enum.TryParse<ManagementTaskStatus>(task.Status, out var parsedStatus) ? parsedStatus : ManagementTaskStatus.New;
+        editProgressPercentage = task.ProgressPercentage;
+    }
+
+    private async Task SaveEditAsync()
+    {
+        if (!editingTaskId.HasValue)
+            return;
+
+        var result = await Tasks.UpdateTaskAsync(editingTaskId.Value, new UpdateManagementTaskRequest(editTitle, editDescription, editAssigneeUserId, editDueAt, editPriority, editStatus, editProgressPercentage));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetEditForm();
+        await LoadAsync();
+    }
+
+    private void ResetEditForm()
+    {
+        editingTaskId = null;
+        editTitle = string.Empty;
+        editDescription = null;
+        editAssigneeUserId = users.FirstOrDefault()?.Id ?? string.Empty;
+        editDueAt = null;
+        editPriority = ManagementTaskPriority.Normal;
+        editStatus = ManagementTaskStatus.New;
+        editProgressPercentage = 0;
+    }
+
+    private async Task CompleteAsync(ManagementTaskResponse task)
+    {
+        var result = await Tasks.CompleteTaskAsync(task.Id, new CompleteTaskRequest(Math.Clamp(completeProgress, 0, 100), actionNote));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task RedirectAsync(ManagementTaskResponse task)
+    {
+        var assignee = string.IsNullOrWhiteSpace(redirectAssigneeUserId) ? users.FirstOrDefault()?.Id ?? task.AssigneeUserId : redirectAssigneeUserId;
+        var result = await Tasks.RedirectTaskAsync(task.Id, new RedirectTaskRequest(assignee!, actionNote ?? "تحويل من قاعدة بيانات المهام"));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task DeleteAsync(int id)
+    {
+        var result = await Tasks.DeleteTaskAsync(id, new DeleteTaskRequest(actionNote ?? "حذف من قاعدة بيانات المهام"));
+        success = result.Success;
+        message = result.Message;
+        includeDeleted = true;
+        await LoadAsync();
+    }
+
+    private async Task RestoreAsync(int id)
+    {
+        var result = await Tasks.RestoreTaskAsync(id);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
     }
 }

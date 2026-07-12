@@ -17,10 +17,14 @@ public class MovementMaintenanceController(IMovementMaintenanceService service) 
     public async Task<IActionResult> Vehicles([FromQuery] FleetVehicleStatus? status, CancellationToken ct) => ToAction(await service.GetVehiclesAsync(status, ct));
     [HttpPost("vehicles")]
     public async Task<IActionResult> SaveVehicle([FromBody] SaveFleetVehicleRequest request, CancellationToken ct) => ToAction(await service.SaveVehicleAsync(null, request, ct));
+    [HttpPut("vehicles/{id:int}")]
+    public async Task<IActionResult> UpdateVehicle(int id, [FromBody] SaveFleetVehicleRequest request, CancellationToken ct) => ToAction(await service.SaveVehicleAsync(id, request, ct));
     [HttpGet("vehicle-requests")]
     public async Task<IActionResult> VehicleRequests([FromQuery] VehicleRequestStatus? status, CancellationToken ct) => ToAction(await service.GetVehicleRequestsAsync(status, ct));
     [HttpPost("vehicle-requests")]
     public async Task<IActionResult> SaveVehicleRequest([FromBody] SaveVehicleRequestRequest request, CancellationToken ct) => ToAction(await service.SaveVehicleRequestAsync(null, request, ct));
+    [HttpPut("vehicle-requests/{id:int}")]
+    public async Task<IActionResult> EditVehicleRequest(int id, [FromBody] SaveVehicleRequestRequest request, CancellationToken ct) => ToAction(await service.SaveVehicleRequestAsync(id, request, ct));
     [HttpPost("vehicle-requests/{id:int}/status")]
     public async Task<IActionResult> UpdateVehicleRequest(int id, [FromBody] UpdateVehicleRequestStatusRequest request, CancellationToken ct) => ToAction(await service.UpdateVehicleRequestStatusAsync(id, request, ct));
     [HttpGet("assignments")]
@@ -29,10 +33,14 @@ public class MovementMaintenanceController(IMovementMaintenanceService service) 
     public async Task<IActionResult> HandVehicle([FromBody] SaveVehicleAssignmentRequest request, CancellationToken ct) => ToAction(await service.HandVehicleAsync(request, ct));
     [HttpPost("assignments/{id:int}/receive")]
     public async Task<IActionResult> ReceiveVehicle(int id, [FromBody] ReceiveVehicleRequest request, CancellationToken ct) => ToAction(await service.ReceiveVehicleAsync(id, request, ct));
+    [HttpPost("assignments/mark-overdue")]
+    public async Task<IActionResult> MarkOverdueAssignments([FromBody] MarkOverdueVehicleAssignmentsRequest request, CancellationToken ct) => ToAction(await service.MarkOverdueAssignmentsAsync(request, ct));
     [HttpGet("maintenance")]
     public async Task<IActionResult> Maintenance([FromQuery] MaintenanceRequestType? type, [FromQuery] MaintenanceRequestStatus? status, CancellationToken ct) => ToAction(await service.GetMaintenanceRequestsAsync(type, status, ct));
     [HttpPost("maintenance")]
     public async Task<IActionResult> SaveMaintenance([FromBody] SaveMaintenanceRequestRequest request, CancellationToken ct) => ToAction(await service.SaveMaintenanceRequestAsync(null, request, ct));
+    [HttpPut("maintenance/{id:int}")]
+    public async Task<IActionResult> EditMaintenance(int id, [FromBody] SaveMaintenanceRequestRequest request, CancellationToken ct) => ToAction(await service.SaveMaintenanceRequestAsync(id, request, ct));
     [HttpPost("maintenance/{id:int}/status")]
     public async Task<IActionResult> UpdateMaintenance(int id, [FromBody] UpdateMaintenanceStatusRequest request, CancellationToken ct) => ToAction(await service.UpdateMaintenanceStatusAsync(id, request, ct));
 

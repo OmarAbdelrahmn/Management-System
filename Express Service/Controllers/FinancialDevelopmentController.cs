@@ -32,6 +32,9 @@ public class FinancialDevelopmentController(IFinancialDevelopmentService service
     [HttpPut("opportunities/{id:int}")]
     public async Task<IActionResult> UpdateOpportunity(int id, [FromBody] SaveFundraisingOpportunityRequest request, CancellationToken ct) => ToAction(await service.SaveOpportunityAsync(id, request, ct));
 
+    [HttpPost("opportunities/{id:int}/complete")]
+    public async Task<IActionResult> CompleteOpportunity(int id, [FromBody] CompleteFundraisingOpportunityRequest request, CancellationToken ct) => ToAction(await service.CompleteOpportunityAsync(id, request, ct));
+
     [HttpGet("contributions")]
     public async Task<IActionResult> Contributions([FromQuery] DonationContributionStatus? status, [FromQuery] int? supporterId, [FromQuery] int? opportunityId, CancellationToken ct) => ToAction(await service.GetContributionsAsync(status, supporterId, opportunityId, ct));
 
@@ -40,6 +43,12 @@ public class FinancialDevelopmentController(IFinancialDevelopmentService service
 
     [HttpPut("contributions/{id:int}")]
     public async Task<IActionResult> UpdateContribution(int id, [FromBody] SaveDonationContributionRequest request, CancellationToken ct) => ToAction(await service.SaveContributionAsync(id, request, ct));
+
+    [HttpPost("contributions/{id:int}/status")]
+    public async Task<IActionResult> UpdateContributionStatus(int id, [FromBody] UpdateDonationContributionStatusRequest request, CancellationToken ct) => ToAction(await service.UpdateContributionStatusAsync(id, request, ct));
+
+    [HttpGet("contributions/{id:int}/activities")]
+    public async Task<IActionResult> ContributionActivities(int id, CancellationToken ct) => ToAction(await service.GetContributionActivitiesAsync(id, ct));
 
     [HttpGet("reports/donations")]
     public async Task<IActionResult> DonationReport([FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct) => ToAction(await service.GetDonationReportAsync(from, to, ct));
@@ -53,6 +62,9 @@ public class FinancialDevelopmentController(IFinancialDevelopmentService service
     [HttpPut("digital-campaigns/{id:int}")]
     public async Task<IActionResult> UpdateDigitalCampaign(int id, [FromBody] SaveDigitalMarketingCampaignRequest request, CancellationToken ct) => ToAction(await service.SaveDigitalCampaignAsync(id, request, ct));
 
+    [HttpPost("digital-campaigns/{id:int}/donations")]
+    public async Task<IActionResult> RecordDigitalCampaignDonation(int id, [FromBody] RecordDigitalCampaignDonationRequest request, CancellationToken ct) => ToAction(await service.RecordDigitalCampaignDonationAsync(id, request, ct));
+
     [HttpGet("abandoned-carts")]
     public async Task<IActionResult> AbandonedCarts([FromQuery] AbandonedDonationCartStatus? status, CancellationToken ct) => ToAction(await service.GetAbandonedCartsAsync(status, ct));
 
@@ -61,6 +73,9 @@ public class FinancialDevelopmentController(IFinancialDevelopmentService service
 
     [HttpPut("abandoned-carts/{id:int}")]
     public async Task<IActionResult> UpdateAbandonedCart(int id, [FromBody] SaveAbandonedDonationCartRequest request, CancellationToken ct) => ToAction(await service.SaveAbandonedCartAsync(id, request, ct));
+
+    [HttpPost("abandoned-carts/{id:int}/recover")]
+    public async Task<IActionResult> RecoverAbandonedCart(int id, [FromBody] RecoverAbandonedDonationCartRequest request, CancellationToken ct) => ToAction(await service.RecoverAbandonedCartAsync(id, request, ct));
 
     [HttpGet("endowments")]
     public async Task<IActionResult> Endowments([FromQuery] EndowmentAssetStatus? status, CancellationToken ct) => ToAction(await service.GetEndowmentsAsync(status, ct));
@@ -88,6 +103,9 @@ public class FinancialDevelopmentController(IFinancialDevelopmentService service
 
     [HttpPut("endowment-invoices/{id:int}")]
     public async Task<IActionResult> UpdateEndowmentInvoice(int id, [FromBody] SaveEndowmentInvoiceRequest request, CancellationToken ct) => ToAction(await service.SaveEndowmentInvoiceAsync(id, request, ct));
+
+    [HttpPost("endowment-invoices/{id:int}/pay")]
+    public async Task<IActionResult> PayEndowmentInvoice(int id, [FromBody] PayEndowmentInvoiceRequest request, CancellationToken ct) => ToAction(await service.PayEndowmentInvoiceAsync(id, request, ct));
 
     private IActionResult ToAction<T>(Application.Abstraction.Result<T> result) => result.IsSuccess ? Ok(result.Value) : result.ToProblem();
 }

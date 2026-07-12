@@ -27,6 +27,12 @@ public class DocumentationArchiveUiService(IDocumentationArchiveService service)
     public async Task<(bool Success, string Message)> UpdateCorrespondenceStatusAsync(int id, CorrespondenceStatus status, string? notes = null, CancellationToken cancellationToken = default) =>
         ToUi(await service.UpdateCorrespondenceStatusAsync(id, new UpdateCorrespondenceStatusRequest(status, notes), cancellationToken), "تم تحديث حالة البريد.");
 
+    public async Task<(bool Success, string Message)> RequestCorrespondenceRemovalAsync(int id, string? notes = null, CancellationToken cancellationToken = default) =>
+        ToUi(await service.RequestCorrespondenceRemovalAsync(id, new RequestCorrespondenceRemovalRequest(notes), cancellationToken), "تم إرسال طلب حذف البريد للاعتماد.");
+
+    public async Task<(bool Success, string Message)> DecideCorrespondenceRemovalAsync(int id, bool approved, string? notes = null, CancellationToken cancellationToken = default) =>
+        ToUi(await service.DecideCorrespondenceRemovalAsync(id, new DecideCorrespondenceRemovalRequest(approved, notes), cancellationToken), approved ? "تم اعتماد حذف البريد." : "تم رفض طلب حذف البريد.");
+
     public async Task<List<CorrespondenceOperationResponse>> GetOperationsAsync(CorrespondenceOperationStatus? status = null, int? correspondenceRecordId = null, CancellationToken cancellationToken = default) =>
         ToList(await service.GetOperationsAsync(status, correspondenceRecordId, cancellationToken));
 

@@ -66,6 +66,7 @@ public record SaveWebsiteNavigationItemRequest(string Label, string Url, string 
 
 public record WebsiteContentItemResponse(int Id, string ContentType, string Title, string? Slug, string? Summary, string Body, string? MediaUrl, string Status, DateTime? PublishedAt);
 public record SaveWebsiteContentItemRequest(WebsiteContentType ContentType, string Title, string? Slug, string? Summary, string Body, string? MediaUrl, WebsiteContentStatus Status);
+public record UpdateWebsiteContentStatusRequest(WebsiteContentStatus Status, DateTime? PublishedAt);
 
 public record WebsiteFormResponse(int Id, string Title, string FieldsJson, bool IsActive, int SubmissionsCount);
 public record SaveWebsiteFormRequest(string Title, string FieldsJson, bool IsActive);

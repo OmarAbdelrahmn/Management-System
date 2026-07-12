@@ -79,6 +79,13 @@ public class BeneficiariesController(IBeneficiaryService beneficiaries) : Contro
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("dependents/{id:int}")]
+    public async Task<IActionResult> UpdateDependent(int id, [FromBody] UpdateBeneficiaryDependentRequest request, CancellationToken cancellationToken)
+    {
+        var result = await beneficiaries.UpdateDependentAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("guardians")]
     public async Task<IActionResult> Guardians([FromQuery] int? beneficiaryProfileId, CancellationToken cancellationToken)
     {
@@ -90,6 +97,13 @@ public class BeneficiariesController(IBeneficiaryService beneficiaries) : Contro
     public async Task<IActionResult> AddGuardian([FromBody] AddBeneficiaryGuardianRequest request, CancellationToken cancellationToken)
     {
         var result = await beneficiaries.AddGuardianAsync(request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("guardians/{id:int}")]
+    public async Task<IActionResult> UpdateGuardian(int id, [FromBody] UpdateBeneficiaryGuardianRequest request, CancellationToken cancellationToken)
+    {
+        var result = await beneficiaries.UpdateGuardianAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -155,6 +169,13 @@ public class BeneficiariesController(IBeneficiaryService beneficiaries) : Contro
     public async Task<IActionResult> CreateAccountArtifact([FromBody] CreateBeneficiaryAccountArtifactRequest request, CancellationToken cancellationToken)
     {
         var result = await beneficiaries.CreateAccountArtifactAsync(request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("account-artifacts/{id:int}")]
+    public async Task<IActionResult> UpdateAccountArtifact(int id, [FromBody] UpdateBeneficiaryAccountArtifactRequest request, CancellationToken cancellationToken)
+    {
+        var result = await beneficiaries.UpdateAccountArtifactAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 

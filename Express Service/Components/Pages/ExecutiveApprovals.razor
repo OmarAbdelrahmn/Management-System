@@ -6,18 +6,19 @@
 <h1 class="page-title">إدارة الاعتمادات</h1>
 @if (!string.IsNullOrWhiteSpace(message)){<section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>}
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-check-to-slot"></i><div><h2>طلب اعتماد</h2><p>تعميدات الصرف، الكفالات، أوامر الصرف، القسائم، التوظيف، الشراء، والصيانة.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-check-to-slot"></i><div><h2>@(editingApprovalId.HasValue ? "تعديل طلب اعتماد" : "طلب اعتماد")</h2><p>تعميدات الصرف، الكفالات، أوامر الصرف، القسائم، التوظيف، الشراء، والصيانة.</p></div></div>
     <div class="form-grid compact">
         <label>رقم الطلب<input @bind="requestNumber" /></label><label>النوع<select @bind="kind"><option value="@ExecutiveApprovalKind.PaymentAuthorization">تعميد صرف</option><option value="@ExecutiveApprovalKind.SponsorshipExpense">صرف كفالة</option><option value="@ExecutiveApprovalKind.PaymentOrder">أمر صرف</option><option value="@ExecutiveApprovalKind.Coupon">قسيمة</option><option value="@ExecutiveApprovalKind.Recruitment">توظيف</option><option value="@ExecutiveApprovalKind.Purchase">شراء</option><option value="@ExecutiveApprovalKind.GeneralMaintenance">صيانة عامة</option><option value="@ExecutiveApprovalKind.VehicleMaintenance">صيانة سيارة</option></select></label>
         <label>الموضوع<input @bind="subject" /></label><label>المبلغ<input type="number" step="0.01" @bind="amount" /></label>
         <label>طالب الاعتماد<input @bind="requestedBy" /></label><label>الحالة<select @bind="status"><option value="@ExecutiveWorkflowStatus.Pending">معلق</option><option value="@ExecutiveWorkflowStatus.Approved">معتمد</option><option value="@ExecutiveWorkflowStatus.RejectedWithNote">مرفوض بملاحظة</option><option value="@ExecutiveWorkflowStatus.FinalRejected">مرفوض نهائيا</option><option value="@ExecutiveWorkflowStatus.Completed">مكتمل</option></select></label>
         <label>تاريخ الطلب<input type="date" @bind="requestedAt" /></label><label class="span-2">ملاحظات القرار<input @bind="decisionNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الاعتماد</button><button class="secondary" @onclick="LoadPendingAsync">المعلقة</button><button class="secondary" @onclick="LoadAsync">كل الاعتمادات</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingApprovalId.HasValue ? "حفظ التعديل" : "حفظ الاعتماد")</button>@if (editingApprovalId.HasValue){<button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>}<button class="secondary" @onclick="LoadPendingAsync">المعلقة</button><button class="secondary" @onclick="LoadAsync">كل الاعتمادات</button></div>
 </section>
-<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> الاعتمادات</span></div><table><thead><tr><th>الطلب</th><th>النوع</th><th>الموضوع</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>@foreach (var item in approvals){<tr><td>@item.RequestNumber<br />@item.RequestedAt.ToString("yyyy-MM-dd")</td><td>@item.ApprovalKind</td><td>@item.Subject<br />@item.RequestedBy</td><td>@item.Amount</td><td>@item.Status<br />@item.DecisionNotes</td><td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, ExecutiveWorkflowStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, ExecutiveWorkflowStatus.RejectedWithNote))">رفض</button></td></tr>}</tbody></table></section>
+<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> الاعتمادات</span></div><table><thead><tr><th>الطلب</th><th>النوع</th><th>الموضوع</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>@foreach (var item in approvals){<tr><td>@item.RequestNumber<br />@item.RequestedAt.ToString("yyyy-MM-dd")</td><td>@item.ApprovalKind</td><td>@item.Subject<br />@item.RequestedBy</td><td>@item.Amount</td><td>@item.Status<br />@item.DecisionNotes</td><td><button class="secondary" @onclick="@(() => Edit(item))">تعديل</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, ExecutiveWorkflowStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, ExecutiveWorkflowStatus.RejectedWithNote))">رفض بملاحظة</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, ExecutiveWorkflowStatus.FinalRejected))">رفض نهائي</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, ExecutiveWorkflowStatus.Completed))">إكمال</button></td></tr>}</tbody></table></section>
 @code {
     private List<ExecutiveApprovalRequestResponse> approvals = [];
+    private int? editingApprovalId;
     private string requestNumber = $"APR-{DateTime.UtcNow:yyyyMMddHHmm}";
     private ExecutiveApprovalKind kind = ExecutiveApprovalKind.PaymentOrder;
     private string subject = string.Empty;
@@ -31,6 +32,30 @@
     protected override async Task OnInitializedAsync() => await LoadAsync();
     private async Task LoadAsync() => approvals = await Executive.GetApprovalsAsync();
     private async Task LoadPendingAsync() => approvals = await Executive.GetApprovalsAsync(status: ExecutiveWorkflowStatus.Pending);
-    private async Task SaveAsync(){ var result = await Executive.SaveApprovalAsync(null, new SaveExecutiveApprovalRequestRequest(requestNumber, kind, subject, amount, requestedBy, status, decisionNotes, requestedAt)); success = result.Success; message = result.Message; if (success) requestNumber = $"APR-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+    private async Task SaveAsync(){ var result = await Executive.SaveApprovalAsync(editingApprovalId, new SaveExecutiveApprovalRequestRequest(requestNumber, kind, subject, amount, requestedBy, status, decisionNotes, requestedAt)); success = result.Success; message = result.Message; if (success) ResetForm(); await LoadAsync(); }
     private async Task DecideAsync(int id, ExecutiveWorkflowStatus next){ var result = await Executive.DecideApprovalAsync(id, next, decisionNotes); success = result.Success; message = result.Message; await LoadAsync(); }
+    private void Edit(ExecutiveApprovalRequestResponse item)
+    {
+        editingApprovalId = item.Id;
+        requestNumber = item.RequestNumber;
+        kind = Enum.TryParse<ExecutiveApprovalKind>(item.ApprovalKind, out var parsedKind) ? parsedKind : ExecutiveApprovalKind.PaymentOrder;
+        subject = item.Subject;
+        amount = item.Amount;
+        requestedBy = item.RequestedBy;
+        status = Enum.TryParse<ExecutiveWorkflowStatus>(item.Status, out var parsedStatus) ? parsedStatus : ExecutiveWorkflowStatus.Pending;
+        decisionNotes = item.DecisionNotes;
+        requestedAt = item.RequestedAt;
+    }
+    private void ResetForm()
+    {
+        editingApprovalId = null;
+        requestNumber = $"APR-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        kind = ExecutiveApprovalKind.PaymentOrder;
+        subject = string.Empty;
+        amount = 0;
+        requestedBy = string.Empty;
+        status = ExecutiveWorkflowStatus.Pending;
+        decisionNotes = null;
+        requestedAt = DateTime.UtcNow.AddHours(3).Date;
+    }
 }

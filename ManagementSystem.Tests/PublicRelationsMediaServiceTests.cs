@@ -32,13 +32,27 @@ public class PublicRelationsMediaServiceTests
         var service = new PublicRelationsMediaService(dbcontext);
 
         var template = await service.SaveTemplateAsync(null, new SaveCommunicationTemplateRequest(CommunicationChannelType.Sms, "قالب", "رسالة", true));
-        var list = await service.SaveListAsync(null, new SaveCommunicationListRequest(CommunicationChannelType.Sms, "قائمة", "0500000000", true));
+        var list = await service.SaveListAsync(null, new SaveCommunicationListRequest(CommunicationChannelType.Sms, "قائمة", "0500000000,0500000001,0500000000", true));
         var campaign = await service.SaveCampaignAsync(null, new SaveCommunicationCampaignRequest(CommunicationChannelType.Sms, template.Value.Id, list.Value.Id, "حملة", "رسالة", CommunicationMessageStatus.Draft));
         var sent = await service.SendCampaignAsync(campaign.Value.Id, new SendCommunicationCampaignRequest(true));
+        var resend = await service.SendCampaignAsync(campaign.Value.Id, new SendCommunicationCampaignRequest(true));
+        var failedCampaign = await service.SaveCampaignAsync(null, new SaveCommunicationCampaignRequest(CommunicationChannelType.Sms, template.Value.Id, list.Value.Id, "حملة فاشلة", "رسالة", CommunicationMessageStatus.Draft));
+        var failed = await service.SendCampaignAsync(failedCampaign.Value.Id, new SendCommunicationCampaignRequest(false));
+        var emptyList = await service.SaveListAsync(null, new SaveCommunicationListRequest(CommunicationChannelType.Sms, "قائمة فارغة", " , ", true));
+        var emptyCampaign = await service.SaveCampaignAsync(null, new SaveCommunicationCampaignRequest(CommunicationChannelType.Sms, template.Value.Id, emptyList.Value.Id, "حملة بلا مستلمين", "رسالة", CommunicationMessageStatus.Draft));
+        var emptySend = await service.SendCampaignAsync(emptyCampaign.Value.Id, new SendCommunicationCampaignRequest(true));
 
         Assert.True(sent.IsSuccess);
         Assert.Equal("Sent", sent.Value.Status);
         Assert.NotNull(sent.Value.SentAt);
+        Assert.Equal(2, sent.Value.RecipientsCount);
+        Assert.Equal(2, sent.Value.DeliveredCount);
+        Assert.All(sent.Value.Recipients, x => Assert.Equal("Sent", x.Status));
+        Assert.True(resend.IsFailure);
+        Assert.True(failed.IsSuccess);
+        Assert.Equal(2, failed.Value.FailedCount);
+        Assert.All(failed.Value.Recipients, x => Assert.NotNull(x.Error));
+        Assert.True(emptySend.IsFailure);
     }
 
     [Fact]
@@ -59,5 +73,25 @@ public class PublicRelationsMediaServiceTests
         Assert.Equal("Published", content.Value.Status);
         Assert.True(submission.IsSuccess);
         Assert.True(contact.IsSuccess);
+    }
+
+    [Fact]
+    public async Task UpdateContentStatusAsync_PublishesWithSlugAndArchives()
+    {
+        await using var dbcontext = ServiceTestFactory.CreateDbContext();
+        var service = new PublicRelationsMediaService(dbcontext);
+
+        var missingSlug = await service.SaveContentItemAsync(null, new SaveWebsiteContentItemRequest(WebsiteContentType.News, "خبر بلا رابط", null, null, "النص", null, WebsiteContentStatus.Draft));
+        var invalidPublish = await service.UpdateContentStatusAsync(missingSlug.Value.Id, new UpdateWebsiteContentStatusRequest(WebsiteContentStatus.Published, new DateTime(2026, 7, 8)));
+        var content = await service.SaveContentItemAsync(missingSlug.Value.Id, new SaveWebsiteContentItemRequest(WebsiteContentType.News, "خبر", "news-slug", null, "النص", null, WebsiteContentStatus.Draft));
+        var published = await service.UpdateContentStatusAsync(content.Value.Id, new UpdateWebsiteContentStatusRequest(WebsiteContentStatus.Published, new DateTime(2026, 7, 8)));
+        var archived = await service.UpdateContentStatusAsync(content.Value.Id, new UpdateWebsiteContentStatusRequest(WebsiteContentStatus.Archived, null));
+        var dashboard = await service.GetDashboardAsync();
+
+        Assert.False(invalidPublish.IsSuccess);
+        Assert.Equal("Published", published.Value.Status);
+        Assert.Equal(new DateTime(2026, 7, 8), published.Value.PublishedAt);
+        Assert.Equal("Archived", archived.Value.Status);
+        Assert.Equal(0, dashboard.Value.PublishedContentCount);
     }
 }

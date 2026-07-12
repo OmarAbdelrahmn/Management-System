@@ -20,7 +20,7 @@
         <label class="span-2">الرؤية<input @bind="vision" /></label>
         <label class="span-2">الرسالة<input @bind="mission" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SavePlanAsync">حفظ الخطة</button><button class="secondary" @onclick="FetchVariablesAsync">تحديث قيم التحقق المؤتمتة لأول خطة</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SavePlanAsync">@(editingPlanId.HasValue ? "تحديث الخطة" : "حفظ الخطة")</button><button class="secondary" @onclick="ResetPlan">تفريغ</button><button class="secondary" @onclick="FetchVariablesAsync">تحديث قيم التحقق المؤتمتة لأول خطة</button></div>
 </section>
 
 <section class="panel" style="margin-top:14px">
@@ -35,7 +35,7 @@
         <label class="span-2">تناغم رؤية 2030<input @bind="visionAlignment" /></label>
         <label class="span-2">تناغم التنمية المستدامة<input @bind="sustainabilityAlignment" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SavePerspectiveAsync">حفظ منظور</button><button class="secondary" @onclick="SaveGoalAsync">حفظ هدف</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SavePerspectiveAsync">@(editingPerspectiveId.HasValue ? "تحديث منظور" : "حفظ منظور")</button><button class="secondary" @onclick="SaveGoalAsync">@(editingGoalId.HasValue ? "تحديث هدف" : "حفظ هدف")</button><button class="secondary" @onclick="ResetPerspectiveGoal">تفريغ</button></div>
 </section>
 
 <section class="panel" style="margin-top:14px">
@@ -57,17 +57,34 @@
         <label>قيمة المتغير<input type="number" step="0.01" @bind="variableValue" /></label>
         <label><input type="checkbox" @bind="isAutomated" /> مؤتمت</label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveIndicatorAsync">حفظ مؤشر</button><button class="secondary" @onclick="SaveVariableAsync">حفظ متغير</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveIndicatorAsync">@(editingIndicatorId.HasValue ? "تحديث مؤشر" : "حفظ مؤشر")</button><button class="secondary" @onclick="SaveVariableAsync">@(editingVariableId.HasValue ? "تحديث متغير" : "حفظ متغير")</button><button class="secondary" @onclick="ApplyVariablesAsync">تطبيق المتغيرات</button><button class="secondary" @onclick="ResetIndicatorVariable">تفريغ</button></div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-diagram-project"></i> خارطة وشجرة الخطة الإستراتيجية</span></div>
     <table>
-        <thead><tr><th>الخطة</th><th>المناظير</th><th>المؤشرات</th><th>الإنجاز</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الخطة</th><th>المناظير</th><th>المؤشرات</th><th>الإنجاز</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var plan in plans)
             {
-                <tr><td>@plan.Title<br />@plan.StartDate.ToString("yyyy-MM-dd") - @plan.EndDate.ToString("yyyy-MM-dd")</td><td>@plan.PerspectivesCount</td><td>@plan.IndicatorsCount</td><td>@plan.AchievementPercent%</td><td>@plan.Status</td></tr>
+                <tr><td>@plan.Title<br />@plan.StartDate.ToString("yyyy-MM-dd") - @plan.EndDate.ToString("yyyy-MM-dd")</td><td>@plan.PerspectivesCount</td><td>@plan.IndicatorsCount</td><td>@plan.AchievementPercent%</td><td>@plan.Status</td><td><button class="secondary" @onclick="@(() => EditPlan(plan))">تعديل</button><button class="secondary" @onclick="@(() => ChangePlanStatusAsync(plan, ExcellenceRecordStatus.Completed))">إكمال</button><button class="secondary" @onclick="@(() => ChangePlanStatusAsync(plan, ExcellenceRecordStatus.Archived))">أرشفة</button></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-sitemap"></i> المناظير والأهداف</span></div>
+    <table>
+        <thead><tr><th>النوع</th><th>الخطة/المنظور</th><th>العنوان</th><th>الترتيب</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var perspective in perspectives)
+            {
+                <tr><td>منظور</td><td>@perspective.PlanTitle</td><td>@perspective.Name</td><td>@perspective.SortOrder</td><td><button class="secondary" @onclick="@(() => EditPerspective(perspective))">تعديل</button></td></tr>
+            }
+            @foreach (var goal in goals)
+            {
+                <tr><td>هدف</td><td>@goal.PerspectiveName</td><td>@goal.Title<br />@goal.Vision2030Alignment</td><td>@goal.SortOrder</td><td><button class="secondary" @onclick="@(() => EditGoal(goal))">تعديل</button></td></tr>
             }
         </tbody>
     </table>
@@ -76,11 +93,24 @@
 <section class="table-section" style="margin-top:14px">
     <div class="table-title"><span><i class="fa-solid fa-chart-simple"></i> المؤشرات</span></div>
     <table>
-        <thead><tr><th>المؤشر</th><th>النوع</th><th>الهدف</th><th>المستهدف/المتحقق</th><th>الإنجاز</th></tr></thead>
+        <thead><tr><th>المؤشر</th><th>النوع</th><th>الهدف</th><th>المستهدف/المتحقق</th><th>الإنجاز</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var indicator in indicators)
             {
-                <tr><td>@indicator.Name<br />@indicator.OwnerName</td><td>@indicator.Kind</td><td>@indicator.GoalTitle</td><td>@indicator.TargetValue / @indicator.ActualValue @indicator.Unit</td><td>@indicator.AchievementPercent%</td></tr>
+                <tr><td>@indicator.Name<br />@indicator.OwnerName</td><td>@indicator.Kind</td><td>@indicator.GoalTitle</td><td>@indicator.TargetValue / @indicator.ActualValue @indicator.Unit</td><td>@indicator.AchievementPercent%</td><td><button class="secondary" @onclick="@(() => EditIndicator(indicator))">تعديل</button><button class="secondary" @onclick="@(() => ChangeIndicatorStatusAsync(indicator, StrategicIndicatorStatus.Achieved))">تحقيق</button><button class="secondary" @onclick="@(() => ChangeIndicatorStatusAsync(indicator, StrategicIndicatorStatus.AtRisk))">متعثر</button></td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-sliders"></i> متغيرات الخطة</span></div>
+    <table>
+        <thead><tr><th>الخطة</th><th>المتغير</th><th>القيمة</th><th>المصدر</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var variable in variables)
+            {
+                <tr><td>@variable.PlanTitle</td><td>@variable.Name</td><td>@variable.Value</td><td>@variable.Source / @(variable.IsAutomated ? "مؤتمت" : "يدوي")</td><td><button class="secondary" @onclick="@(() => EditVariable(variable))">تعديل</button></td></tr>
             }
         </tbody>
     </table>
@@ -91,20 +121,27 @@
     private List<StrategicPerspectiveResponse> perspectives = [];
     private List<StrategicGoalResponse> goals = [];
     private List<StrategicIndicatorResponse> indicators = [];
+    private List<StrategicVariableResponse> variables = [];
+    private int? editingPlanId;
     private string planTitle = string.Empty;
     private DateTime startDate = DateTime.UtcNow.AddHours(3).Date;
     private DateTime endDate = DateTime.UtcNow.AddHours(3).Date.AddYears(3);
     private ExcellenceRecordStatus planStatus = ExcellenceRecordStatus.Active;
     private string? vision;
     private string? mission;
+    private string? planNotes;
+    private int? editingPerspectiveId;
     private int perspectivePlanId;
     private string perspectiveName = string.Empty;
     private int perspectiveSortOrder = 1;
+    private int? editingGoalId;
     private int goalPerspectiveId;
     private string goalTitle = string.Empty;
+    private string? goalDescription;
     private int goalSortOrder = 1;
     private string? visionAlignment;
     private string? sustainabilityAlignment;
+    private int? editingIndicatorId;
     private int indicatorPlanId;
     private int? indicatorGoalId;
     private int? parentIndicatorId;
@@ -117,6 +154,8 @@
     private string? relatedProject;
     private string? relatedProgram;
     private StrategicIndicatorStatus indicatorStatus = StrategicIndicatorStatus.Active;
+    private string? indicatorNotes;
+    private int? editingVariableId;
     private string variableName = string.Empty;
     private decimal variableValue;
     private bool isAutomated = true;
@@ -131,45 +170,56 @@
         perspectives = await Excellence.GetStrategicPerspectivesAsync();
         goals = await Excellence.GetStrategicGoalsAsync();
         indicators = await Excellence.GetStrategicIndicatorsAsync();
+        variables = await Excellence.GetStrategicVariablesAsync();
     }
 
     private async Task SavePlanAsync()
     {
-        var result = await Excellence.SaveStrategicPlanAsync(null, new SaveStrategicPlanRequest(planTitle, startDate, endDate, planStatus, vision, mission, null));
+        var result = await Excellence.SaveStrategicPlanAsync(editingPlanId, new SaveStrategicPlanRequest(planTitle, startDate, endDate, planStatus, vision, mission, planNotes));
         success = result.Success;
         message = result.Message;
+        if (result.Success)
+            ResetPlan();
         await LoadAsync();
     }
 
     private async Task SavePerspectiveAsync()
     {
-        var result = await Excellence.SaveStrategicPerspectiveAsync(null, new SaveStrategicPerspectiveRequest(perspectivePlanId, perspectiveName, perspectiveSortOrder));
+        var result = await Excellence.SaveStrategicPerspectiveAsync(editingPerspectiveId, new SaveStrategicPerspectiveRequest(perspectivePlanId, perspectiveName, perspectiveSortOrder));
         success = result.Success;
         message = result.Message;
+        if (result.Success)
+            ResetPerspective();
         await LoadAsync();
     }
 
     private async Task SaveGoalAsync()
     {
-        var result = await Excellence.SaveStrategicGoalAsync(null, new SaveStrategicGoalRequest(goalPerspectiveId, goalTitle, null, visionAlignment, sustainabilityAlignment, goalSortOrder));
+        var result = await Excellence.SaveStrategicGoalAsync(editingGoalId, new SaveStrategicGoalRequest(goalPerspectiveId, goalTitle, goalDescription, visionAlignment, sustainabilityAlignment, goalSortOrder));
         success = result.Success;
         message = result.Message;
+        if (result.Success)
+            ResetGoal();
         await LoadAsync();
     }
 
     private async Task SaveIndicatorAsync()
     {
-        var result = await Excellence.SaveStrategicIndicatorAsync(null, new SaveStrategicIndicatorRequest(indicatorPlanId, indicatorGoalId, parentIndicatorId, indicatorKind, indicatorName, indicatorTarget, indicatorActual, indicatorUnit, indicatorOwner, relatedProject, relatedProgram, indicatorStatus, null));
+        var result = await Excellence.SaveStrategicIndicatorAsync(editingIndicatorId, new SaveStrategicIndicatorRequest(indicatorPlanId, indicatorGoalId, parentIndicatorId, indicatorKind, indicatorName, indicatorTarget, indicatorActual, indicatorUnit, indicatorOwner, relatedProject, relatedProgram, indicatorStatus, indicatorNotes));
         success = result.Success;
         message = result.Message;
+        if (result.Success)
+            ResetIndicator();
         await LoadAsync();
     }
 
     private async Task SaveVariableAsync()
     {
-        var result = await Excellence.SaveStrategicVariableAsync(null, new SaveStrategicVariableRequest(indicatorPlanId, variableName, variableValue, "Manual", isAutomated));
+        var result = await Excellence.SaveStrategicVariableAsync(editingVariableId, new SaveStrategicVariableRequest(indicatorPlanId, variableName, variableValue, "Manual", isAutomated));
         success = result.Success;
         message = result.Message;
+        if (result.Success)
+            ResetVariable();
         await LoadAsync();
     }
 
@@ -181,5 +231,167 @@
         success = true;
         message = "تم تحديث قيم التحقق المؤتمتة.";
         await LoadAsync();
+    }
+
+    private async Task ApplyVariablesAsync()
+    {
+        var planId = indicatorPlanId > 0 ? indicatorPlanId : plans.FirstOrDefault()?.Id ?? 0;
+        if (planId <= 0) { success = false; message = "لا توجد خطة لتطبيق المتغيرات."; return; }
+        var result = await Excellence.ApplyStrategicVariablesAsync(planId, new ApplyStrategicVariablesRequest(true, "تحديث من متغيرات الخطة"));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void EditPlan(StrategicPlanResponse plan)
+    {
+        editingPlanId = plan.Id;
+        planTitle = plan.Title;
+        startDate = plan.StartDate;
+        endDate = plan.EndDate;
+        planStatus = Enum.TryParse<ExcellenceRecordStatus>(plan.Status, out var parsedStatus) ? parsedStatus : ExcellenceRecordStatus.Active;
+        vision = plan.Vision;
+        mission = plan.Mission;
+        planNotes = plan.Notes;
+        perspectivePlanId = plan.Id;
+        indicatorPlanId = plan.Id;
+        message = null;
+    }
+
+    private async Task ChangePlanStatusAsync(StrategicPlanResponse plan, ExcellenceRecordStatus status)
+    {
+        var result = await Excellence.SaveStrategicPlanAsync(plan.Id, new SaveStrategicPlanRequest(plan.Title, plan.StartDate, plan.EndDate, status, plan.Vision, plan.Mission, plan.Notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void EditPerspective(StrategicPerspectiveResponse perspective)
+    {
+        editingPerspectiveId = perspective.Id;
+        perspectivePlanId = perspective.StrategicPlanId;
+        perspectiveName = perspective.Name;
+        perspectiveSortOrder = perspective.SortOrder;
+        goalPerspectiveId = perspective.Id;
+        message = null;
+    }
+
+    private void EditGoal(StrategicGoalResponse goal)
+    {
+        editingGoalId = goal.Id;
+        goalPerspectiveId = goal.StrategicPerspectiveId;
+        goalTitle = goal.Title;
+        goalDescription = goal.Description;
+        visionAlignment = goal.Vision2030Alignment;
+        sustainabilityAlignment = goal.SustainabilityAlignment;
+        goalSortOrder = goal.SortOrder;
+        indicatorGoalId = goal.Id;
+        message = null;
+    }
+
+    private void EditIndicator(StrategicIndicatorResponse indicator)
+    {
+        editingIndicatorId = indicator.Id;
+        indicatorPlanId = indicator.StrategicPlanId;
+        indicatorGoalId = indicator.StrategicGoalId;
+        parentIndicatorId = indicator.ParentIndicatorId;
+        indicatorKind = Enum.TryParse<StrategicIndicatorKind>(indicator.Kind, out var parsedKind) ? parsedKind : StrategicIndicatorKind.Main;
+        indicatorName = indicator.Name;
+        indicatorTarget = indicator.TargetValue;
+        indicatorActual = indicator.ActualValue;
+        indicatorUnit = indicator.Unit;
+        indicatorOwner = indicator.OwnerName;
+        relatedProject = indicator.RelatedProjectName;
+        relatedProgram = indicator.RelatedProgramName;
+        indicatorStatus = Enum.TryParse<StrategicIndicatorStatus>(indicator.Status, out var parsedStatus) ? parsedStatus : StrategicIndicatorStatus.Active;
+        indicatorNotes = indicator.Notes;
+        message = null;
+    }
+
+    private async Task ChangeIndicatorStatusAsync(StrategicIndicatorResponse indicator, StrategicIndicatorStatus status)
+    {
+        var result = await Excellence.SaveStrategicIndicatorAsync(indicator.Id, new SaveStrategicIndicatorRequest(indicator.StrategicPlanId, indicator.StrategicGoalId, indicator.ParentIndicatorId, Enum.TryParse<StrategicIndicatorKind>(indicator.Kind, out var parsedKind) ? parsedKind : StrategicIndicatorKind.Main, indicator.Name, indicator.TargetValue, indicator.ActualValue, indicator.Unit, indicator.OwnerName, indicator.RelatedProjectName, indicator.RelatedProgramName, status, indicator.Notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void EditVariable(StrategicVariableResponse variable)
+    {
+        editingVariableId = variable.Id;
+        indicatorPlanId = variable.StrategicPlanId;
+        variableName = variable.Name;
+        variableValue = variable.Value;
+        isAutomated = variable.IsAutomated;
+        message = null;
+    }
+
+    private void ResetPlan()
+    {
+        editingPlanId = null;
+        planTitle = string.Empty;
+        startDate = DateTime.UtcNow.AddHours(3).Date;
+        endDate = DateTime.UtcNow.AddHours(3).Date.AddYears(3);
+        planStatus = ExcellenceRecordStatus.Active;
+        vision = null;
+        mission = null;
+        planNotes = null;
+    }
+
+    private void ResetPerspectiveGoal()
+    {
+        ResetPerspective();
+        ResetGoal();
+    }
+
+    private void ResetPerspective()
+    {
+        editingPerspectiveId = null;
+        perspectivePlanId = 0;
+        perspectiveName = string.Empty;
+        perspectiveSortOrder = 1;
+    }
+
+    private void ResetGoal()
+    {
+        editingGoalId = null;
+        goalPerspectiveId = 0;
+        goalTitle = string.Empty;
+        goalDescription = null;
+        goalSortOrder = 1;
+        visionAlignment = null;
+        sustainabilityAlignment = null;
+    }
+
+    private void ResetIndicatorVariable()
+    {
+        ResetIndicator();
+        ResetVariable();
+    }
+
+    private void ResetIndicator()
+    {
+        editingIndicatorId = null;
+        indicatorPlanId = 0;
+        indicatorGoalId = null;
+        parentIndicatorId = null;
+        indicatorKind = StrategicIndicatorKind.Main;
+        indicatorName = string.Empty;
+        indicatorTarget = 100;
+        indicatorActual = 0;
+        indicatorUnit = "%";
+        indicatorOwner = null;
+        relatedProject = null;
+        relatedProgram = null;
+        indicatorStatus = StrategicIndicatorStatus.Active;
+        indicatorNotes = null;
+    }
+
+    private void ResetVariable()
+    {
+        editingVariableId = null;
+        variableName = string.Empty;
+        variableValue = 0;
+        isAutomated = true;
     }
 }

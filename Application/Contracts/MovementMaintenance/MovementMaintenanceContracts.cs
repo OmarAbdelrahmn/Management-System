@@ -14,6 +14,8 @@ public record UpdateVehicleRequestStatusRequest(VehicleRequestStatus Status, str
 public record VehicleAssignmentResponse(int Id, int FleetVehicleId, string VehiclePlateNumber, int? VehicleRequestId, string RequestNumber, string EmployeeName, DateTime HandedAt, DateTime? ExpectedReturnAt, DateTime? ReceivedAt, string? HandOdometer, string? ReceiveOdometer, string Status, string? Notes);
 public record SaveVehicleAssignmentRequest(int FleetVehicleId, int? VehicleRequestId, string EmployeeName, DateTime HandedAt, DateTime? ExpectedReturnAt, string? HandOdometer, string? Notes);
 public record ReceiveVehicleRequest(DateTime ReceivedAt, string? ReceiveOdometer, string? Notes);
+public record MarkOverdueVehicleAssignmentsRequest(DateTime? AsOf, string? Notes);
+public record VehicleAssignmentOverdueResponse(int UpdatedCount, IEnumerable<VehicleAssignmentResponse> Assignments);
 
 public record MaintenanceRequestResponse(int Id, string RequestNumber, string RequestType, int? FleetVehicleId, string VehiclePlateNumber, string RequestedBy, string AssetName, string IssueDescription, DateTime RequestDate, string Status, decimal EstimatedCost, decimal ActualCost, string? VendorName, string? CompletionNotes);
 public record SaveMaintenanceRequestRequest(MaintenanceRequestType RequestType, int? FleetVehicleId, string RequestedBy, string AssetName, string IssueDescription, DateTime RequestDate, MaintenanceRequestStatus Status, decimal EstimatedCost, decimal ActualCost, string? VendorName, string? CompletionNotes);

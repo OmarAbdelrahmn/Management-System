@@ -13,6 +13,8 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
     {
         var today = DateTime.UtcNow.AddHours(3).Date;
         var nextMonth = today.AddDays(30);
+        var currentPayrollMonth = FirstDayOfMonth(today);
+        var recentActivitySince = today.AddDays(-30);
 
         var employeesCount = await dbcontext.EmployeeProfiles.CountAsync(cancellationToken);
         var activeEmployeesCount = await dbcontext.EmployeeProfiles.CountAsync(x => x.Status == EmployeeStatus.Active, cancellationToken);
@@ -22,6 +24,18 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         var monthlyPayrollTotal = await dbcontext.EmployeeProfiles
             .Where(x => x.Status == EmployeeStatus.Active || x.Status == EmployeeStatus.OnLeave)
             .SumAsync(x => x.BasicSalary + x.Allowances, cancellationToken);
+        var pendingAttendanceExcusesCount = await dbcontext.EmployeeAttendanceExcuses.CountAsync(x => x.Status == HumanResourceRequestStatus.Pending, cancellationToken);
+        var pendingAdministrativeRequestsCount = await dbcontext.EmployeeAdministrativeRequests.CountAsync(x => x.Status == HumanResourceRequestStatus.Pending, cancellationToken);
+        var pendingEvaluationsCount = await dbcontext.EmployeeEvaluations.CountAsync(x => x.Status == EmployeeEvaluationStatus.PendingApproval, cancellationToken);
+        var openSafetyInspectionsCount = await dbcontext.HrSafetyInspections.CountAsync(x => x.Status == SafetyRecordStatus.Open || x.Status == SafetyRecordStatus.InProgress, cancellationToken);
+        var openRecruitmentRequestsCount = await dbcontext.RecruitmentRequests.CountAsync(x => x.Status != RecruitmentRequestStatus.Completed && x.Status != RecruitmentRequestStatus.Cancelled, cancellationToken);
+        var draftPayrollRecordsCount = await dbcontext.EmployeePayrollRecords.CountAsync(x => x.PayrollMonth == currentPayrollMonth && x.Status == PayrollRecordStatus.Draft, cancellationToken);
+        var reviewedPayrollRecordsCount = await dbcontext.EmployeePayrollRecords.CountAsync(x => x.PayrollMonth == currentPayrollMonth && x.Status == PayrollRecordStatus.Reviewed, cancellationToken);
+        var approvedPayrollRecordsCount = await dbcontext.EmployeePayrollRecords.CountAsync(x => x.PayrollMonth == currentPayrollMonth && x.Status == PayrollRecordStatus.Approved, cancellationToken);
+        var approvedPayrollTotal = await dbcontext.EmployeePayrollRecords
+            .Where(x => x.PayrollMonth == currentPayrollMonth && (x.Status == PayrollRecordStatus.Approved || x.Status == PayrollRecordStatus.Paid))
+            .SumAsync(x => x.NetSalary, cancellationToken);
+        var recentActivityCount = await dbcontext.HumanResourceActivities.CountAsync(x => x.OccurredAt.Date >= recentActivitySince, cancellationToken);
 
         return Result.Success(new HumanResourceDashboardResponse(
             employeesCount,
@@ -29,7 +43,17 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
             pendingLeaveRequestsCount,
             todayAttendanceCount,
             expiringDocumentsCount,
-            monthlyPayrollTotal));
+            monthlyPayrollTotal,
+            pendingAttendanceExcusesCount,
+            pendingAdministrativeRequestsCount,
+            pendingEvaluationsCount,
+            openSafetyInspectionsCount,
+            openRecruitmentRequestsCount,
+            draftPayrollRecordsCount,
+            reviewedPayrollRecordsCount,
+            approvedPayrollRecordsCount,
+            approvedPayrollTotal,
+            recentActivityCount));
     }
 
     public async Task<Result<IEnumerable<EmployeeDepartmentResponse>>> GetDepartmentsAsync(CancellationToken cancellationToken = default)
@@ -203,6 +227,16 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
 
         dbcontext.EmployeeProfiles.Add(employee);
         await dbcontext.SaveChangesAsync(cancellationToken);
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.EmployeeProfile,
+            employee.Id,
+            employee.Id,
+            HumanResourceActivityAction.Created,
+            employee.FullName,
+            null,
+            employee.Status.ToString(),
+            "تم إنشاء ملف الموظف.");
+        await dbcontext.SaveChangesAsync(cancellationToken);
         await dbcontext.Entry(employee).Reference(x => x.Department).LoadAsync(cancellationToken);
         await dbcontext.Entry(employee).Reference(x => x.JobTitle).LoadAsync(cancellationToken);
         return Result.Success(MapEmployee(employee));
@@ -225,6 +259,7 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         if (lookupResult is not null)
             return Result.Failure<EmployeeResponse>(lookupResult);
 
+        var oldStatus = employee.Status.ToString();
         employee.FullName = request.FullName.Trim();
         employee.NationalId = request.NationalId?.Trim();
         employee.Email = request.Email?.Trim();
@@ -244,6 +279,15 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
             employee.TerminationReason = null;
         }
 
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.EmployeeProfile,
+            employee.Id,
+            employee.Id,
+            oldStatus == employee.Status.ToString() ? HumanResourceActivityAction.Updated : HumanResourceActivityAction.StatusChanged,
+            employee.FullName,
+            oldStatus,
+            employee.Status.ToString(),
+            "تم تحديث ملف الموظف.");
         await dbcontext.SaveChangesAsync(cancellationToken);
         await dbcontext.Entry(employee).Reference(x => x.Department).LoadAsync(cancellationToken);
         await dbcontext.Entry(employee).Reference(x => x.JobTitle).LoadAsync(cancellationToken);
@@ -259,9 +303,19 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         if (string.IsNullOrWhiteSpace(request.Reason))
             return Result.Failure(HumanResourceErrors.InvalidRequest);
 
+        var oldStatus = employee.Status.ToString();
         employee.Status = EmployeeStatus.Terminated;
         employee.TerminatedAt = DateTime.UtcNow.AddHours(3);
         employee.TerminationReason = request.Reason.Trim();
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.EmployeeProfile,
+            employee.Id,
+            employee.Id,
+            HumanResourceActivityAction.StatusChanged,
+            employee.FullName,
+            oldStatus,
+            employee.Status.ToString(),
+            employee.TerminationReason);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
@@ -272,9 +326,19 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         if (employee is null)
             return Result.Failure(HumanResourceErrors.EmployeeNotFound);
 
+        var oldStatus = employee.Status.ToString();
         employee.Status = EmployeeStatus.Active;
         employee.TerminatedAt = null;
         employee.TerminationReason = null;
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.EmployeeProfile,
+            employee.Id,
+            employee.Id,
+            HumanResourceActivityAction.StatusChanged,
+            employee.FullName,
+            oldStatus,
+            employee.Status.ToString(),
+            "تمت إعادة الموظف للخدمة.");
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
@@ -289,18 +353,70 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         if (await dbcontext.EmployeeAttendanceRecords.AnyAsync(x => x.EmployeeProfileId == request.EmployeeProfileId && x.WorkDate.Date == workDate, cancellationToken))
             return Result.Failure<EmployeeAttendanceResponse>(HumanResourceErrors.DuplicateAttendance);
 
+        var status = await ResolveAttendanceStatusAsync(request, cancellationToken);
         var attendance = new EmployeeAttendance
         {
             EmployeeProfileId = request.EmployeeProfileId,
             WorkDate = workDate,
             CheckIn = request.CheckIn,
             CheckOut = request.CheckOut,
-            Status = request.Status,
+            Status = status,
             Notes = request.Notes?.Trim(),
             EmployeeProfile = employee
         };
 
         dbcontext.EmployeeAttendanceRecords.Add(attendance);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.AttendanceRecord,
+            attendance.Id,
+            attendance.EmployeeProfileId,
+            HumanResourceActivityAction.Created,
+            $"{attendance.WorkDate:yyyy-MM-dd} - {employee.FullName}",
+            null,
+            attendance.Status.ToString(),
+            attendance.Notes);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapAttendance(attendance));
+    }
+
+    public async Task<Result<EmployeeAttendanceResponse>> UpdateAttendanceAsync(int id, RecordEmployeeAttendanceRequest request, CancellationToken cancellationToken = default)
+    {
+        var attendance = await dbcontext.EmployeeAttendanceRecords
+            .Include(x => x.EmployeeProfile)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (attendance is null)
+            return Result.Failure<EmployeeAttendanceResponse>(HumanResourceErrors.AttendanceRecordNotFound);
+
+        var employee = await dbcontext.EmployeeProfiles.FirstOrDefaultAsync(x => x.Id == request.EmployeeProfileId, cancellationToken);
+        if (employee is null)
+            return Result.Failure<EmployeeAttendanceResponse>(HumanResourceErrors.EmployeeNotFound);
+
+        var workDate = request.WorkDate.Date;
+        if (await dbcontext.EmployeeAttendanceRecords.AnyAsync(x => x.Id != id && x.EmployeeProfileId == request.EmployeeProfileId && x.WorkDate.Date == workDate, cancellationToken))
+            return Result.Failure<EmployeeAttendanceResponse>(HumanResourceErrors.DuplicateAttendance);
+
+        var oldStatus = attendance.Status.ToString();
+        var resolvedStatus = await ResolveAttendanceStatusAsync(request, cancellationToken);
+        attendance.EmployeeProfileId = request.EmployeeProfileId;
+        attendance.EmployeeProfile = employee;
+        attendance.WorkDate = workDate;
+        attendance.CheckIn = request.CheckIn;
+        attendance.CheckOut = request.CheckOut;
+        attendance.Status = resolvedStatus;
+        attendance.Notes = request.Notes?.Trim();
+
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.AttendanceRecord,
+            attendance.Id,
+            attendance.EmployeeProfileId,
+            oldStatus == attendance.Status.ToString() ? HumanResourceActivityAction.Updated : HumanResourceActivityAction.StatusChanged,
+            $"{attendance.WorkDate:yyyy-MM-dd} - {employee.FullName}",
+            oldStatus,
+            attendance.Status.ToString(),
+            attendance.Notes);
+
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapAttendance(attendance));
     }
@@ -351,6 +467,16 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
 
         dbcontext.EmployeeLeaveRequests.Add(leave);
         await dbcontext.SaveChangesAsync(cancellationToken);
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.LeaveRequest,
+            leave.Id,
+            leave.EmployeeProfileId,
+            HumanResourceActivityAction.Created,
+            leave.LeaveType,
+            null,
+            leave.Status.ToString(),
+            leave.Reason);
+        await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapLeave(leave));
     }
 
@@ -362,7 +488,17 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
 
         if (leave is null)
             return Result.Failure<EmployeeLeaveRequestResponse>(HumanResourceErrors.LeaveRequestNotFound);
+        if (leave.Status != LeaveRequestStatus.Pending)
+            return Result.Failure<EmployeeLeaveRequestResponse>(HumanResourceErrors.LeaveAlreadyDecided);
 
+        if (request.Approved)
+        {
+            var balanceValidationError = await ValidateApprovedLeaveBalanceAsync(leave, cancellationToken);
+            if (balanceValidationError is not null)
+                return Result.Failure<EmployeeLeaveRequestResponse>(balanceValidationError);
+        }
+
+        var oldStatus = leave.Status.ToString();
         leave.Status = request.Approved ? LeaveRequestStatus.Approved : LeaveRequestStatus.Rejected;
         leave.DecisionNotes = request.Notes?.Trim();
         leave.DecidedAt = DateTime.UtcNow.AddHours(3);
@@ -373,6 +509,15 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
             await ApplyApprovedLeaveBalanceAsync(leave, cancellationToken);
         }
 
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.LeaveRequest,
+            leave.Id,
+            leave.EmployeeProfileId,
+            HumanResourceActivityAction.StatusChanged,
+            leave.LeaveType,
+            oldStatus,
+            leave.Status.ToString(),
+            leave.DecisionNotes);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapLeave(leave));
     }
@@ -416,6 +561,55 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         };
 
         dbcontext.EmployeeDocuments.Add(document);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.EmployeeDocument,
+            document.Id,
+            document.EmployeeProfileId,
+            HumanResourceActivityAction.Created,
+            document.Title,
+            null,
+            document.DocumentType,
+            document.Notes);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapDocument(document));
+    }
+
+    public async Task<Result<EmployeeDocumentResponse>> UpdateDocumentAsync(int id, AddEmployeeDocumentRequest request, CancellationToken cancellationToken = default)
+    {
+        var document = await dbcontext.EmployeeDocuments
+            .Include(x => x.EmployeeProfile)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (document is null)
+            return Result.Failure<EmployeeDocumentResponse>(HumanResourceErrors.EmployeeDocumentNotFound);
+
+        var employee = await dbcontext.EmployeeProfiles.FirstOrDefaultAsync(x => x.Id == request.EmployeeProfileId, cancellationToken);
+        if (employee is null)
+            return Result.Failure<EmployeeDocumentResponse>(HumanResourceErrors.EmployeeNotFound);
+
+        if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.DocumentType))
+            return Result.Failure<EmployeeDocumentResponse>(HumanResourceErrors.InvalidRequest);
+
+        var oldDocumentType = document.DocumentType;
+        document.EmployeeProfileId = request.EmployeeProfileId;
+        document.EmployeeProfile = employee;
+        document.Title = request.Title.Trim();
+        document.DocumentType = request.DocumentType.Trim();
+        document.FilePath = request.FilePath?.Trim();
+        document.ExpiresAt = request.ExpiresAt;
+        document.Notes = request.Notes?.Trim();
+
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.EmployeeDocument,
+            document.Id,
+            document.EmployeeProfileId,
+            HumanResourceActivityAction.Updated,
+            document.Title,
+            oldDocumentType,
+            document.DocumentType,
+            document.Notes);
+
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapDocument(document));
     }
@@ -482,6 +676,16 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
 
         dbcontext.EmployeeDisciplinaryRecords.Add(record);
         await dbcontext.SaveChangesAsync(cancellationToken);
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.DisciplinaryRecord,
+            record.Id,
+            record.EmployeeProfileId,
+            HumanResourceActivityAction.Created,
+            record.Title,
+            null,
+            record.Status.ToString(),
+            record.Reason);
+        await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapDisciplinaryRecord(record));
     }
 
@@ -494,9 +698,19 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         if (record is null)
             return Result.Failure<EmployeeDisciplinaryRecordResponse>(HumanResourceErrors.DisciplinaryRecordNotFound);
 
+        var oldStatus = record.Status.ToString();
         record.Status = request.Status;
         record.DecisionNotes = request.Notes?.Trim();
         record.DecidedAt = DateTime.UtcNow.AddHours(3);
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.DisciplinaryRecord,
+            record.Id,
+            record.EmployeeProfileId,
+            HumanResourceActivityAction.StatusChanged,
+            record.Title,
+            oldStatus,
+            record.Status.ToString(),
+            record.DecisionNotes);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapDisciplinaryRecord(record));
     }
@@ -600,8 +814,12 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
 
         if (request.PeriodEnd.Date < request.PeriodStart.Date || request.Score < 0 || request.MaxScore <= 0 || request.Score > request.MaxScore || string.IsNullOrWhiteSpace(request.Rating))
             return Result.Failure<EmployeeEvaluationResponse>(HumanResourceErrors.InvalidRequest);
+        if (request.Status is EmployeeEvaluationStatus.Approved or EmployeeEvaluationStatus.Rejected)
+            return Result.Failure<EmployeeEvaluationResponse>(HumanResourceErrors.InvalidRequest);
 
+        var isNew = !id.HasValue;
         EmployeeEvaluation evaluation;
+        string? oldStatus = null;
         if (id.HasValue)
         {
             evaluation = await dbcontext.EmployeeEvaluations
@@ -611,6 +829,9 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
 
             if (evaluation is null)
                 return Result.Failure<EmployeeEvaluationResponse>(HumanResourceErrors.EvaluationNotFound);
+            if (evaluation.Status is EmployeeEvaluationStatus.Approved or EmployeeEvaluationStatus.Rejected)
+                return Result.Failure<EmployeeEvaluationResponse>(HumanResourceErrors.InvalidEvaluationStatusTransition);
+            oldStatus = evaluation.Status.ToString();
         }
         else
         {
@@ -627,7 +848,50 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         evaluation.EvaluatorName = request.EvaluatorName?.Trim();
         evaluation.Strengths = request.Strengths?.Trim();
         evaluation.ImprovementAreas = request.ImprovementAreas?.Trim();
+        evaluation.Status = request.Status;
         evaluation.Notes = request.Notes?.Trim();
+
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.EmployeeProfile,
+            evaluation.EmployeeProfileId,
+            evaluation.EmployeeProfileId,
+            isNew ? HumanResourceActivityAction.Created : oldStatus == evaluation.Status.ToString() ? HumanResourceActivityAction.Updated : HumanResourceActivityAction.StatusChanged,
+            $"تقييم {evaluation.Rating}",
+            oldStatus,
+            evaluation.Status.ToString(),
+            evaluation.Notes ?? evaluation.ImprovementAreas);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapEvaluation(evaluation));
+    }
+
+    public async Task<Result<EmployeeEvaluationResponse>> DecideEvaluationAsync(int id, DecideEmployeeEvaluationRequest request, CancellationToken cancellationToken = default)
+    {
+        var evaluation = await dbcontext.EmployeeEvaluations
+            .Include(x => x.EmployeeProfile)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (evaluation is null)
+            return Result.Failure<EmployeeEvaluationResponse>(HumanResourceErrors.EvaluationNotFound);
+
+        var decisionNotes = request.DecisionNotes?.Trim();
+        var transitionError = ValidateEvaluationDecision(evaluation, request.Status, decisionNotes);
+        if (transitionError is not null)
+            return Result.Failure<EmployeeEvaluationResponse>(transitionError);
+
+        var oldStatus = evaluation.Status.ToString();
+        evaluation.Status = request.Status;
+        evaluation.DecisionNotes = decisionNotes;
+        evaluation.DecidedAt = DateTime.UtcNow.AddHours(3);
+
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.EmployeeProfile,
+            evaluation.EmployeeProfileId,
+            evaluation.EmployeeProfileId,
+            HumanResourceActivityAction.StatusChanged,
+            $"اعتماد تقييم {evaluation.Rating}",
+            oldStatus,
+            evaluation.Status.ToString(),
+            evaluation.DecisionNotes);
 
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapEvaluation(evaluation));
@@ -686,6 +950,51 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         };
 
         dbcontext.EmployeeCardIssues.Add(card);
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.EmployeeProfile,
+            card.EmployeeProfileId,
+            card.EmployeeProfileId,
+            HumanResourceActivityAction.Created,
+            $"إصدار بطاقة {card.CardType}",
+            null,
+            card.Status.ToString(),
+            card.CardNumber);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapCardIssue(card));
+    }
+
+    public async Task<Result<EmployeeCardIssueResponse>> DecideCardIssueAsync(int id, DecideEmployeeCardIssueRequest request, CancellationToken cancellationToken = default)
+    {
+        var card = await dbcontext.EmployeeCardIssues
+            .Include(x => x.EmployeeProfile)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (card is null)
+            return Result.Failure<EmployeeCardIssueResponse>(HumanResourceErrors.CardIssueNotFound);
+
+        var notes = request.Notes?.Trim();
+        var transitionError = ValidateCardIssueDecision(card, request.Status, notes);
+        if (transitionError is not null)
+            return Result.Failure<EmployeeCardIssueResponse>(transitionError);
+
+        var oldStatus = card.Status.ToString();
+        card.Status = request.Status;
+        card.Notes = string.IsNullOrWhiteSpace(notes)
+            ? card.Notes
+            : string.IsNullOrWhiteSpace(card.Notes)
+                ? notes
+                : $"{card.Notes.Trim()} | {notes}";
+
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.EmployeeProfile,
+            card.EmployeeProfileId,
+            card.EmployeeProfileId,
+            HumanResourceActivityAction.StatusChanged,
+            $"تحديث بطاقة {card.CardType}",
+            oldStatus,
+            card.Status.ToString(),
+            card.Notes);
+
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapCardIssue(card));
     }
@@ -724,6 +1033,7 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
                 return Result.Failure<EmployeeLetterRequestResponse>(HumanResourceErrors.EmployeeNotFound);
         }
 
+        var isNew = !id.HasValue;
         EmployeeLetterRequest letter;
         if (id.HasValue)
         {
@@ -749,6 +1059,16 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         letter.Body = request.Body.Trim();
 
         await dbcontext.SaveChangesAsync(cancellationToken);
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.LetterRequest,
+            letter.Id,
+            letter.EmployeeProfileId,
+            isNew ? HumanResourceActivityAction.Created : HumanResourceActivityAction.Updated,
+            letter.Subject,
+            null,
+            letter.Status.ToString(),
+            letter.Purpose);
+        await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapLetterRequest(letter));
     }
 
@@ -761,12 +1081,22 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         if (letter is null)
             return Result.Failure<EmployeeLetterRequestResponse>(HumanResourceErrors.LetterRequestNotFound);
 
+        var oldStatus = letter.Status.ToString();
         letter.Status = request.Status;
         letter.DecisionNotes = request.Notes?.Trim();
         letter.IssuedAt = request.Status is HumanResourceRequestStatus.Approved or HumanResourceRequestStatus.Completed
             ? DateTime.UtcNow.AddHours(3)
             : letter.IssuedAt;
 
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.LetterRequest,
+            letter.Id,
+            letter.EmployeeProfileId,
+            HumanResourceActivityAction.StatusChanged,
+            letter.Subject,
+            oldStatus,
+            letter.Status.ToString(),
+            letter.DecisionNotes);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapLetterRequest(letter));
     }
@@ -824,6 +1154,9 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
                 existingRecords[employee.Id] = record;
             }
 
+            if (record.Status != PayrollRecordStatus.Draft)
+                continue;
+
             record.BasicSalary = employee.BasicSalary;
             record.Allowances = employee.Allowances;
             record.Deductions = request.DefaultDeductions;
@@ -839,6 +1172,47 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
             .ToList();
 
         return Result.Success<IEnumerable<EmployeePayrollRecordResponse>>(generated);
+    }
+
+    public async Task<Result<EmployeePayrollRecordResponse>> DecidePayrollRecordAsync(int id, DecidePayrollRecordRequest request, CancellationToken cancellationToken = default)
+    {
+        var record = await dbcontext.EmployeePayrollRecords
+            .Include(x => x.EmployeeProfile)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (record is null)
+            return Result.Failure<EmployeePayrollRecordResponse>(HumanResourceErrors.PayrollRecordNotFound);
+
+        if (record.Status == PayrollRecordStatus.Paid)
+            return Result.Failure<EmployeePayrollRecordResponse>(HumanResourceErrors.PayrollAlreadyPaid);
+
+        if (!IsValidPayrollTransition(record.Status, request.Status))
+            return Result.Failure<EmployeePayrollRecordResponse>(HumanResourceErrors.InvalidPayrollStatusTransition);
+
+        var oldStatus = record.Status.ToString();
+        var now = DateTime.UtcNow.AddHours(3);
+        record.Status = request.Status;
+        record.DecisionNotes = request.Notes?.Trim();
+
+        if (record.Status == PayrollRecordStatus.Reviewed)
+            record.ReviewedAt = now;
+        else if (record.Status == PayrollRecordStatus.Approved)
+            record.ApprovedAt = now;
+        else if (record.Status == PayrollRecordStatus.Paid)
+            record.PaidAt = now;
+
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.PayrollRecord,
+            record.Id,
+            record.EmployeeProfileId,
+            HumanResourceActivityAction.StatusChanged,
+            $"{record.PayrollMonth:yyyy-MM} - {record.EmployeeProfile?.FullName}",
+            oldStatus,
+            record.Status.ToString(),
+            record.DecisionNotes);
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapPayrollRecord(record));
     }
 
     public async Task<Result<IEnumerable<AttendancePolicyResponse>>> GetAttendancePoliciesAsync(CancellationToken cancellationToken = default)
@@ -1023,6 +1397,16 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
 
         dbcontext.EmployeeAttendanceExcuses.Add(excuse);
         await dbcontext.SaveChangesAsync(cancellationToken);
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.AttendanceExcuse,
+            excuse.Id,
+            excuse.EmployeeProfileId,
+            HumanResourceActivityAction.Created,
+            excuse.ExcuseType,
+            null,
+            excuse.Status.ToString(),
+            excuse.Reason);
+        await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapAttendanceExcuse(excuse));
     }
 
@@ -1035,9 +1419,19 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         if (excuse is null)
             return Result.Failure<AttendanceExcuseResponse>(HumanResourceErrors.AttendanceExcuseNotFound);
 
+        var oldStatus = excuse.Status.ToString();
         excuse.Status = request.Status;
         excuse.DecisionNotes = request.Notes?.Trim();
         excuse.DecidedAt = DateTime.UtcNow.AddHours(3);
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.AttendanceExcuse,
+            excuse.Id,
+            excuse.EmployeeProfileId,
+            HumanResourceActivityAction.StatusChanged,
+            excuse.ExcuseType,
+            oldStatus,
+            excuse.Status.ToString(),
+            excuse.DecisionNotes);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapAttendanceExcuse(excuse));
     }
@@ -1183,6 +1577,7 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
                 return Result.Failure<SafetyInspectionResponse>(HumanResourceErrors.SafetyCategoryNotFound);
         }
 
+        var isNew = !id.HasValue;
         HrSafetyInspection inspection;
         if (id.HasValue)
         {
@@ -1200,6 +1595,7 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
             dbcontext.HrSafetyInspections.Add(inspection);
         }
 
+        var oldStatus = inspection.Status.ToString();
         inspection.HrSafetyCategoryId = request.HrSafetyCategoryId;
         inspection.InspectionDate = request.InspectionDate;
         inspection.Location = request.Location.Trim();
@@ -1207,6 +1603,20 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         inspection.CorrectiveAction = request.CorrectiveAction?.Trim();
         inspection.Status = request.Status;
 
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.SafetyInspection,
+            inspection.Id,
+            null,
+            isNew
+                ? HumanResourceActivityAction.Created
+                : oldStatus == inspection.Status.ToString()
+                    ? HumanResourceActivityAction.Updated
+                    : HumanResourceActivityAction.StatusChanged,
+            inspection.Location,
+            isNew ? null : oldStatus,
+            inspection.Status.ToString(),
+            inspection.CorrectiveAction);
         await dbcontext.SaveChangesAsync(cancellationToken);
         await dbcontext.Entry(inspection).Reference(x => x.HrSafetyCategory).LoadAsync(cancellationToken);
         return Result.Success(MapSafetyInspection(inspection));
@@ -1218,6 +1628,7 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
             .AsNoTracking()
             .Include(x => x.Department)
             .Include(x => x.JobTitle)
+            .Include(x => x.ConvertedEmployeeProfile)
             .AsQueryable();
 
         if (status.HasValue)
@@ -1240,12 +1651,14 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         if (lookupError is not null)
             return Result.Failure<RecruitmentRequestResponse>(lookupError);
 
+        var isNew = !id.HasValue;
         RecruitmentRequest entity;
         if (id.HasValue)
         {
             entity = await dbcontext.RecruitmentRequests
                 .Include(x => x.Department)
                 .Include(x => x.JobTitle)
+                .Include(x => x.ConvertedEmployeeProfile)
                 .FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken)
                 ?? null!;
 
@@ -1271,6 +1684,16 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         entity.Notes = request.Notes?.Trim();
 
         await dbcontext.SaveChangesAsync(cancellationToken);
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.RecruitmentRequest,
+            entity.Id,
+            null,
+            isNew ? HumanResourceActivityAction.Created : HumanResourceActivityAction.Updated,
+            entity.RequestTitle,
+            null,
+            entity.Status.ToString(),
+            entity.Notes ?? entity.Justification);
+        await dbcontext.SaveChangesAsync(cancellationToken);
         await dbcontext.Entry(entity).Reference(x => x.Department).LoadAsync(cancellationToken);
         await dbcontext.Entry(entity).Reference(x => x.JobTitle).LoadAsync(cancellationToken);
         return Result.Success(MapRecruitmentRequest(entity));
@@ -1281,17 +1704,132 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         var entity = await dbcontext.RecruitmentRequests
             .Include(x => x.Department)
             .Include(x => x.JobTitle)
+            .Include(x => x.ConvertedEmployeeProfile)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
         if (entity is null)
             return Result.Failure<RecruitmentRequestResponse>(HumanResourceErrors.RecruitmentRequestNotFound);
 
+        var notes = request.Notes?.Trim();
+        var transitionError = ValidateRecruitmentStatusTransition(entity, request, notes);
+        if (transitionError is not null)
+            return Result.Failure<RecruitmentRequestResponse>(transitionError);
+
+        var oldStatus = entity.Status.ToString();
         entity.Status = request.Status;
-        entity.AnnouncedAt = request.AnnouncedAt ?? (request.Status == RecruitmentRequestStatus.Announced ? DateTime.UtcNow.AddHours(3) : entity.AnnouncedAt);
-        entity.CompletedAt = request.CompletedAt ?? (request.Status == RecruitmentRequestStatus.Completed ? DateTime.UtcNow.AddHours(3) : entity.CompletedAt);
-        entity.Notes = request.Notes?.Trim() ?? entity.Notes;
+        if (request.Status == RecruitmentRequestStatus.Announced)
+            entity.AnnouncedAt = request.AnnouncedAt ?? entity.AnnouncedAt ?? DateTime.UtcNow.AddHours(3);
+
+        if (request.Status is RecruitmentRequestStatus.Interviewed or RecruitmentRequestStatus.Completed)
+        {
+            entity.InterviewAt = request.InterviewAt ?? entity.InterviewAt ?? DateTime.UtcNow.AddHours(3);
+            if (string.IsNullOrWhiteSpace(entity.InterviewNotes) && !string.IsNullOrWhiteSpace(notes))
+                entity.InterviewNotes = notes;
+        }
+
+        if (request.Status == RecruitmentRequestStatus.Completed)
+            entity.CompletedAt = request.CompletedAt ?? entity.CompletedAt ?? DateTime.UtcNow.AddHours(3);
+
+        entity.Notes = notes ?? entity.Notes;
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.RecruitmentRequest,
+            entity.Id,
+            null,
+            oldStatus == entity.Status.ToString() ? HumanResourceActivityAction.Updated : HumanResourceActivityAction.StatusChanged,
+            entity.RequestTitle,
+            oldStatus,
+            entity.Status.ToString(),
+            entity.Notes);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapRecruitmentRequest(entity));
+    }
+
+    public async Task<Result<EmployeeResponse>> ConvertRecruitmentToEmployeeAsync(int id, ConvertRecruitmentToEmployeeRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.BasicSalary < 0 || request.Allowances < 0)
+            return Result.Failure<EmployeeResponse>(HumanResourceErrors.InvalidRequest);
+
+        var recruitment = await dbcontext.RecruitmentRequests
+            .Include(x => x.Department)
+            .Include(x => x.JobTitle)
+            .Include(x => x.ConvertedEmployeeProfile)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (recruitment is null)
+            return Result.Failure<EmployeeResponse>(HumanResourceErrors.RecruitmentRequestNotFound);
+        if (recruitment.Status != RecruitmentRequestStatus.Completed)
+            return Result.Failure<EmployeeResponse>(HumanResourceErrors.RecruitmentNotCompleted);
+        if (recruitment.ConvertedEmployeeProfileId.HasValue)
+            return Result.Failure<EmployeeResponse>(HumanResourceErrors.RecruitmentAlreadyConverted);
+        if (string.IsNullOrWhiteSpace(recruitment.CandidateName))
+            return Result.Failure<EmployeeResponse>(HumanResourceErrors.RecruitmentCandidateRequired);
+
+        var lookupError = await ValidateLookupsAsync(recruitment.DepartmentId, recruitment.JobTitleId, cancellationToken);
+        if (lookupError is not null)
+            return Result.Failure<EmployeeResponse>(lookupError);
+
+        var employeeNumber = string.IsNullOrWhiteSpace(request.EmployeeNumber)
+            ? await GenerateEmployeeNumberAsync(cancellationToken)
+            : request.EmployeeNumber.Trim();
+
+        if (await dbcontext.EmployeeProfiles.AnyAsync(x => x.EmployeeNumber == employeeNumber, cancellationToken))
+            return Result.Failure<EmployeeResponse>(HumanResourceErrors.DuplicateEmployeeNumber);
+
+        var noteParts = new[]
+        {
+            $"تم إنشاء ملف الموظف من طلب التوظيف #{recruitment.Id}.",
+            recruitment.RequestTitle,
+            request.Notes?.Trim()
+        }.Where(x => !string.IsNullOrWhiteSpace(x));
+
+        var employee = new EmployeeProfile
+        {
+            EmployeeNumber = employeeNumber,
+            FullName = recruitment.CandidateName.Trim(),
+            NationalId = request.NationalId?.Trim(),
+            Email = recruitment.CandidateEmail?.Trim(),
+            Mobile = recruitment.CandidateMobile?.Trim(),
+            DepartmentId = recruitment.DepartmentId,
+            JobTitleId = recruitment.JobTitleId,
+            AccountType = EmployeeAccountType.Employee,
+            HireDate = request.HireDate ?? recruitment.CompletedAt ?? DateTime.UtcNow.AddHours(3),
+            BasicSalary = request.BasicSalary,
+            Allowances = request.Allowances,
+            Notes = string.Join(" ", noteParts)
+        };
+
+        dbcontext.EmployeeProfiles.Add(employee);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+
+        recruitment.ConvertedEmployeeProfileId = employee.Id;
+        recruitment.ConvertedEmployeeProfile = employee;
+        recruitment.Notes = string.IsNullOrWhiteSpace(recruitment.Notes)
+            ? $"تم تحويل الطلب إلى ملف موظف رقم {employee.EmployeeNumber}."
+            : $"{recruitment.Notes.Trim()} | تم تحويل الطلب إلى ملف موظف رقم {employee.EmployeeNumber}.";
+
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.EmployeeProfile,
+            employee.Id,
+            employee.Id,
+            HumanResourceActivityAction.Created,
+            employee.FullName,
+            null,
+            employee.Status.ToString(),
+            $"إنشاء من طلب التوظيف: {recruitment.RequestTitle}");
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.RecruitmentRequest,
+            recruitment.Id,
+            employee.Id,
+            HumanResourceActivityAction.Updated,
+            recruitment.RequestTitle,
+            recruitment.Status.ToString(),
+            recruitment.Status.ToString(),
+            $"تم إنشاء ملف الموظف {employee.EmployeeNumber}.");
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        await dbcontext.Entry(employee).Reference(x => x.Department).LoadAsync(cancellationToken);
+        await dbcontext.Entry(employee).Reference(x => x.JobTitle).LoadAsync(cancellationToken);
+        return Result.Success(MapEmployee(employee));
     }
 
     public async Task<Result<IEnumerable<EmployeeAdministrativeRequestResponse>>> GetAdministrativeRequestsAsync(int? employeeId, HumanResourceRequestStatus? status, CancellationToken cancellationToken = default)
@@ -1339,6 +1877,16 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
 
         dbcontext.EmployeeAdministrativeRequests.Add(entity);
         await dbcontext.SaveChangesAsync(cancellationToken);
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.AdministrativeRequest,
+            entity.Id,
+            entity.EmployeeProfileId,
+            HumanResourceActivityAction.Created,
+            entity.Title,
+            null,
+            entity.Status.ToString(),
+            entity.Details);
+        await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapAdministrativeRequest(entity));
     }
 
@@ -1351,11 +1899,128 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         if (entity is null)
             return Result.Failure<EmployeeAdministrativeRequestResponse>(HumanResourceErrors.AdministrativeRequestNotFound);
 
+        var oldStatus = entity.Status.ToString();
         entity.Status = request.Status;
         entity.DecisionNotes = request.Notes?.Trim();
         entity.DecidedAt = DateTime.UtcNow.AddHours(3);
+        QueueHumanResourceActivity(
+            HumanResourceActivityEntityType.AdministrativeRequest,
+            entity.Id,
+            entity.EmployeeProfileId,
+            HumanResourceActivityAction.StatusChanged,
+            entity.Title,
+            oldStatus,
+            entity.Status.ToString(),
+            entity.DecisionNotes);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapAdministrativeRequest(entity));
+    }
+
+    public async Task<Result<IEnumerable<HumanResourceActivityResponse>>> GetActivitiesAsync(HumanResourceActivityEntityType? entityType, int? entityId, int? employeeId, CancellationToken cancellationToken = default)
+    {
+        var query = dbcontext.HumanResourceActivities
+            .AsNoTracking()
+            .Include(x => x.EmployeeProfile)
+            .AsQueryable();
+
+        if (entityType.HasValue)
+            query = query.Where(x => x.EntityType == entityType.Value);
+
+        if (entityId.HasValue)
+            query = query.Where(x => x.EntityId == entityId.Value);
+
+        if (employeeId.HasValue)
+            query = query.Where(x => x.EmployeeProfileId == employeeId.Value);
+
+        var activities = await query
+            .OrderByDescending(x => x.OccurredAt)
+            .ThenByDescending(x => x.Id)
+            .Take(100)
+            .Select(x => MapHumanResourceActivity(x))
+            .ToListAsync(cancellationToken);
+
+        return Result.Success<IEnumerable<HumanResourceActivityResponse>>(activities);
+    }
+
+    private static Error? ValidateRecruitmentStatusTransition(RecruitmentRequest entity, UpdateRecruitmentStatusRequest request, string? notes)
+    {
+        if (entity.Status == request.Status)
+            return null;
+
+        if (entity.Status is RecruitmentRequestStatus.Completed or RecruitmentRequestStatus.Cancelled)
+            return HumanResourceErrors.RecruitmentAlreadyClosed;
+
+        if (request.Status == RecruitmentRequestStatus.Cancelled)
+            return string.IsNullOrWhiteSpace(notes)
+                ? HumanResourceErrors.RecruitmentCancellationNotesRequired
+                : null;
+
+        return request.Status switch
+        {
+            RecruitmentRequestStatus.Announced when entity.Status == RecruitmentRequestStatus.Requested => null,
+            RecruitmentRequestStatus.Received when entity.Status == RecruitmentRequestStatus.Announced =>
+                HasRecruitmentCandidateInfo(entity)
+                    ? null
+                    : HumanResourceErrors.RecruitmentCandidateRequired,
+            RecruitmentRequestStatus.Interviewed when entity.Status == RecruitmentRequestStatus.Received =>
+                ValidateRecruitmentInterviewStep(entity, notes),
+            RecruitmentRequestStatus.Completed when entity.Status == RecruitmentRequestStatus.Interviewed =>
+                ValidateRecruitmentCompletionStep(entity, request, notes),
+            _ => HumanResourceErrors.InvalidRecruitmentStatusTransition
+        };
+    }
+
+    private static Error? ValidateRecruitmentInterviewStep(RecruitmentRequest entity, string? notes)
+    {
+        if (!HasRecruitmentCandidateInfo(entity))
+            return HumanResourceErrors.RecruitmentCandidateRequired;
+
+        return HasRecruitmentInterviewNotes(entity, notes)
+            ? null
+            : HumanResourceErrors.RecruitmentInterviewRequired;
+    }
+
+    private static Error? ValidateRecruitmentCompletionStep(RecruitmentRequest entity, UpdateRecruitmentStatusRequest request, string? notes)
+    {
+        if (!HasRecruitmentCandidateInfo(entity))
+            return HumanResourceErrors.RecruitmentCandidateRequired;
+
+        return (entity.InterviewAt.HasValue || request.InterviewAt.HasValue) && HasRecruitmentInterviewNotes(entity, notes)
+            ? null
+            : HumanResourceErrors.RecruitmentInterviewRequired;
+    }
+
+    private static bool HasRecruitmentCandidateInfo(RecruitmentRequest entity) =>
+        !string.IsNullOrWhiteSpace(entity.CandidateName) &&
+        (!string.IsNullOrWhiteSpace(entity.CandidateMobile) || !string.IsNullOrWhiteSpace(entity.CandidateEmail));
+
+    private static bool HasRecruitmentInterviewNotes(RecruitmentRequest entity, string? notes) =>
+        !string.IsNullOrWhiteSpace(entity.InterviewNotes) || !string.IsNullOrWhiteSpace(notes);
+
+    private static Error? ValidateEvaluationDecision(EmployeeEvaluation evaluation, EmployeeEvaluationStatus status, string? notes)
+    {
+        if (evaluation.Status != EmployeeEvaluationStatus.PendingApproval)
+            return HumanResourceErrors.InvalidEvaluationStatusTransition;
+
+        if (status == EmployeeEvaluationStatus.Rejected && string.IsNullOrWhiteSpace(notes))
+            return HumanResourceErrors.EvaluationDecisionNotesRequired;
+
+        return status is EmployeeEvaluationStatus.Approved or EmployeeEvaluationStatus.Rejected
+            ? null
+            : HumanResourceErrors.InvalidEvaluationStatusTransition;
+    }
+
+    private static Error? ValidateCardIssueDecision(EmployeeCardIssue card, HumanResourceRequestStatus status, string? notes)
+    {
+        if (card.Status is HumanResourceRequestStatus.Completed or HumanResourceRequestStatus.Cancelled or HumanResourceRequestStatus.Rejected)
+            return HumanResourceErrors.CardIssueAlreadyClosed;
+
+        if (status == HumanResourceRequestStatus.Cancelled && string.IsNullOrWhiteSpace(notes))
+            return HumanResourceErrors.CardIssueDecisionNotesRequired;
+
+        return status is HumanResourceRequestStatus.Approved or HumanResourceRequestStatus.Completed or HumanResourceRequestStatus.Cancelled
+            ? null
+            : HumanResourceErrors.InvalidCardIssueStatusTransition;
     }
 
     private async Task<Error?> ValidateLookupsAsync(int departmentId, int jobTitleId, CancellationToken cancellationToken)
@@ -1385,10 +2050,34 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         return $"{prefix}-{year}-{count:0000}";
     }
 
+    private void QueueHumanResourceActivity(
+        HumanResourceActivityEntityType entityType,
+        int entityId,
+        int? employeeProfileId,
+        HumanResourceActivityAction action,
+        string title,
+        string? fromStatus,
+        string? toStatus,
+        string? notes)
+    {
+        dbcontext.HumanResourceActivities.Add(new HumanResourceActivity
+        {
+            EntityType = entityType,
+            EntityId = entityId,
+            EmployeeProfileId = employeeProfileId,
+            Action = action,
+            Title = string.IsNullOrWhiteSpace(title) ? entityType.ToString() : title.Trim(),
+            FromStatus = fromStatus,
+            ToStatus = toStatus,
+            Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
+            OccurredAt = DateTime.UtcNow.AddHours(3)
+        });
+    }
+
     private async Task ApplyApprovedLeaveBalanceAsync(EmployeeLeaveRequest leave, CancellationToken cancellationToken)
     {
         var year = leave.StartsAt.Year;
-        var days = (leave.EndsAt.Date - leave.StartsAt.Date).Days + 1;
+        var days = GetLeaveDays(leave);
         var balance = await dbcontext.EmployeeLeaveBalances.FirstOrDefaultAsync(x =>
             x.EmployeeProfileId == leave.EmployeeProfileId &&
             x.Year == year &&
@@ -1397,6 +2086,47 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
 
         if (balance is not null)
             balance.UsedDays += days;
+    }
+
+    private async Task<Error?> ValidateApprovedLeaveBalanceAsync(EmployeeLeaveRequest leave, CancellationToken cancellationToken)
+    {
+        var year = leave.StartsAt.Year;
+        var balance = await dbcontext.EmployeeLeaveBalances.FirstOrDefaultAsync(x =>
+            x.EmployeeProfileId == leave.EmployeeProfileId &&
+            x.Year == year &&
+            x.LeaveType == leave.LeaveType,
+            cancellationToken);
+
+        if (balance is null)
+            return null;
+
+        return GetLeaveDays(leave) > balance.EntitledDays + balance.CarriedDays - balance.UsedDays
+            ? HumanResourceErrors.InsufficientLeaveBalance
+            : null;
+    }
+
+    private static int GetLeaveDays(EmployeeLeaveRequest leave) => (leave.EndsAt.Date - leave.StartsAt.Date).Days + 1;
+
+    private async Task<AttendanceStatus> ResolveAttendanceStatusAsync(RecordEmployeeAttendanceRequest request, CancellationToken cancellationToken)
+    {
+        if (request.Status != AttendanceStatus.Present || !request.CheckIn.HasValue)
+            return request.Status;
+
+        var policy = await dbcontext.EmployeeAttendancePolicies
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.IsActive && x.IsDefault, cancellationToken);
+        if (policy is null || !IsPolicyWorkDay(policy, request.WorkDate))
+            return request.Status;
+
+        var latestOnTime = policy.WorkStart.Add(TimeSpan.FromMinutes(policy.GraceMinutes));
+        return request.CheckIn.Value > latestOnTime ? AttendanceStatus.Late : request.Status;
+    }
+
+    private static bool IsPolicyWorkDay(EmployeeAttendancePolicy policy, DateTime workDate)
+    {
+        var day = workDate.DayOfWeek.ToString();
+        return policy.WorkDays.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Any(x => string.Equals(x, day, StringComparison.OrdinalIgnoreCase));
     }
 
     private static DateTime FirstDayOfMonth(DateTime value) => new(value.Year, value.Month, 1);
@@ -1508,6 +2238,9 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
             evaluation.EvaluatorName,
             evaluation.Strengths,
             evaluation.ImprovementAreas,
+            evaluation.Status.ToString(),
+            evaluation.DecisionNotes,
+            evaluation.DecidedAt,
             evaluation.Notes);
 
     private static EmployeeCardIssueResponse MapCardIssue(EmployeeCardIssue card) =>
@@ -1546,7 +2279,20 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
             record.Deductions,
             record.NetSalary,
             record.Status.ToString(),
-            record.Notes);
+            record.Notes,
+            record.DecisionNotes,
+            record.ReviewedAt,
+            record.ApprovedAt,
+            record.PaidAt);
+
+    private static bool IsValidPayrollTransition(PayrollRecordStatus fromStatus, PayrollRecordStatus toStatus) =>
+        (fromStatus, toStatus) switch
+        {
+            (PayrollRecordStatus.Draft, PayrollRecordStatus.Reviewed) => true,
+            (PayrollRecordStatus.Reviewed, PayrollRecordStatus.Approved) => true,
+            (PayrollRecordStatus.Approved, PayrollRecordStatus.Paid) => true,
+            _ => false
+        };
 
     private static AttendancePolicyResponse MapAttendancePolicy(EmployeeAttendancePolicy policy) =>
         new(policy.Id, policy.Name, policy.WorkStart, policy.WorkEnd, policy.GraceMinutes, policy.WorkDays, policy.IsDefault, policy.IsActive);
@@ -1606,6 +2352,8 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
             request.InterviewAt,
             request.InterviewNotes,
             request.CompletedAt,
+            request.ConvertedEmployeeProfileId,
+            request.ConvertedEmployeeProfile?.FullName,
             request.Notes);
 
     private static EmployeeAdministrativeRequestResponse MapAdministrativeRequest(EmployeeAdministrativeRequest request) =>
@@ -1619,4 +2367,18 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
             request.Status.ToString(),
             request.DecisionNotes,
             request.DecidedAt);
+
+    private static HumanResourceActivityResponse MapHumanResourceActivity(HumanResourceActivity activity) =>
+        new(
+            activity.Id,
+            activity.EntityType.ToString(),
+            activity.EntityId,
+            activity.EmployeeProfileId,
+            activity.EmployeeProfile?.FullName,
+            activity.Action.ToString(),
+            activity.Title,
+            activity.FromStatus,
+            activity.ToStatus,
+            activity.Notes,
+            activity.OccurredAt);
 }

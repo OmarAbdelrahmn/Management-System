@@ -78,6 +78,12 @@ public class ProgramsProjectsUiService(IProgramsProjectsService programsProjects
         return result.IsSuccess ? (true, "تم حفظ العقد.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> RecordContractPaymentAsync(int contractId, RecordProgramContractPaymentRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await programsProjects.RecordContractPaymentAsync(contractId, request, cancellationToken);
+        return result.IsSuccess ? (true, $"تم تسجيل سداد العقد. المتبقي {result.Value.RemainingAmount:N2}.") : (false, result.Error.Description);
+    }
+
     public async Task<List<ProgramProjectFinanceEntryResponse>> GetFinanceEntriesAsync(int? projectId = null, ProgramProjectFinanceEntryType? entryType = null, CancellationToken cancellationToken = default)
     {
         var result = await programsProjects.GetFinanceEntriesAsync(projectId, entryType, cancellationToken);
@@ -88,6 +94,12 @@ public class ProgramsProjectsUiService(IProgramsProjectsService programsProjects
     {
         var result = await programsProjects.AddFinanceEntryAsync(request, cancellationToken);
         return result.IsSuccess ? (true, "تم تسجيل الحركة المالية.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> UpdateFinanceEntryAsync(int id, AddProgramProjectFinanceEntryRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await programsProjects.UpdateFinanceEntryAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث الحركة المالية.") : (false, result.Error.Description);
     }
 
     public async Task<List<ProgramProjectAssignmentResponse>> GetAssignmentsAsync(int? projectId = null, ProgramProjectAssignmentType? assignmentType = null, CancellationToken cancellationToken = default)
@@ -102,6 +114,12 @@ public class ProgramsProjectsUiService(IProgramsProjectsService programsProjects
         return result.IsSuccess ? (true, "تم إلحاق السجل بالمشروع.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> UpdateAssignmentAsync(int id, AddProgramProjectAssignmentRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await programsProjects.UpdateAssignmentAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث الإلحاق.") : (false, result.Error.Description);
+    }
+
     public async Task<List<ProgramProjectReportResponse>> GetReportsAsync(int? projectId = null, string? reportType = null, CancellationToken cancellationToken = default)
     {
         var result = await programsProjects.GetReportsAsync(projectId, reportType, cancellationToken);
@@ -112,6 +130,18 @@ public class ProgramsProjectsUiService(IProgramsProjectsService programsProjects
     {
         var result = await programsProjects.AddReportAsync(request, cancellationToken);
         return result.IsSuccess ? (true, "تم حفظ التقرير.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> UpdateReportAsync(int id, AddProgramProjectReportRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await programsProjects.UpdateReportAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث التقرير.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> CloseProjectAsync(int id, CloseProgramProjectRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await programsProjects.CloseProjectAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم إغلاق المشروع/البرنامج بالتقرير الختامي.") : (false, result.Error.Description);
     }
 
     public async Task<List<ProgramProjectActivityResponse>> GetProjectActivitiesAsync(int projectId, CancellationToken cancellationToken = default)
@@ -132,6 +162,30 @@ public class ProgramsProjectsUiService(IProgramsProjectsService programsProjects
         return result.IsSuccess ? (true, "تم حفظ المورد.") : (false, result.Error.Description);
     }
 
+    public async Task<List<ProgramSupplierProposalResponse>> GetSupplierProposalsAsync(int? projectId = null, int? supplierId = null, ProgramSupplierProposalStatus? status = null, CancellationToken cancellationToken = default)
+    {
+        var result = await programsProjects.GetSupplierProposalsAsync(projectId, supplierId, status, cancellationToken);
+        return result.IsSuccess ? result.Value.ToList() : [];
+    }
+
+    public async Task<(bool Success, string Message)> SaveSupplierProposalAsync(int? id, SaveProgramSupplierProposalRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await programsProjects.SaveSupplierProposalAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم حفظ عرض المورد.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> DecideSupplierProposalAsync(int id, ProgramSupplierProposalStatus status, string? notes, CancellationToken cancellationToken = default)
+    {
+        var result = await programsProjects.DecideSupplierProposalAsync(id, new DecideProgramSupplierProposalRequest(status, notes), cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث قرار عرض المورد.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> ConvertSupplierProposalToContractAsync(int id, ConvertProgramSupplierProposalRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await programsProjects.ConvertSupplierProposalToContractAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحويل عرض المورد إلى عقد.") : (false, result.Error.Description);
+    }
+
     public async Task<List<ProgramIdeaResponse>> GetIdeasAsync(ProgramIdeaStatus? status = null, CancellationToken cancellationToken = default)
     {
         var result = await programsProjects.GetIdeasAsync(status, cancellationToken);
@@ -148,6 +202,12 @@ public class ProgramsProjectsUiService(IProgramsProjectsService programsProjects
     {
         var result = await programsProjects.UpdateIdeaStatusAsync(id, new UpdateProgramIdeaStatusRequest(status, notes), cancellationToken);
         return result.IsSuccess ? (true, "تم تحديث حالة المقترح.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> ConvertIdeaToProjectAsync(int id, ConvertProgramIdeaToProjectRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await programsProjects.ConvertIdeaToProjectAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, $"تم تحويل المقترح إلى مشروع/برنامج برقم {result.Value.ProjectCode}.") : (false, result.Error.Description);
     }
 
     public async Task<List<ProgramApprovalResponse>> GetApprovalsAsync(ProgramApprovalStatus? status = null, CancellationToken cancellationToken = default)
@@ -258,6 +318,18 @@ public class ProgramsProjectsUiService(IProgramsProjectsService programsProjects
         return result.IsSuccess ? (true, "تم إصدار الشهادة.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> IssueCertificateFromRegistrationAsync(int registrationId, IssueProgramCertificateFromRegistrationRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await programsProjects.IssueCertificateFromRegistrationAsync(registrationId, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم إصدار شهادة حضور التسجيل.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> CancelCertificateIssueAsync(int id, string? notes, CancellationToken cancellationToken = default)
+    {
+        var result = await programsProjects.CancelCertificateIssueAsync(id, new CancelProgramCertificateIssueRequest(notes), cancellationToken);
+        return result.IsSuccess ? (true, "تم إلغاء الشهادة.") : (false, result.Error.Description);
+    }
+
     public async Task<List<ProgramQualificationCaseResponse>> GetQualificationCasesAsync(ProgramQualificationCaseStatus? status = null, CancellationToken cancellationToken = default)
     {
         var result = await programsProjects.GetQualificationCasesAsync(status, cancellationToken);
@@ -280,6 +352,12 @@ public class ProgramsProjectsUiService(IProgramsProjectsService programsProjects
     {
         var result = await programsProjects.GetQualificationInstallmentsAsync(caseId, status, cancellationToken);
         return result.IsSuccess ? result.Value.ToList() : [];
+    }
+
+    public async Task<(bool Success, string Message)> GenerateQualificationInstallmentsAsync(int caseId, GenerateQualificationInstallmentsRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await programsProjects.GenerateQualificationInstallmentsAsync(caseId, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم إنشاء جدول أقساط التأهيل.") : (false, result.Error.Description);
     }
 
     public async Task<(bool Success, string Message)> SaveQualificationInstallmentAsync(int? id, SaveProgramQualificationInstallmentRequest request, CancellationToken cancellationToken = default)

@@ -395,6 +395,57 @@ public class InstitutionalExcellenceService(ApplicationDbcontext dbcontext) : II
         return Result.Success(result.Value.Where(x => x.IsAutomated));
     }
 
+    public async Task<Result<ApplyStrategicVariablesResponse>> ApplyStrategicVariablesAsync(int planId, ApplyStrategicVariablesRequest request, CancellationToken cancellationToken = default)
+    {
+        if (!await dbcontext.StrategicPlans.AnyAsync(x => x.Id == planId, cancellationToken))
+            return Result.Failure<ApplyStrategicVariablesResponse>(InstitutionalExcellenceErrors.StrategicPlanNotFound);
+
+        var variables = await dbcontext.StrategicVariables.Where(x => x.StrategicPlanId == planId).ToListAsync(cancellationToken);
+        var indicators = await dbcontext.StrategicIndicators
+            .Include(x => x.StrategicPlan)
+            .Include(x => x.StrategicGoal)
+            .Where(x => x.StrategicPlanId == planId)
+            .ToListAsync(cancellationToken);
+
+        var updatedIndicatorIds = new List<int>();
+        var now = DateTime.UtcNow.AddHours(3);
+        foreach (var indicator in indicators)
+        {
+            var variable = MatchStrategicVariable(indicator, variables);
+            if (variable is null)
+                continue;
+
+            indicator.ActualValue = variable.Value;
+            if (request.UpdateStatuses && indicator.Status != StrategicIndicatorStatus.Closed && indicator.Status != StrategicIndicatorStatus.Draft)
+                indicator.Status = StatusFromAchievement(Achievement(indicator.ActualValue, indicator.TargetValue));
+
+            indicator.Notes = string.IsNullOrWhiteSpace(request.Notes) ? indicator.Notes : request.Notes.Trim();
+            if (variable.IsAutomated)
+                variable.LastFetchedAt = now;
+
+            updatedIndicatorIds.Add(indicator.Id);
+        }
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+
+        var updatedIndicators = await dbcontext.StrategicIndicators
+            .AsNoTracking()
+            .Include(x => x.StrategicPlan)
+            .Include(x => x.StrategicGoal)
+            .Where(x => updatedIndicatorIds.Contains(x.Id))
+            .OrderBy(x => x.Kind)
+            .ThenBy(x => x.Name)
+            .ToListAsync(cancellationToken);
+        var planIndicators = await dbcontext.StrategicIndicators.AsNoTracking().Where(x => x.StrategicPlanId == planId).ToListAsync(cancellationToken);
+
+        return Result.Success(new ApplyStrategicVariablesResponse(
+            planId,
+            variables.Count,
+            updatedIndicators.Count,
+            AverageAchievement(planIndicators.Select(x => Achievement(x.ActualValue, x.TargetValue))),
+            updatedIndicators.Select(MapIndicator).ToList()));
+    }
+
     private static decimal Achievement(decimal actual, decimal target)
     {
         if (target <= 0) return actual > 0 ? 100 : 0;
@@ -417,6 +468,34 @@ public class InstitutionalExcellenceService(ApplicationDbcontext dbcontext) : II
             return AverageAchievement(criteria.Select(x => Achievement(x.ActualScore, x.TargetScore)));
 
         return Math.Round(criteria.Sum(x => Achievement(x.ActualScore, x.TargetScore) * x.Weight) / totalWeight, 2);
+    }
+
+    private static StrategicIndicatorStatus StatusFromAchievement(decimal achievement)
+    {
+        if (achievement >= 100)
+            return StrategicIndicatorStatus.Achieved;
+        return achievement < 70 ? StrategicIndicatorStatus.AtRisk : StrategicIndicatorStatus.Active;
+    }
+
+    private static StrategicVariable? MatchStrategicVariable(StrategicIndicator indicator, IReadOnlyCollection<StrategicVariable> variables)
+    {
+        return variables.FirstOrDefault(variable =>
+            TextMatches(indicator.Name, variable.Name) ||
+            TextMatches(indicator.Notes, variable.Name) ||
+            TextMatches(indicator.RelatedProjectName, variable.Name) ||
+            TextMatches(indicator.RelatedProgramName, variable.Name) ||
+            TextMatches(indicator.RelatedProjectName, variable.Source) ||
+            TextMatches(indicator.RelatedProgramName, variable.Source));
+    }
+
+    private static bool TextMatches(string? value, string? token)
+    {
+        if (string.IsNullOrWhiteSpace(value) || string.IsNullOrWhiteSpace(token))
+            return false;
+
+        var normalizedValue = value.Trim().ToLowerInvariant();
+        var normalizedToken = token.Trim().ToLowerInvariant();
+        return normalizedValue == normalizedToken || normalizedValue.Contains(normalizedToken, StringComparison.Ordinal);
     }
 
     private static async Task<T?> FindOrCreateAsync<T>(DbSet<T> set, int? id, CancellationToken cancellationToken) where T : class, new()

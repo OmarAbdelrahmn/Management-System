@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-money-check-dollar"></i><div><h2>حركة مالية</h2><p>تسجيل إيراد أو مصروف أو عهدة أو تحويل رصيد.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-money-check-dollar"></i><div><h2>@(editingFinanceEntryId.HasValue ? "تعديل حركة مالية" : "حركة مالية")</h2><p>تسجيل أو تصحيح إيراد أو مصروف أو عهدة أو تحويل رصيد.</p></div></div>
     <div class="form-grid compact">
         <label>المشروع<select @bind="projectId">@foreach (var project in projects){<option value="@project.Id">@project.Name</option>}</select></label>
         <label>النوع<select @bind="entryType"><option value="@ProgramProjectFinanceEntryType.Income">إيراد</option><option value="@ProgramProjectFinanceEntryType.Expense">مصروف</option><option value="@ProgramProjectFinanceEntryType.BalanceTransfer">تحويل رصيد</option><option value="@ProgramProjectFinanceEntryType.Custody">عهدة</option></select></label>
@@ -20,47 +20,68 @@
         <label>المصدر/المستفيد<input @bind="sourceOrPayee" /></label>
         <label>المرجع<input @bind="referenceNumber" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveFinanceAsync">تسجيل الحركة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveFinanceAsync">@(editingFinanceEntryId.HasValue ? "حفظ التعديل" : "تسجيل الحركة")</button>
+        @if (editingFinanceEntryId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetFinanceForm">إلغاء التعديل</button>
+        }
+    </div>
 </section>
 
 <section class="panel" style="margin-top:14px">
-    <div class="panel-heading"><i class="fa-solid fa-people-arrows"></i><div><h2>إلحاق بالمشروع</h2><p>إلحاق مستفيدين أو جهات أو فريق عمل.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-people-arrows"></i><div><h2>@(editingAssignmentId.HasValue ? "تعديل إلحاق" : "إلحاق بالمشروع")</h2><p>إلحاق أو تصحيح مستفيدين أو جهات أو فريق عمل.</p></div></div>
     <div class="form-grid compact">
         <label>نوع الإلحاق<select @bind="assignmentType"><option value="@ProgramProjectAssignmentType.Beneficiary">مستفيد</option><option value="@ProgramProjectAssignmentType.Entity">جهة</option><option value="@ProgramProjectAssignmentType.TeamMember">فريق عمل</option></select></label>
         <label>الاسم<input @bind="displayName" /></label>
+        <label>تاريخ الإلحاق<input type="date" @bind="assignedAt" /></label>
         <label>مرجع خارجي<input @bind="externalReference" /></label>
         <label class="span-2">ملاحظات<input @bind="assignmentNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAssignmentAsync">إلحاق</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAssignmentAsync">@(editingAssignmentId.HasValue ? "حفظ التعديل" : "إلحاق")</button>
+        @if (editingAssignmentId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetAssignmentForm">إلغاء التعديل</button>
+        }
+    </div>
 </section>
 
 <section class="panel" style="margin-top:14px">
-    <div class="panel-heading"><i class="fa-solid fa-file-lines"></i><div><h2>تقرير مشروع</h2><p>إدارة تقارير المشروع والمتابعة.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-file-lines"></i><div><h2>@(editingReportId.HasValue ? "تعديل تقرير مشروع" : "تقرير مشروع")</h2><p>إدارة وتصحيح تقارير المشروع والمتابعة.</p></div></div>
     <div class="form-grid">
         <label>نوع التقرير<input @bind="reportType" /></label>
         <label>التاريخ<input type="date" @bind="reportDate" /></label>
         <label class="span-2">الملخص<textarea @bind="summary"></textarea></label>
         <label class="span-2">مسار ملف<input @bind="filePath" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveReportAsync">حفظ التقرير</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveReportAsync">@(editingReportId.HasValue ? "حفظ التعديل" : "حفظ التقرير")</button>
+        @if (editingReportId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetReportForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="CloseProjectAsync">إغلاق بتقرير ختامي</button>
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-chart-line"></i> سجلات التنفيذ</span></div>
     <table>
-        <thead><tr><th>النوع</th><th>المشروع</th><th>التفاصيل</th><th>القيمة/الحالة</th></tr></thead>
+        <thead><tr><th>النوع</th><th>المشروع</th><th>التفاصيل</th><th>القيمة/الحالة</th><th>إجراءات</th></tr></thead>
         <tbody>
             @foreach (var item in finance)
             {
-                <tr><td>@item.EntryType</td><td>@item.ProjectName</td><td>@item.SourceOrPayee / @item.EntryDate.ToString("yyyy-MM-dd")</td><td>@item.Amount</td></tr>
+                <tr><td>@item.EntryType</td><td>@item.ProjectName</td><td>@item.SourceOrPayee / @item.EntryDate.ToString("yyyy-MM-dd")</td><td>@item.Amount</td><td><button class="secondary small" @onclick="() => EditFinance(item)">تعديل</button></td></tr>
             }
             @foreach (var item in assignments)
             {
-                <tr><td>@item.AssignmentType</td><td>@item.ProjectName</td><td>@item.DisplayName</td><td>@item.ExternalReference</td></tr>
+                <tr><td>@item.AssignmentType</td><td>@item.ProjectName</td><td>@item.DisplayName</td><td>@item.ExternalReference</td><td><button class="secondary small" @onclick="() => EditAssignment(item)">تعديل</button></td></tr>
             }
             @foreach (var item in reports)
             {
-                <tr><td>تقرير</td><td>@item.ProjectName</td><td>@item.ReportType / @item.ReportDate.ToString("yyyy-MM-dd")</td><td>@item.Summary</td></tr>
+                <tr><td>تقرير</td><td>@item.ProjectName</td><td>@item.ReportType / @item.ReportDate.ToString("yyyy-MM-dd")</td><td>@item.Summary</td><td><button class="secondary small" @onclick="() => EditReport(item)">تعديل</button></td></tr>
             }
         </tbody>
     </table>
@@ -77,14 +98,18 @@
     private decimal amount;
     private string sourceOrPayee = string.Empty;
     private string? referenceNumber;
+    private int? editingFinanceEntryId;
     private ProgramProjectAssignmentType assignmentType = ProgramProjectAssignmentType.Beneficiary;
     private string displayName = string.Empty;
+    private DateTime assignedAt = DateTime.UtcNow.AddHours(3).Date;
     private string? externalReference;
     private string? assignmentNotes;
+    private int? editingAssignmentId;
     private string reportType = "تقرير متابعة";
     private DateTime reportDate = DateTime.UtcNow.AddHours(3).Date;
     private string summary = string.Empty;
     private string? filePath;
+    private int? editingReportId;
     private bool success;
     private string? message;
 
@@ -104,23 +129,110 @@
 
     private async Task SaveFinanceAsync()
     {
-        var result = await ProgramsProjects.AddFinanceEntryAsync(new AddProgramProjectFinanceEntryRequest(projectId, entryType, entryDate, amount, sourceOrPayee, referenceNumber, null));
+        var request = new AddProgramProjectFinanceEntryRequest(projectId, entryType, entryDate, amount, sourceOrPayee, referenceNumber, null);
+        var result = editingFinanceEntryId.HasValue
+            ? await ProgramsProjects.UpdateFinanceEntryAsync(editingFinanceEntryId.Value, request)
+            : await ProgramsProjects.AddFinanceEntryAsync(request);
         success = result.Success;
         message = result.Message;
+        if (success)
+            ResetFinanceForm();
         await LoadAsync();
+    }
+
+    private void EditFinance(ProgramProjectFinanceEntryResponse item)
+    {
+        editingFinanceEntryId = item.Id;
+        projectId = item.ProgramProjectId;
+        entryType = Enum.TryParse<ProgramProjectFinanceEntryType>(item.EntryType, out var parsedType) ? parsedType : ProgramProjectFinanceEntryType.Income;
+        entryDate = item.EntryDate;
+        amount = item.Amount;
+        sourceOrPayee = item.SourceOrPayee;
+        referenceNumber = item.ReferenceNumber;
+    }
+
+    private void ResetFinanceForm()
+    {
+        editingFinanceEntryId = null;
+        projectId = projects.FirstOrDefault()?.Id ?? 0;
+        entryType = ProgramProjectFinanceEntryType.Income;
+        entryDate = DateTime.UtcNow.AddHours(3).Date;
+        amount = 0;
+        sourceOrPayee = string.Empty;
+        referenceNumber = null;
     }
 
     private async Task SaveAssignmentAsync()
     {
-        var result = await ProgramsProjects.AddAssignmentAsync(new AddProgramProjectAssignmentRequest(projectId, assignmentType, displayName, externalReference, DateTime.UtcNow.AddHours(3), assignmentNotes));
+        var request = new AddProgramProjectAssignmentRequest(projectId, assignmentType, displayName, externalReference, assignedAt, assignmentNotes);
+        var result = editingAssignmentId.HasValue
+            ? await ProgramsProjects.UpdateAssignmentAsync(editingAssignmentId.Value, request)
+            : await ProgramsProjects.AddAssignmentAsync(request);
         success = result.Success;
         message = result.Message;
+        if (success)
+            ResetAssignmentForm();
         await LoadAsync();
     }
 
     private async Task SaveReportAsync()
     {
-        var result = await ProgramsProjects.AddReportAsync(new AddProgramProjectReportRequest(projectId, reportType, reportDate, summary, filePath));
+        var request = new AddProgramProjectReportRequest(projectId, reportType, reportDate, summary, filePath);
+        var result = editingReportId.HasValue
+            ? await ProgramsProjects.UpdateReportAsync(editingReportId.Value, request)
+            : await ProgramsProjects.AddReportAsync(request);
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetReportForm();
+        await LoadAsync();
+    }
+
+    private void EditAssignment(ProgramProjectAssignmentResponse item)
+    {
+        editingAssignmentId = item.Id;
+        projectId = item.ProgramProjectId;
+        assignmentType = Enum.TryParse<ProgramProjectAssignmentType>(item.AssignmentType, out var parsedType) ? parsedType : ProgramProjectAssignmentType.Beneficiary;
+        displayName = item.DisplayName;
+        assignedAt = item.AssignedAt;
+        externalReference = item.ExternalReference;
+        assignmentNotes = item.Notes;
+    }
+
+    private void ResetAssignmentForm()
+    {
+        editingAssignmentId = null;
+        projectId = projects.FirstOrDefault()?.Id ?? 0;
+        assignmentType = ProgramProjectAssignmentType.Beneficiary;
+        displayName = string.Empty;
+        assignedAt = DateTime.UtcNow.AddHours(3).Date;
+        externalReference = null;
+        assignmentNotes = null;
+    }
+
+    private void EditReport(ProgramProjectReportResponse item)
+    {
+        editingReportId = item.Id;
+        projectId = item.ProgramProjectId;
+        reportType = item.ReportType;
+        reportDate = item.ReportDate;
+        summary = item.Summary;
+        filePath = item.FilePath;
+    }
+
+    private void ResetReportForm()
+    {
+        editingReportId = null;
+        projectId = projects.FirstOrDefault()?.Id ?? 0;
+        reportType = "تقرير متابعة";
+        reportDate = DateTime.UtcNow.AddHours(3).Date;
+        summary = string.Empty;
+        filePath = null;
+    }
+
+    private async Task CloseProjectAsync()
+    {
+        var result = await ProgramsProjects.CloseProjectAsync(projectId, new CloseProgramProjectRequest(reportDate, summary, filePath, "إغلاق من شاشة التنفيذ"));
         success = result.Success;
         message = result.Message;
         await LoadAsync();

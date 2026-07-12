@@ -11,25 +11,38 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-user-plus"></i><div><h2>إضافة مستخدم</h2><p>إنشاء حساب Identity وربطه بالأدوار.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-user-plus"></i><div><h2>@(editingUserId is null ? "إضافة مستخدم" : "تعديل مستخدم")</h2><p>إنشاء حساب Identity وربطه بالأدوار.</p></div></div>
     <div class="form-grid">
         <label>الاسم الكامل<input @bind="fullName" /></label>
         <label>البريد<input type="email" @bind="email" /></label>
-        <label>كلمة المرور<input type="password" @bind="password" /></label>
+        @if (editingUserId is null)
+        {
+            <label>كلمة المرور<input type="password" @bind="password" /></label>
+        }
+        else
+        {
+            <label class="check-row"><input type="checkbox" @bind="isActive" /> المستخدم فعال</label>
+        }
         <label>الجوال<input @bind="phone" /></label>
         <label class="span-2">الأدوار<select multiple @bind="selectedRoles">@foreach (var role in roles){<option value="@role.Name">@role.Name</option>}</select></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="CreateAsync">إنشاء المستخدم</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingUserId is null ? "إنشاء المستخدم" : "حفظ التعديل")</button>
+        @if (editingUserId is not null)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-users-gear"></i> المستخدمون</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
     <table>
-        <thead><tr><th>الاسم</th><th>البريد</th><th>الجوال</th><th>الحالة</th><th>الأدوار</th></tr></thead>
+        <thead><tr><th>الاسم</th><th>البريد</th><th>الجوال</th><th>الحالة</th><th>الأدوار</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var user in users)
             {
-                <tr><td>@user.FullName</td><td>@user.Email</td><td>@user.PhoneNumber</td><td><span class="status @(user.IsActive ? "ok" : "warn")">@(user.IsActive ? "فعال" : "موقوف")</span></td><td>@string.Join(", ", user.Roles)</td></tr>
+                <tr><td>@user.FullName</td><td>@user.Email</td><td>@user.PhoneNumber</td><td><span class="status @(user.IsActive ? "ok" : "warn")">@(user.IsActive ? "فعال" : "موقوف")</span></td><td>@string.Join(", ", user.Roles)</td><td><button class="secondary" @onclick="@(() => Edit(user))">تعديل</button><button class="secondary" @onclick="@(() => ToggleAsync(user, true))">تفعيل</button><button class="secondary" @onclick="@(() => ToggleAsync(user, false))">إيقاف</button></td></tr>
             }
         </tbody>
     </table>
@@ -38,10 +51,12 @@
 @code {
     private List<AdminUserResponse> users = [];
     private List<RoleResponse> roles = [];
+    private string? editingUserId;
     private string fullName = string.Empty;
     private string email = string.Empty;
     private string password = string.Empty;
     private string? phone;
+    private bool isActive = true;
     private string[] selectedRoles = [];
     private bool success;
     private string? message;
@@ -54,19 +69,44 @@
         roles = await Admin.GetRolesAsync();
     }
 
-    private async Task CreateAsync()
+    private async Task SaveAsync()
     {
-        var result = await Admin.CreateUserAsync(new CreateAdminUserRequest(fullName, email, password, phone, selectedRoles));
+        var result = editingUserId is null
+            ? await Admin.CreateUserAsync(new CreateAdminUserRequest(fullName, email, password, phone, selectedRoles))
+            : await Admin.UpdateUserAsync(editingUserId, new UpdateAdminUserRequest(fullName, phone, isActive, selectedRoles));
         success = result.Success;
         message = result.Message;
         if (success)
-        {
-            fullName = string.Empty;
-            email = string.Empty;
-            password = string.Empty;
-            phone = null;
-            selectedRoles = [];
-        }
+            ResetForm();
         await LoadAsync();
+    }
+
+    private async Task ToggleAsync(AdminUserResponse user, bool active)
+    {
+        var result = await Admin.UpdateUserAsync(user.Id, new UpdateAdminUserRequest(user.FullName, user.PhoneNumber, active, user.Roles));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void Edit(AdminUserResponse user)
+    {
+        editingUserId = user.Id;
+        fullName = user.FullName;
+        email = user.Email ?? string.Empty;
+        phone = user.PhoneNumber;
+        isActive = user.IsActive;
+        selectedRoles = user.Roles.ToArray();
+    }
+
+    private void ResetForm()
+    {
+        editingUserId = null;
+        fullName = string.Empty;
+        email = string.Empty;
+        password = string.Empty;
+        phone = null;
+        isActive = true;
+        selectedRoles = [];
     }
 }

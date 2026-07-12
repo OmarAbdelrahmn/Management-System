@@ -25,17 +25,17 @@
         <label class="span-2">ملخص النشاط<input @bind="summary" /></label>
         <label class="span-2">النتيجة<input @bind="resultText" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ النشاط</button><button class="secondary" @onclick="LoadNextActionsAsync">الإجراءات التالية</button><button class="secondary" @onclick="LoadAsync">كل النشاطات</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingActivityId.HasValue ? "تحديث النشاط" : "حفظ النشاط")</button><button class="secondary" @onclick="ResetForm">تفريغ</button><button class="secondary" @onclick="LoadNextActionsAsync">الإجراءات التالية</button><button class="secondary" @onclick="LoadAsync">كل النشاطات</button></div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-table"></i> سجل النشاطات</span></div>
     <table>
-        <thead><tr><th>النشاط</th><th>النوع</th><th>الحالة</th><th>النتيجة</th><th>إجراء لاحق</th></tr></thead>
+        <thead><tr><th>النشاط</th><th>النوع</th><th>الحالة</th><th>النتيجة</th><th>إجراء لاحق</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var item in activities)
             {
-                <tr><td>@item.ActivityType<br />@item.ActivityDate.ToString("yyyy-MM-dd")</td><td>@item.SubjectName<br />@item.SubjectType<br />@item.ReferenceNumber</td><td>@item.CaseNumber</td><td>@item.Summary<br />@item.Result</td><td>@(item.RequiresNextAction ? item.NextActionDate?.ToString("yyyy-MM-dd") : "لا")</td></tr>
+                <tr><td>@item.ActivityType<br />@item.ActivityDate.ToString("yyyy-MM-dd")</td><td>@item.SubjectName<br />@item.SubjectType<br />@item.ReferenceNumber</td><td>@item.CaseNumber</td><td>@item.Summary<br />@item.Result</td><td>@(item.RequiresNextAction ? item.NextActionDate?.ToString("yyyy-MM-dd") : "لا")</td><td><button class="secondary" @onclick="@(() => EditActivity(item))">تعديل</button><button class="secondary" @onclick="@(() => ClearNextActionAsync(item))">إغلاق الإجراء</button></td></tr>
             }
         </tbody>
     </table>
@@ -44,6 +44,7 @@
 @code {
     private List<FollowUpCaseResponse> cases = [];
     private List<FollowUpActivityResponse> activities = [];
+    private int? editingActivityId;
     private int? caseId;
     private FollowUpSubjectType subjectType = FollowUpSubjectType.General;
     private string subjectName = string.Empty;
@@ -70,9 +71,52 @@
 
     private async Task SaveAsync()
     {
-        var result = await FollowUp.SaveActivityAsync(null, new SaveFollowUpActivityRequest(caseId, subjectType, subjectName, referenceNumber, activityDate, activityType, summary, resultText, ownerName, requiresNextAction, nextActionDate));
+        var result = await FollowUp.SaveActivityAsync(editingActivityId, new SaveFollowUpActivityRequest(caseId, subjectType, subjectName, referenceNumber, activityDate, activityType, summary, resultText, ownerName, requiresNextAction, nextActionDate));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetForm();
+        await LoadAsync();
+    }
+
+    private void EditActivity(FollowUpActivityResponse item)
+    {
+        editingActivityId = item.Id;
+        caseId = item.FollowUpCaseId;
+        subjectType = Enum.TryParse<FollowUpSubjectType>(item.SubjectType, out var parsedSubjectType) ? parsedSubjectType : FollowUpSubjectType.General;
+        subjectName = item.SubjectName;
+        referenceNumber = item.ReferenceNumber;
+        activityDate = item.ActivityDate;
+        activityType = item.ActivityType;
+        summary = item.Summary;
+        resultText = item.Result;
+        ownerName = item.OwnerName;
+        requiresNextAction = item.RequiresNextAction;
+        nextActionDate = item.NextActionDate;
+        message = null;
+    }
+
+    private async Task ClearNextActionAsync(FollowUpActivityResponse item)
+    {
+        var result = await FollowUp.SaveActivityAsync(item.Id, new SaveFollowUpActivityRequest(item.FollowUpCaseId, Enum.TryParse<FollowUpSubjectType>(item.SubjectType, out var parsedSubjectType) ? parsedSubjectType : FollowUpSubjectType.General, item.SubjectName, item.ReferenceNumber, item.ActivityDate, item.ActivityType, item.Summary, item.Result, item.OwnerName, false, null));
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private void ResetForm()
+    {
+        editingActivityId = null;
+        caseId = null;
+        subjectType = FollowUpSubjectType.General;
+        subjectName = string.Empty;
+        referenceNumber = null;
+        activityDate = DateTime.UtcNow.AddHours(3).Date;
+        activityType = "زيارة";
+        summary = string.Empty;
+        resultText = null;
+        ownerName = null;
+        requiresNextAction = false;
+        nextActionDate = DateTime.UtcNow.AddHours(3).Date.AddDays(7);
     }
 }

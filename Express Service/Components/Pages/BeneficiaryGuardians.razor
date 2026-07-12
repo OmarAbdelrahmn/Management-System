@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-user-shield"></i><div><h2>إضافة وصي</h2><p>ربط وصي بملف مستفيد وتحديد الوصي الأساسي عند الحاجة.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-user-shield"></i><div><h2>@(editingGuardianId.HasValue ? "تعديل وصي" : "إضافة وصي")</h2><p>ربط وصي بملف مستفيد وتحديد الوصي الأساسي وإدارة الحذف المنطقي.</p></div></div>
     <div class="form-grid">
         <label>المستفيد<select @bind="beneficiaryProfileId">@foreach (var profile in profiles){<option value="@profile.Id">@profile.BeneficiaryNumber - @profile.FullName</option>}</select></label>
         <label>اسم الوصي<input @bind="fullName" /></label>
@@ -19,15 +19,24 @@
         <label>الجوال<input @bind="mobile" /></label>
         <label>العلاقة<input @bind="relationship" /></label>
         <label>وصي أساسي<select @bind="isPrimaryText"><option value="true">نعم</option><option value="false">لا</option></select></label>
+        <label>محذوف<select @bind="isDeletedText"><option value="false">لا</option><option value="true">نعم</option></select></label>
+        <label>سبب الحذف<input @bind="deleteReason" /></label>
         <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">إضافة وصي</button><button class="secondary" @onclick="LoadGuardiansAsync">تحديث القائمة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingGuardianId.HasValue ? "تحديث وصي" : "إضافة وصي")</button>
+        @if (editingGuardianId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadGuardiansAsync">تحديث القائمة</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-users-gear"></i> الأوصياء</span></div>
     <table>
-        <thead><tr><th>المستفيد</th><th>الوصي</th><th>الهوية</th><th>الجوال</th><th>العلاقة</th><th>أساسي</th></tr></thead>
+        <thead><tr><th>المستفيد</th><th>الوصي</th><th>الهوية</th><th>الجوال</th><th>العلاقة</th><th>أساسي</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var guardian in guardians)
             {
@@ -38,6 +47,7 @@
                     <td>@guardian.Mobile</td>
                     <td>@guardian.Relationship</td>
                     <td>@(guardian.IsPrimary ? "نعم" : "لا")</td>
+                    <td><button class="secondary" @onclick="@(() => EditGuardian(guardian))">تعديل</button><button class="secondary" @onclick="@(() => MakePrimaryAsync(guardian))">جعله أساسي</button><button class="secondary" @onclick="@(() => DeleteGuardianAsync(guardian))">حذف</button></td>
                 </tr>
             }
         </tbody>
@@ -47,12 +57,15 @@
 @code {
     private List<BeneficiaryResponse> profiles = [];
     private List<BeneficiaryGuardianResponse> guardians = [];
+    private int? editingGuardianId;
     private int beneficiaryProfileId;
     private string fullName = string.Empty;
     private string? nationalId;
     private string? mobile;
     private string relationship = string.Empty;
     private string isPrimaryText = "true";
+    private string isDeletedText = "false";
+    private string? deleteReason;
     private string? notes;
     private bool success;
     private string? message;
@@ -68,17 +81,74 @@
 
     private async Task SaveAsync()
     {
-        var result = await Beneficiaries.AddGuardianAsync(new AddBeneficiaryGuardianRequest(beneficiaryProfileId, fullName, nationalId, mobile, relationship, isPrimaryText == "true", notes));
+        (bool Success, string Message) result;
+        if (editingGuardianId.HasValue)
+        {
+            result = await Beneficiaries.UpdateGuardianAsync(
+                editingGuardianId.Value,
+                new UpdateBeneficiaryGuardianRequest(beneficiaryProfileId, fullName, nationalId, mobile, relationship, isPrimaryText == "true", isDeletedText == "true", deleteReason, notes));
+        }
+        else
+        {
+            result = await Beneficiaries.AddGuardianAsync(new AddBeneficiaryGuardianRequest(beneficiaryProfileId, fullName, nationalId, mobile, relationship, isPrimaryText == "true", notes));
+        }
+
         success = result.Success;
         message = result.Message;
         if (success)
         {
-            fullName = string.Empty;
-            nationalId = null;
-            mobile = null;
-            relationship = string.Empty;
-            notes = null;
+            ResetForm();
             await LoadGuardiansAsync();
         }
+    }
+
+    private void EditGuardian(BeneficiaryGuardianResponse guardian)
+    {
+        editingGuardianId = guardian.Id;
+        beneficiaryProfileId = guardian.BeneficiaryProfileId;
+        fullName = guardian.FullName;
+        nationalId = guardian.NationalId;
+        mobile = guardian.Mobile;
+        relationship = guardian.Relationship;
+        isPrimaryText = guardian.IsPrimary ? "true" : "false";
+        isDeletedText = guardian.IsDeleted ? "true" : "false";
+        deleteReason = guardian.DeleteReason;
+        notes = guardian.Notes;
+        message = null;
+    }
+
+    private async Task MakePrimaryAsync(BeneficiaryGuardianResponse guardian)
+    {
+        var result = await Beneficiaries.UpdateGuardianAsync(
+            guardian.Id,
+            new UpdateBeneficiaryGuardianRequest(guardian.BeneficiaryProfileId, guardian.FullName, guardian.NationalId, guardian.Mobile, guardian.Relationship, true, false, null, guardian.Notes));
+
+        success = result.Success;
+        message = result.Message;
+        await LoadGuardiansAsync();
+    }
+
+    private async Task DeleteGuardianAsync(BeneficiaryGuardianResponse guardian)
+    {
+        var result = await Beneficiaries.UpdateGuardianAsync(
+            guardian.Id,
+            new UpdateBeneficiaryGuardianRequest(guardian.BeneficiaryProfileId, guardian.FullName, guardian.NationalId, guardian.Mobile, guardian.Relationship, guardian.IsPrimary, true, deleteReason ?? "حذف من شاشة الأوصياء", guardian.Notes));
+
+        success = result.Success;
+        message = result.Message;
+        await LoadGuardiansAsync();
+    }
+
+    private void ResetForm()
+    {
+        editingGuardianId = null;
+        fullName = string.Empty;
+        nationalId = null;
+        mobile = null;
+        relationship = string.Empty;
+        isPrimaryText = "true";
+        isDeletedText = "false";
+        deleteReason = null;
+        notes = null;
     }
 }

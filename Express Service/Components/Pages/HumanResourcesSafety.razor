@@ -11,28 +11,28 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-shield-heart"></i><div><h2>تصنيف خطر مهني</h2><p>تعريف تصنيفات المخاطر المهنية.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-shield-heart"></i><div><h2>@(editingCategoryId.HasValue ? "تعديل تصنيف خطر مهني" : "تصنيف خطر مهني")</h2><p>تعريف تصنيفات المخاطر المهنية.</p></div></div>
     <div class="form-grid compact">
         <label>التصنيف<input @bind="categoryName" /></label>
         <label class="span-2">الوصف<input @bind="categoryDescription" /></label>
         <label class="check-row"><input type="checkbox" @bind="categoryActive" /> فعال</label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveCategoryAsync">حفظ التصنيف</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveCategoryAsync">@(editingCategoryId.HasValue ? "حفظ التعديل" : "حفظ التصنيف")</button>@if (editingCategoryId.HasValue){<button class="secondary" @onclick="ResetCategoryForm">إلغاء التعديل</button>}</div>
 </section>
 
 <section class="panel" style="margin-top:14px">
-    <div class="panel-heading"><i class="fa-solid fa-person-circle-check"></i><div><h2>تدبير أو إجراء</h2><p>إدارة التدابير والإجراءات المرتبطة بالتصنيفات.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-person-circle-check"></i><div><h2>@(editingProcedureId.HasValue ? "تعديل تدبير أو إجراء" : "تدبير أو إجراء")</h2><p>إدارة التدابير والإجراءات المرتبطة بالتصنيفات.</p></div></div>
     <div class="form-grid">
         <label>التصنيف<select @bind="procedureCategoryIdText"><option value="">بدون تصنيف</option>@foreach (var category in categories){<option value="@category.Id">@category.Name</option>}</select></label>
         <label>العنوان<input @bind="procedureTitle" /></label>
         <label class="span-2">الإجراء<textarea @bind="procedureText"></textarea></label>
         <label class="check-row"><input type="checkbox" @bind="procedureActive" /> فعال</label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveProcedureAsync">حفظ الإجراء</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveProcedureAsync">@(editingProcedureId.HasValue ? "حفظ التعديل" : "حفظ الإجراء")</button>@if (editingProcedureId.HasValue){<button class="secondary" @onclick="ResetProcedureForm">إلغاء التعديل</button>}</div>
 </section>
 
 <section class="panel" style="margin-top:14px">
-    <div class="panel-heading"><i class="fa-solid fa-clipboard-check"></i><div><h2>نموذج إجراء سلامة</h2><p>تسجيل فحص أو إجراء ومتابعة حالته.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-clipboard-check"></i><div><h2>@(editingInspectionId.HasValue ? "تعديل نموذج إجراء سلامة" : "نموذج إجراء سلامة")</h2><p>تسجيل فحص أو إجراء ومتابعة حالته.</p></div></div>
     <div class="form-grid">
         <label>التصنيف<select @bind="inspectionCategoryIdText"><option value="">بدون تصنيف</option>@foreach (var category in categories){<option value="@category.Id">@category.Name</option>}</select></label>
         <label>التاريخ<input type="date" @bind="inspectionDate" /></label>
@@ -41,42 +41,63 @@
         <label class="span-2">الوصف<textarea @bind="description"></textarea></label>
         <label class="span-2">الإجراء التصحيحي<textarea @bind="correctiveAction"></textarea></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveInspectionAsync">حفظ النموذج</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveInspectionAsync">@(editingInspectionId.HasValue ? "حفظ التعديل" : "حفظ النموذج")</button>@if (editingInspectionId.HasValue){<button class="secondary" @onclick="ResetInspectionForm">إلغاء التعديل</button>}<button class="secondary" @onclick="LoadAsync">تحديث</button></div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-list"></i> سجلات السلامة</span></div>
     <table>
-        <thead><tr><th>النوع</th><th>العنوان</th><th>التصنيف</th><th>التفاصيل</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>النوع</th><th>العنوان</th><th>التصنيف</th><th>التفاصيل</th><th>الحالة</th><th>السجل</th></tr></thead>
         <tbody>
             @foreach (var category in categories)
             {
-                <tr><td>تصنيف</td><td>@category.Name</td><td></td><td>@category.Description</td><td>@(category.IsActive ? "فعال" : "موقوف")</td></tr>
+                <tr><td>تصنيف</td><td>@category.Name</td><td></td><td>@category.Description</td><td>@(category.IsActive ? "فعال" : "موقوف")</td><td><button class="secondary" @onclick="@(() => EditCategory(category))">تعديل</button></td></tr>
             }
             @foreach (var procedure in procedures)
             {
-                <tr><td>إجراء</td><td>@procedure.Title</td><td>@procedure.CategoryName</td><td>@procedure.ProcedureText</td><td>@(procedure.IsActive ? "فعال" : "موقوف")</td></tr>
+                <tr><td>إجراء</td><td>@procedure.Title</td><td>@procedure.CategoryName</td><td>@procedure.ProcedureText</td><td>@(procedure.IsActive ? "فعال" : "موقوف")</td><td><button class="secondary" @onclick="@(() => EditProcedure(procedure))">تعديل</button></td></tr>
             }
             @foreach (var inspection in inspections)
             {
-                <tr><td>نموذج</td><td>@inspection.Location</td><td>@inspection.CategoryName</td><td>@inspection.Description</td><td><span class="status">@inspection.Status</span></td></tr>
+                <tr><td>نموذج</td><td>@inspection.Location</td><td>@inspection.CategoryName</td><td>@inspection.Description</td><td><span class="status">@inspection.Status</span></td><td><button class="secondary" @onclick="@(() => EditInspection(inspection))">تعديل</button><button class="secondary" @onclick="@(() => ChangeInspectionStatusAsync(inspection, SafetyRecordStatus.InProgress))">معالجة</button><button class="secondary" @onclick="@(() => ChangeInspectionStatusAsync(inspection, SafetyRecordStatus.Closed))">إغلاق</button><button class="secondary" @onclick="@(() => LoadActivityAsync(inspection))">السجل</button></td></tr>
             }
         </tbody>
     </table>
 </section>
 
+@if (activities.Count > 0)
+{
+    <section class="table-section" style="margin-top:14px">
+        <div class="table-title"><span><i class="fa-solid fa-clock-rotate-left"></i> سجل @activityTitle</span></div>
+        <table>
+            <thead><tr><th>الوقت</th><th>الإجراء</th><th>من</th><th>إلى</th><th>ملاحظات</th></tr></thead>
+            <tbody>
+                @foreach (var item in activities)
+                {
+                    <tr><td>@item.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td><td>@item.Action</td><td>@item.FromStatus</td><td>@item.ToStatus</td><td>@item.Notes</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
 @code {
     private List<SafetyCategoryResponse> categories = [];
     private List<SafetyProcedureResponse> procedures = [];
     private List<SafetyInspectionResponse> inspections = [];
+    private List<HumanResourceActivityResponse> activities = [];
+    private string? activityTitle;
+    private int? editingCategoryId;
     private string categoryName = string.Empty;
     private string? categoryDescription;
     private bool categoryActive = true;
     private string procedureCategoryIdText = string.Empty;
+    private int? editingProcedureId;
     private string procedureTitle = string.Empty;
     private string procedureText = string.Empty;
     private bool procedureActive = true;
     private string inspectionCategoryIdText = string.Empty;
+    private int? editingInspectionId;
     private DateTime inspectionDate = DateTime.UtcNow.AddHours(3).Date;
     private string location = string.Empty;
     private string description = string.Empty;
@@ -96,40 +117,103 @@
 
     private async Task SaveCategoryAsync()
     {
-        var result = await HR.SaveSafetyCategoryAsync(null, new SaveSafetyCategoryRequest(categoryName, categoryDescription, categoryActive));
+        var result = await HR.SaveSafetyCategoryAsync(editingCategoryId, new SaveSafetyCategoryRequest(categoryName, categoryDescription, categoryActive));
         success = result.Success;
         message = result.Message;
         if (success)
-            categoryName = string.Empty;
+            ResetCategoryForm();
         await LoadAsync();
     }
 
     private async Task SaveProcedureAsync()
     {
         var categoryId = int.TryParse(procedureCategoryIdText, out var parsedCategoryId) ? parsedCategoryId : (int?)null;
-        var result = await HR.SaveSafetyProcedureAsync(null, new SaveSafetyProcedureRequest(categoryId, procedureTitle, procedureText, procedureActive));
+        var result = await HR.SaveSafetyProcedureAsync(editingProcedureId, new SaveSafetyProcedureRequest(categoryId, procedureTitle, procedureText, procedureActive));
         success = result.Success;
         message = result.Message;
         if (success)
-        {
-            procedureTitle = string.Empty;
-            procedureText = string.Empty;
-        }
+            ResetProcedureForm();
         await LoadAsync();
     }
 
     private async Task SaveInspectionAsync()
     {
         var categoryId = int.TryParse(inspectionCategoryIdText, out var parsedCategoryId) ? parsedCategoryId : (int?)null;
-        var result = await HR.SaveSafetyInspectionAsync(null, new SaveSafetyInspectionRequest(categoryId, inspectionDate, location, description, correctiveAction, inspectionStatus));
+        var result = await HR.SaveSafetyInspectionAsync(editingInspectionId, new SaveSafetyInspectionRequest(categoryId, inspectionDate, location, description, correctiveAction, inspectionStatus));
         success = result.Success;
         message = result.Message;
         if (success)
-        {
-            location = string.Empty;
-            description = string.Empty;
-            correctiveAction = null;
-        }
+            ResetInspectionForm();
         await LoadAsync();
+    }
+
+    private async Task ChangeInspectionStatusAsync(SafetyInspectionResponse item, SafetyRecordStatus status)
+    {
+        var result = await HR.SaveSafetyInspectionAsync(item.Id, new SaveSafetyInspectionRequest(item.HrSafetyCategoryId, item.InspectionDate, item.Location, item.Description, item.CorrectiveAction, status));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task LoadActivityAsync(SafetyInspectionResponse item)
+    {
+        activityTitle = item.Location;
+        activities = await HR.GetActivitiesAsync(HumanResourceActivityEntityType.SafetyInspection, item.Id);
+    }
+
+    private void EditCategory(SafetyCategoryResponse category)
+    {
+        editingCategoryId = category.Id;
+        categoryName = category.Name;
+        categoryDescription = category.Description;
+        categoryActive = category.IsActive;
+    }
+
+    private void ResetCategoryForm()
+    {
+        editingCategoryId = null;
+        categoryName = string.Empty;
+        categoryDescription = null;
+        categoryActive = true;
+    }
+
+    private void EditProcedure(SafetyProcedureResponse procedure)
+    {
+        editingProcedureId = procedure.Id;
+        procedureCategoryIdText = procedure.HrSafetyCategoryId?.ToString() ?? string.Empty;
+        procedureTitle = procedure.Title;
+        procedureText = procedure.ProcedureText;
+        procedureActive = procedure.IsActive;
+    }
+
+    private void ResetProcedureForm()
+    {
+        editingProcedureId = null;
+        procedureCategoryIdText = string.Empty;
+        procedureTitle = string.Empty;
+        procedureText = string.Empty;
+        procedureActive = true;
+    }
+
+    private void EditInspection(SafetyInspectionResponse inspection)
+    {
+        editingInspectionId = inspection.Id;
+        inspectionCategoryIdText = inspection.HrSafetyCategoryId?.ToString() ?? string.Empty;
+        inspectionDate = inspection.InspectionDate;
+        location = inspection.Location;
+        description = inspection.Description;
+        correctiveAction = inspection.CorrectiveAction;
+        inspectionStatus = Enum.TryParse<SafetyRecordStatus>(inspection.Status, out var parsedStatus) ? parsedStatus : SafetyRecordStatus.Open;
+    }
+
+    private void ResetInspectionForm()
+    {
+        editingInspectionId = null;
+        inspectionCategoryIdText = string.Empty;
+        inspectionDate = DateTime.UtcNow.AddHours(3).Date;
+        location = string.Empty;
+        description = string.Empty;
+        correctiveAction = null;
+        inspectionStatus = SafetyRecordStatus.Open;
     }
 }

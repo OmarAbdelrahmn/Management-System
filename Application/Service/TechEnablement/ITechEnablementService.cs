@@ -15,6 +15,7 @@ public interface ITechEnablementService
     Task<Result<VisualAssetTemplateResponse>> SaveVisualAssetAsync(int? id, SaveVisualAssetTemplateRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<CybersecurityReviewResponse>>> GetCybersecurityReviewsAsync(CybersecurityReviewStatus? status = null, CancellationToken cancellationToken = default);
     Task<Result<CybersecurityReviewResponse>> SaveCybersecurityReviewAsync(int? id, SaveCybersecurityReviewRequest request, CancellationToken cancellationToken = default);
+    Task<Result<CybersecurityReviewResponse>> UpdateCybersecurityStatusAsync(int id, UpdateCybersecurityReviewStatusRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<NcnpDataRecordResponse>>> GetNcnpDataAsync(NcnpDataStatus? status = null, CancellationToken cancellationToken = default);
     Task<Result<NcnpDataRecordResponse>> SaveNcnpDataAsync(int? id, SaveNcnpDataRecordRequest request, CancellationToken cancellationToken = default);
     Task<Result> UpdateNcnpStatusAsync(int id, UpdateNcnpDataStatusRequest request, CancellationToken cancellationToken = default);

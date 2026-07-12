@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-user-tie"></i><div><h2>طلب تعيين موظف</h2><p>إنشاء طلب التوظيف وإضافة بيانات المرشح والمقابلة عند توفرها.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-user-tie"></i><div><h2>@(editingId.HasValue ? "تعديل طلب التوظيف" : "طلب تعيين موظف")</h2><p>إنشاء طلب التوظيف وإضافة بيانات المرشح والمقابلة عند توفرها.</p></div></div>
     <div class="form-grid">
         <label>القسم<select @bind="departmentId">@foreach (var department in departments){<option value="@department.Id">@department.NameAr</option>}</select></label>
         <label>المسمى<select @bind="jobTitleId">@foreach (var title in jobTitles){<option value="@title.Id">@title.NameAr</option>}</select></label>
@@ -23,14 +23,34 @@
         <label>موعد المقابلة<input type="datetime-local" @bind="interviewAt" /></label>
         <label class="span-2">المبررات<textarea @bind="justification"></textarea></label>
         <label class="span-2">ملاحظات المقابلة<textarea @bind="interviewNotes"></textarea></label>
+        <label class="span-2">ملاحظات عامة<textarea @bind="notes"></textarea></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الطلب</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingId.HasValue ? "تحديث الطلب" : "حفظ الطلب")</button><button class="secondary" @onclick="ResetForm">تفريغ النموذج</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+</section>
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-route"></i><div><h2>مسار الحالة</h2><p>الانتقال بين الحالات يتطلب البيانات المناسبة: إعلان، استلام مرشح، مقابلة، ثم إكمال أو إلغاء بسبب واضح.</p></div></div>
+    <div class="form-grid">
+        <label class="span-2">ملاحظات الحالة أو سبب الإلغاء<textarea @bind="statusNotes"></textarea></label>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-id-badge"></i><div><h2>تحويل التوظيف إلى موظف</h2><p>بعد إكمال طلب التوظيف يمكن إنشاء ملف الموظف وربطه بالطلب.</p></div></div>
+    <div class="form-grid compact">
+        <label>رقم الموظف<input @bind="conversionEmployeeNumber" placeholder="يولد تلقائياً عند تركه فارغاً" /></label>
+        <label>رقم الهوية<input @bind="conversionNationalId" /></label>
+        <label>تاريخ المباشرة<input type="date" @bind="conversionHireDate" /></label>
+        <label>الراتب الأساسي<input type="number" step="0.01" @bind="conversionBasicSalary" /></label>
+        <label>البدلات<input type="number" step="0.01" @bind="conversionAllowances" /></label>
+        <label class="span-2">ملاحظات التحويل<input @bind="conversionNotes" /></label>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-briefcase"></i> طلبات التوظيف</span></div>
     <table>
-        <thead><tr><th>العنوان</th><th>القسم</th><th>المسمى</th><th>العدد</th><th>المرشح</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <thead><tr><th>العنوان</th><th>القسم</th><th>المسمى</th><th>العدد</th><th>المرشح</th><th>الحالة</th><th>ملف الموظف</th><th>إجراء</th><th>السجل</th></tr></thead>
         <tbody>
             @foreach (var item in requests)
             {
@@ -41,21 +61,64 @@
                     <td>@item.RequestedCount</td>
                     <td>@item.CandidateName</td>
                     <td><span class="status">@item.Status</span></td>
+                    <td>@(item.ConvertedEmployeeName ?? "-")</td>
                     <td>
-                        <button class="secondary" @onclick="@(() => StatusAsync(item.Id, RecruitmentRequestStatus.Announced))">إعلان</button>
-                        <button class="secondary" @onclick="@(() => StatusAsync(item.Id, RecruitmentRequestStatus.Interviewed))">مقابلة</button>
-                        <button class="secondary" @onclick="@(() => StatusAsync(item.Id, RecruitmentRequestStatus.Completed))">إكمال</button>
+                        <button class="secondary" @onclick="@(() => Edit(item))">تعديل</button>
+                        @if (CanMove(item, RecruitmentRequestStatus.Announced))
+                        {
+                            <button class="secondary" @onclick="@(() => StatusAsync(item.Id, RecruitmentRequestStatus.Announced))">إعلان</button>
+                        }
+                        @if (CanMove(item, RecruitmentRequestStatus.Received))
+                        {
+                            <button class="secondary" @onclick="@(() => StatusAsync(item.Id, RecruitmentRequestStatus.Received))">استلام</button>
+                        }
+                        @if (CanMove(item, RecruitmentRequestStatus.Interviewed))
+                        {
+                            <button class="secondary" @onclick="@(() => StatusAsync(item.Id, RecruitmentRequestStatus.Interviewed))">مقابلة</button>
+                        }
+                        @if (CanMove(item, RecruitmentRequestStatus.Completed))
+                        {
+                            <button class="secondary" @onclick="@(() => StatusAsync(item.Id, RecruitmentRequestStatus.Completed))">إكمال</button>
+                        }
+                        @if (CanCancel(item))
+                        {
+                            <button class="secondary" @onclick="@(() => StatusAsync(item.Id, RecruitmentRequestStatus.Cancelled))">إلغاء</button>
+                        }
+                        @if (CanConvert(item))
+                        {
+                            <button class="secondary" @onclick="@(() => ConvertAsync(item.Id))">إنشاء موظف</button>
+                        }
                     </td>
+                    <td><button class="secondary" @onclick="@(() => LoadActivityAsync(item))">السجل</button></td>
                 </tr>
             }
         </tbody>
     </table>
 </section>
 
+@if (activities.Count > 0)
+{
+    <section class="table-section" style="margin-top:14px">
+        <div class="table-title"><span><i class="fa-solid fa-clock-rotate-left"></i> سجل @activityTitle</span></div>
+        <table>
+            <thead><tr><th>الوقت</th><th>الإجراء</th><th>من</th><th>إلى</th><th>ملاحظات</th></tr></thead>
+            <tbody>
+                @foreach (var item in activities)
+                {
+                    <tr><td>@item.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td><td>@item.Action</td><td>@item.FromStatus</td><td>@item.ToStatus</td><td>@item.Notes</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
 @code {
     private List<EmployeeDepartmentResponse> departments = [];
     private List<JobTitleResponse> jobTitles = [];
     private List<RecruitmentRequestResponse> requests = [];
+    private List<HumanResourceActivityResponse> activities = [];
+    private string? activityTitle;
+    private int? editingId;
     private int departmentId;
     private int jobTitleId;
     private string requestTitle = string.Empty;
@@ -66,6 +129,14 @@
     private string? candidateEmail;
     private DateTime? interviewAt;
     private string? interviewNotes;
+    private string? notes;
+    private string? statusNotes;
+    private string? conversionEmployeeNumber;
+    private string? conversionNationalId;
+    private DateTime? conversionHireDate = DateTime.UtcNow.AddHours(3).Date;
+    private decimal conversionBasicSalary;
+    private decimal conversionAllowances;
+    private string? conversionNotes;
     private bool success;
     private string? message;
 
@@ -82,27 +153,98 @@
 
     private async Task SaveAsync()
     {
-        var result = await HR.SaveRecruitmentRequestAsync(null, new SaveRecruitmentRequest(departmentId, jobTitleId, requestTitle, requestedCount, justification, candidateName, candidateMobile, candidateEmail, interviewAt, interviewNotes, null));
+        var result = await HR.SaveRecruitmentRequestAsync(editingId, new SaveRecruitmentRequest(departmentId, jobTitleId, requestTitle, requestedCount, justification, candidateName, candidateMobile, candidateEmail, interviewAt, interviewNotes, notes));
         success = result.Success;
         message = result.Message;
         if (success)
         {
-            requestTitle = string.Empty;
-            justification = null;
-            candidateName = null;
-            candidateMobile = null;
-            candidateEmail = null;
-            interviewAt = null;
-            interviewNotes = null;
+            ResetForm();
             await LoadAsync();
         }
     }
 
     private async Task StatusAsync(int id, RecruitmentRequestStatus status)
     {
-        var result = await HR.UpdateRecruitmentStatusAsync(id, new UpdateRecruitmentStatusRequest(status, null, null, null));
+        var result = await HR.UpdateRecruitmentStatusAsync(id, new UpdateRecruitmentStatusRequest(status, null, null, statusNotes));
         success = result.Success;
         message = result.Message;
+        if (success)
+            statusNotes = null;
         await LoadAsync();
+    }
+
+    private async Task ConvertAsync(int id)
+    {
+        var result = await HR.ConvertRecruitmentToEmployeeAsync(id, new ConvertRecruitmentToEmployeeRequest(conversionEmployeeNumber, conversionNationalId, conversionHireDate, conversionBasicSalary, conversionAllowances, conversionNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            conversionEmployeeNumber = null;
+            conversionNationalId = null;
+            conversionHireDate = DateTime.UtcNow.AddHours(3).Date;
+            conversionBasicSalary = 0;
+            conversionAllowances = 0;
+            conversionNotes = null;
+        }
+        await LoadAsync();
+    }
+
+    private void Edit(RecruitmentRequestResponse item)
+    {
+        editingId = item.Id;
+        departmentId = item.DepartmentId;
+        jobTitleId = item.JobTitleId;
+        requestTitle = item.RequestTitle;
+        requestedCount = item.RequestedCount;
+        justification = item.Justification;
+        candidateName = item.CandidateName;
+        candidateMobile = item.CandidateMobile;
+        candidateEmail = item.CandidateEmail;
+        interviewAt = item.InterviewAt;
+        interviewNotes = item.InterviewNotes;
+        notes = item.Notes;
+        message = null;
+        activities.Clear();
+    }
+
+    private void ResetForm()
+    {
+        editingId = null;
+        departmentId = departments.FirstOrDefault()?.Id ?? 0;
+        jobTitleId = jobTitles.FirstOrDefault()?.Id ?? 0;
+        requestTitle = string.Empty;
+        requestedCount = 1;
+        justification = null;
+        candidateName = null;
+        candidateMobile = null;
+        candidateEmail = null;
+        interviewAt = null;
+        interviewNotes = null;
+        notes = null;
+    }
+
+    private static bool CanMove(RecruitmentRequestResponse item, RecruitmentRequestStatus nextStatus) =>
+        nextStatus switch
+        {
+            RecruitmentRequestStatus.Announced => item.Status == RecruitmentRequestStatus.Requested.ToString(),
+            RecruitmentRequestStatus.Received => item.Status == RecruitmentRequestStatus.Announced.ToString(),
+            RecruitmentRequestStatus.Interviewed => item.Status == RecruitmentRequestStatus.Received.ToString(),
+            RecruitmentRequestStatus.Completed => item.Status == RecruitmentRequestStatus.Interviewed.ToString(),
+            _ => false
+        };
+
+    private static bool CanCancel(RecruitmentRequestResponse item) =>
+        item.Status != RecruitmentRequestStatus.Completed.ToString() &&
+        item.Status != RecruitmentRequestStatus.Cancelled.ToString();
+
+    private static bool CanConvert(RecruitmentRequestResponse item) =>
+        item.Status == RecruitmentRequestStatus.Completed.ToString() &&
+        !item.ConvertedEmployeeProfileId.HasValue;
+
+    private async Task LoadActivityAsync(RecruitmentRequestResponse item)
+    {
+        activityTitle = item.RequestTitle;
+        activities = await HR.GetActivitiesAsync(HumanResourceActivityEntityType.RecruitmentRequest, item.Id);
     }
 }

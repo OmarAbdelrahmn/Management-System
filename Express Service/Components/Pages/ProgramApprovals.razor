@@ -11,13 +11,19 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-stamp"></i><div><h2>طلب اعتماد</h2><p>تسجيل اعتماد فكرة أو فريق أو ميزانية أو خطة تسويق.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-stamp"></i><div><h2>@(editingApprovalId.HasValue ? "تعديل طلب اعتماد" : "طلب اعتماد")</h2><p>تسجيل وتصحيح اعتماد فكرة أو فريق أو ميزانية أو خطة تسويق.</p></div></div>
     <div class="form-grid compact">
         <label>مقترح البرنامج<select @bind="ideaIdText"><option value="">بدون ربط</option>@foreach (var idea in ideas){<option value="@idea.Id">@idea.Title</option>}</select></label>
         <label>نوع الاعتماد<select @bind="approvalType"><option>Idea</option><option>Team</option><option>Budget</option><option>Marketing</option><option>Completion</option></select></label>
         <label class="span-2">العنوان<input @bind="title" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الاعتماد</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingApprovalId.HasValue ? "حفظ التعديل" : "حفظ الاعتماد")</button>
+        @if (editingApprovalId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+    </div>
 </section>
 
 <section class="panel" style="margin-top:14px">
@@ -43,6 +49,7 @@
                     <td><span class="status">@approval.Status</span></td>
                     <td>@approval.DecisionNotes</td>
                     <td>
+                        <button class="secondary" @onclick="@(() => Edit(approval))">تعديل</button>
                         <button class="secondary" @onclick="@(() => DecideAsync(approval.Id, ProgramApprovalStatus.Approved))">اعتماد</button>
                         <button class="secondary" @onclick="@(() => DecideAsync(approval.Id, ProgramApprovalStatus.Rejected))">رفض</button>
                         <button class="secondary" @onclick="@(() => DecideAsync(approval.Id, ProgramApprovalStatus.Completed))">إكمال</button>
@@ -60,6 +67,7 @@
     private string ideaIdText = string.Empty;
     private string approvalType = "Idea";
     private string title = string.Empty;
+    private int? editingApprovalId;
     private string statusText = string.Empty;
     private string? decisionNotes;
     private bool success;
@@ -80,15 +88,11 @@
     private async Task SaveAsync()
     {
         var ideaId = int.TryParse(ideaIdText, out var value) ? value : (int?)null;
-        var result = await ProgramsProjects.SaveApprovalAsync(null, new SaveProgramApprovalRequest(ideaId, approvalType, title));
+        var result = await ProgramsProjects.SaveApprovalAsync(editingApprovalId, new SaveProgramApprovalRequest(ideaId, approvalType, title));
         success = result.Success;
         message = result.Message;
         if (success)
-        {
-            ideaIdText = string.Empty;
-            approvalType = "Idea";
-            title = string.Empty;
-        }
+            ResetForm();
         await LoadAsync();
     }
 
@@ -99,5 +103,21 @@
         message = result.Message;
         ideas = await ProgramsProjects.GetIdeasAsync();
         await LoadAsync();
+    }
+
+    private void Edit(ProgramApprovalResponse approval)
+    {
+        editingApprovalId = approval.Id;
+        ideaIdText = approval.ProgramIdeaId?.ToString() ?? string.Empty;
+        approvalType = approval.ApprovalType;
+        title = approval.Title;
+    }
+
+    private void ResetForm()
+    {
+        editingApprovalId = null;
+        ideaIdText = string.Empty;
+        approvalType = "Idea";
+        title = string.Empty;
     }
 }

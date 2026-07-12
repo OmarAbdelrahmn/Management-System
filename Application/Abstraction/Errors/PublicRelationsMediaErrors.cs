@@ -18,5 +18,7 @@ public static class PublicRelationsMediaErrors
     public static readonly Error FormNotFound = new("PublicRelationsMedia.FormNotFound", "Website form was not found.", StatusCodes.Status404NotFound);
     public static readonly Error ContactRequestNotFound = new("PublicRelationsMedia.ContactRequestNotFound", "Website contact request was not found.", StatusCodes.Status404NotFound);
     public static readonly Error DuplicateUsername = new("PublicRelationsMedia.DuplicateUsername", "Website username is already used.", StatusCodes.Status409Conflict);
+    public static readonly Error CampaignRecipientsRequired = new("PublicRelationsMedia.CampaignRecipientsRequired", "Communication campaign requires at least one recipient.", StatusCodes.Status400BadRequest);
+    public static readonly Error InvalidCampaignStatus = new("PublicRelationsMedia.InvalidCampaignStatus", "Communication campaign status does not allow this action.", StatusCodes.Status400BadRequest);
     public static readonly Error InvalidRequest = new("PublicRelationsMedia.InvalidRequest", "Public relations and media request is invalid.", StatusCodes.Status400BadRequest);
 }

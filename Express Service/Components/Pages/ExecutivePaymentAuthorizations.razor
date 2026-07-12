@@ -5,10 +5,11 @@
 
 <h1 class="page-title">إدارة التعميد بالصرف</h1>
 @if (!string.IsNullOrWhiteSpace(message)){<section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>}
-<section class="panel"><div class="panel-heading"><i class="fa-solid fa-file-invoice-dollar"></i><div><h2>تعميد صرف</h2><p>إدارة التعميدات، المرفوضة بملاحظة، المرفوضة نهائيا، وقاعدة البيانات.</p></div></div><div class="form-grid compact"><label>رقم التعميد<input @bind="authorizationNumber" /></label><label>المستفيد<input @bind="payeeName" /></label><label>الغرض<input @bind="purpose" /></label><label>المبلغ<input type="number" step="0.01" @bind="amount" /></label><label>الحالة<select @bind="status"><option value="@ExecutiveWorkflowStatus.Pending">معلق</option><option value="@ExecutiveWorkflowStatus.Approved">معتمد</option><option value="@ExecutiveWorkflowStatus.RejectedWithNote">مرفوض بملاحظة</option><option value="@ExecutiveWorkflowStatus.FinalRejected">مرفوض نهائيا</option><option value="@ExecutiveWorkflowStatus.Completed">مكتمل</option></select></label><label>التاريخ<input type="date" @bind="authorizationDate" /></label><label class="span-2">ملاحظة الرفض<input @bind="rejectionNote" /></label></div><div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ التعميد</button><button class="secondary" @onclick="LoadPendingAsync">المعلقة</button><button class="secondary" @onclick="LoadRejectedAsync">المرفوضة</button><button class="secondary" @onclick="LoadAsync">كل السجلات</button></div></section>
-<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> سجلات التعميد</span></div><table><thead><tr><th>الرقم</th><th>المستفيد</th><th>الغرض</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>@foreach (var item in authorizations){<tr><td>@item.AuthorizationNumber<br />@item.AuthorizationDate.ToString("yyyy-MM-dd")</td><td>@item.PayeeName</td><td>@item.Purpose</td><td>@item.Amount</td><td>@item.Status<br />@item.RejectionNote</td><td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, ExecutiveWorkflowStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, ExecutiveWorkflowStatus.FinalRejected))">رفض نهائي</button></td></tr>}</tbody></table></section>
+<section class="panel"><div class="panel-heading"><i class="fa-solid fa-file-invoice-dollar"></i><div><h2>@(editingAuthorizationId.HasValue ? "تعديل تعميد صرف" : "تعميد صرف")</h2><p>إدارة التعميدات، المرفوضة بملاحظة، المرفوضة نهائيا، وقاعدة البيانات.</p></div></div><div class="form-grid compact"><label>رقم التعميد<input @bind="authorizationNumber" /></label><label>المستفيد<input @bind="payeeName" /></label><label>الغرض<input @bind="purpose" /></label><label>المبلغ<input type="number" step="0.01" @bind="amount" /></label><label>الحالة<select @bind="status"><option value="@ExecutiveWorkflowStatus.Pending">معلق</option><option value="@ExecutiveWorkflowStatus.Approved">معتمد</option><option value="@ExecutiveWorkflowStatus.RejectedWithNote">مرفوض بملاحظة</option><option value="@ExecutiveWorkflowStatus.FinalRejected">مرفوض نهائيا</option><option value="@ExecutiveWorkflowStatus.Completed">مكتمل</option></select></label><label>التاريخ<input type="date" @bind="authorizationDate" /></label><label class="span-2">ملاحظة الرفض<input @bind="rejectionNote" /></label></div><div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingAuthorizationId.HasValue ? "حفظ التعديل" : "حفظ التعميد")</button>@if (editingAuthorizationId.HasValue){<button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>}<button class="secondary" @onclick="LoadPendingAsync">المعلقة</button><button class="secondary" @onclick="LoadRejectedAsync">المرفوضة</button><button class="secondary" @onclick="LoadAsync">كل السجلات</button></div></section>
+<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> سجلات التعميد</span></div><table><thead><tr><th>الرقم</th><th>المستفيد</th><th>الغرض</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>@foreach (var item in authorizations){<tr><td>@item.AuthorizationNumber<br />@item.AuthorizationDate.ToString("yyyy-MM-dd")</td><td>@item.PayeeName</td><td>@item.Purpose</td><td>@item.Amount</td><td>@item.Status<br />@item.RejectionNote</td><td><button class="secondary" @onclick="@(() => Edit(item))">تعديل</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, ExecutiveWorkflowStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, ExecutiveWorkflowStatus.RejectedWithNote))">رفض بملاحظة</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, ExecutiveWorkflowStatus.FinalRejected))">رفض نهائي</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, ExecutiveWorkflowStatus.Completed))">إكمال</button></td></tr>}</tbody></table></section>
 @code {
     private List<PaymentAuthorizationResponse> authorizations = [];
+    private int? editingAuthorizationId;
     private string authorizationNumber = $"AUTH-{DateTime.UtcNow:yyyyMMddHHmm}";
     private string payeeName = string.Empty;
     private string purpose = string.Empty;
@@ -22,6 +23,28 @@
     private async Task LoadAsync() => authorizations = await Executive.GetPaymentAuthorizationsAsync();
     private async Task LoadPendingAsync() => authorizations = await Executive.GetPaymentAuthorizationsAsync(ExecutiveWorkflowStatus.Pending);
     private async Task LoadRejectedAsync() => authorizations = await Executive.GetPaymentAuthorizationsAsync(ExecutiveWorkflowStatus.RejectedWithNote);
-    private async Task SaveAsync(){ var result = await Executive.SavePaymentAuthorizationAsync(null, new SavePaymentAuthorizationRequest(authorizationNumber, payeeName, purpose, amount, status, rejectionNote, authorizationDate)); success = result.Success; message = result.Message; if (success) authorizationNumber = $"AUTH-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+    private async Task SaveAsync(){ var result = await Executive.SavePaymentAuthorizationAsync(editingAuthorizationId, new SavePaymentAuthorizationRequest(authorizationNumber, payeeName, purpose, amount, status, rejectionNote, authorizationDate)); success = result.Success; message = result.Message; if (success) ResetForm(); await LoadAsync(); }
     private async Task DecideAsync(int id, ExecutiveWorkflowStatus next){ var result = await Executive.DecidePaymentAuthorizationAsync(id, next, rejectionNote); success = result.Success; message = result.Message; await LoadAsync(); }
+    private void Edit(PaymentAuthorizationResponse item)
+    {
+        editingAuthorizationId = item.Id;
+        authorizationNumber = item.AuthorizationNumber;
+        payeeName = item.PayeeName;
+        purpose = item.Purpose;
+        amount = item.Amount;
+        status = Enum.TryParse<ExecutiveWorkflowStatus>(item.Status, out var parsedStatus) ? parsedStatus : ExecutiveWorkflowStatus.Pending;
+        rejectionNote = item.RejectionNote;
+        authorizationDate = item.AuthorizationDate;
+    }
+    private void ResetForm()
+    {
+        editingAuthorizationId = null;
+        authorizationNumber = $"AUTH-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        payeeName = string.Empty;
+        purpose = string.Empty;
+        amount = 0;
+        status = ExecutiveWorkflowStatus.Pending;
+        rejectionNote = null;
+        authorizationDate = DateTime.UtcNow.AddHours(3).Date;
+    }
 }

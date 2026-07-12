@@ -23,7 +23,7 @@
         <label>الحالة<select @bind="caseStatus"><option value="@FollowUpCaseStatus.Requested">طلب</option><option value="@FollowUpCaseStatus.Running">قيد المتابعة</option><option value="@FollowUpCaseStatus.PendingApproval">منتهية بحاجة لاعتماد</option><option value="@FollowUpCaseStatus.Rejected">مرفوضة</option><option value="@FollowUpCaseStatus.Approved">معتمدة</option></select></label>
         <label class="span-2">ملاحظة/ملخص<input @bind="caseNote" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المتابعة</button><button class="secondary" @onclick="LoadRunningAsync">الجارية</button><button class="secondary" @onclick="LoadCompletedAsync">المكتملة</button><button class="secondary" @onclick="LoadRejectedAsync">المرفوضة</button><button class="secondary" @onclick="LoadAsync">كل السجل</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingCaseId.HasValue ? "تحديث المتابعة" : "حفظ المتابعة")</button><button class="secondary" @onclick="ResetForm">تفريغ</button><button class="secondary" @onclick="LoadRunningAsync">الجارية</button><button class="secondary" @onclick="LoadCompletedAsync">المكتملة</button><button class="secondary" @onclick="LoadRejectedAsync">المرفوضة</button><button class="secondary" @onclick="LoadAsync">كل السجل</button></div>
 </section>
 
 <section class="table-section">
@@ -40,6 +40,7 @@
                     <td>@item.Priority</td>
                     <td>@item.Status<br />@item.RejectionNote @item.CompletionSummary</td>
                     <td>
+                        <button class="secondary" @onclick="@(() => EditCase(item))">تعديل</button>
                         <button class="secondary" @onclick="@(() => ChangeStatusAsync(item.Id, FollowUpCaseStatus.Running))">تشغيل</button>
                         <button class="secondary" @onclick="@(() => ChangeStatusAsync(item.Id, FollowUpCaseStatus.PendingApproval))">إنهاء</button>
                         <button class="secondary" @onclick="@(() => ChangeStatusAsync(item.Id, FollowUpCaseStatus.Rejected))">رفض</button>
@@ -53,6 +54,7 @@
 
 @code {
     private List<FollowUpCaseResponse> cases = [];
+    private int? editingCaseId;
     private FollowUpSubjectType subjectType = FollowUpSubjectType.General;
     private string subjectName = string.Empty;
     private string? referenceNumber;
@@ -73,9 +75,11 @@
 
     private async Task SaveAsync()
     {
-        var result = await FollowUp.SaveCaseAsync(null, new SaveFollowUpCaseRequest(subjectType, subjectName, referenceNumber, requestedBy, requestDate, dueDate, priority, caseStatus, caseStatus == FollowUpCaseStatus.Rejected ? caseNote : null, caseStatus == FollowUpCaseStatus.PendingApproval ? caseNote : null, null));
+        var result = await FollowUp.SaveCaseAsync(editingCaseId, new SaveFollowUpCaseRequest(subjectType, subjectName, referenceNumber, requestedBy, requestDate, dueDate, priority, caseStatus, caseStatus == FollowUpCaseStatus.Rejected ? caseNote : null, caseStatus == FollowUpCaseStatus.PendingApproval ? caseNote : null, caseStatus == FollowUpCaseStatus.Approved ? caseNote : null));
         success = result.Success;
         message = result.Message;
+        if (result.Success)
+            ResetForm();
         await LoadAsync();
     }
 
@@ -85,5 +89,34 @@
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private void EditCase(FollowUpCaseResponse item)
+    {
+        editingCaseId = item.Id;
+        subjectType = Enum.TryParse<FollowUpSubjectType>(item.SubjectType, out var parsedSubjectType) ? parsedSubjectType : FollowUpSubjectType.General;
+        subjectName = item.SubjectName;
+        referenceNumber = item.ReferenceNumber;
+        requestedBy = item.RequestedBy;
+        requestDate = item.RequestDate;
+        dueDate = item.DueDate;
+        priority = Enum.TryParse<FollowUpPriority>(item.Priority, out var parsedPriority) ? parsedPriority : FollowUpPriority.Normal;
+        caseStatus = Enum.TryParse<FollowUpCaseStatus>(item.Status, out var parsedStatus) ? parsedStatus : FollowUpCaseStatus.Requested;
+        caseNote = item.RejectionNote ?? item.CompletionSummary ?? item.ApprovalNote;
+        message = null;
+    }
+
+    private void ResetForm()
+    {
+        editingCaseId = null;
+        subjectType = FollowUpSubjectType.General;
+        subjectName = string.Empty;
+        referenceNumber = null;
+        requestedBy = string.Empty;
+        requestDate = DateTime.UtcNow.AddHours(3).Date;
+        dueDate = DateTime.UtcNow.AddHours(3).Date.AddDays(14);
+        priority = FollowUpPriority.Normal;
+        caseStatus = FollowUpCaseStatus.Requested;
+        caseNote = null;
     }
 }

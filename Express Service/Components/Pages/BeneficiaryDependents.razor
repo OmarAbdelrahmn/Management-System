@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-people-roof"></i><div><h2>إضافة تابع</h2><p>ربط التابع بملف مستفيد وتسجيل العلاقة والفئة.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-people-roof"></i><div><h2>@(editingDependentId.HasValue ? "تعديل تابع" : "إضافة تابع")</h2><p>ربط التابع بملف مستفيد وتسجيل العلاقة والفئة وحالة النشاط.</p></div></div>
     <div class="form-grid">
         <label>المستفيد<select @bind="beneficiaryProfileId">@foreach (var profile in profiles){<option value="@profile.Id">@profile.BeneficiaryNumber - @profile.FullName</option>}</select></label>
         <label>اسم التابع<input @bind="fullName" /></label>
@@ -20,15 +20,23 @@
         <label>تاريخ الميلاد<input type="date" @bind="birthDate" /></label>
         <label>الفئة<input @bind="category" /></label>
         <label>الدرجة<input @bind="grade" /></label>
+        <label>نشط<select @bind="isActiveText"><option value="true">نعم</option><option value="false">لا</option></select></label>
         <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">إضافة تابع</button><button class="secondary" @onclick="LoadDependentsAsync">تحديث القائمة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingDependentId.HasValue ? "تحديث تابع" : "إضافة تابع")</button>
+        @if (editingDependentId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadDependentsAsync">تحديث القائمة</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-users-line"></i> التابعون</span></div>
     <table>
-        <thead><tr><th>المستفيد</th><th>التابع</th><th>الهوية</th><th>العلاقة</th><th>الفئة</th><th>نشط</th></tr></thead>
+        <thead><tr><th>المستفيد</th><th>التابع</th><th>الهوية</th><th>العلاقة</th><th>الفئة</th><th>نشط</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var dependent in dependents)
             {
@@ -39,6 +47,7 @@
                     <td>@dependent.Relationship</td>
                     <td>@dependent.Category @dependent.Grade</td>
                     <td>@(dependent.IsActive ? "نعم" : "لا")</td>
+                    <td><button class="secondary" @onclick="@(() => EditDependent(dependent))">تعديل</button><button class="secondary" @onclick="@(() => SetActiveAsync(dependent, false))">تعطيل</button><button class="secondary" @onclick="@(() => SetActiveAsync(dependent, true))">تفعيل</button></td>
                 </tr>
             }
         </tbody>
@@ -48,6 +57,7 @@
 @code {
     private List<BeneficiaryResponse> profiles = [];
     private List<BeneficiaryDependentResponse> dependents = [];
+    private int? editingDependentId;
     private int beneficiaryProfileId;
     private string fullName = string.Empty;
     private string? nationalId;
@@ -55,6 +65,7 @@
     private DateTime? birthDate;
     private string? category;
     private string? grade;
+    private string isActiveText = "true";
     private string? notes;
     private bool success;
     private string? message;
@@ -70,19 +81,63 @@
 
     private async Task SaveAsync()
     {
-        var result = await Beneficiaries.AddDependentAsync(new AddBeneficiaryDependentRequest(beneficiaryProfileId, fullName, nationalId, relationship, birthDate, category, grade, notes));
+        (bool Success, string Message) result;
+        if (editingDependentId.HasValue)
+        {
+            result = await Beneficiaries.UpdateDependentAsync(
+                editingDependentId.Value,
+                new UpdateBeneficiaryDependentRequest(beneficiaryProfileId, fullName, nationalId, relationship, birthDate, category, grade, isActiveText == "true", notes));
+        }
+        else
+        {
+            result = await Beneficiaries.AddDependentAsync(new AddBeneficiaryDependentRequest(beneficiaryProfileId, fullName, nationalId, relationship, birthDate, category, grade, notes));
+        }
+
         success = result.Success;
         message = result.Message;
         if (success)
         {
-            fullName = string.Empty;
-            nationalId = null;
-            relationship = string.Empty;
-            birthDate = null;
-            category = null;
-            grade = null;
-            notes = null;
+            ResetForm();
             await LoadDependentsAsync();
         }
+    }
+
+    private void EditDependent(BeneficiaryDependentResponse dependent)
+    {
+        editingDependentId = dependent.Id;
+        beneficiaryProfileId = dependent.BeneficiaryProfileId;
+        fullName = dependent.FullName;
+        nationalId = dependent.NationalId;
+        relationship = dependent.Relationship;
+        birthDate = dependent.BirthDate;
+        category = dependent.Category;
+        grade = dependent.Grade;
+        isActiveText = dependent.IsActive ? "true" : "false";
+        notes = dependent.Notes;
+        message = null;
+    }
+
+    private async Task SetActiveAsync(BeneficiaryDependentResponse dependent, bool isActive)
+    {
+        var result = await Beneficiaries.UpdateDependentAsync(
+            dependent.Id,
+            new UpdateBeneficiaryDependentRequest(dependent.BeneficiaryProfileId, dependent.FullName, dependent.NationalId, dependent.Relationship, dependent.BirthDate, dependent.Category, dependent.Grade, isActive, dependent.Notes));
+
+        success = result.Success;
+        message = result.Message;
+        await LoadDependentsAsync();
+    }
+
+    private void ResetForm()
+    {
+        editingDependentId = null;
+        fullName = string.Empty;
+        nationalId = null;
+        relationship = string.Empty;
+        birthDate = null;
+        category = null;
+        grade = null;
+        isActiveText = "true";
+        notes = null;
     }
 }

@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-shield-halved"></i><div><h2>مراجعة أمنية</h2><p>تقرير الأمن السيبراني وحوكمة ومتابعة الصلاحيات والصفحات الحساسة.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-shield-halved"></i><div><h2>@(editingId.HasValue ? "تعديل مراجعة أمنية" : "مراجعة أمنية")</h2><p>تقرير الأمن السيبراني وحوكمة ومتابعة الصلاحيات والصفحات الحساسة.</p></div></div>
     <div class="form-grid compact">
         <label>النطاق<input @bind="area" /></label>
         <label>الشدة<select @bind="severity"><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></label>
@@ -21,17 +21,37 @@
         <label class="span-2">الملاحظة الأمنية<input @bind="finding" /></label>
         <label class="span-2">خطة المعالجة<input @bind="mitigationPlan" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المراجعة</button><button class="secondary" @onclick="LoadOpenAsync">المفتوحة</button><button class="secondary" @onclick="LoadAsync">كل المراجعات</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingId.HasValue ? "حفظ التعديل" : "حفظ المراجعة")</button>
+        @if (editingId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadOpenAsync">المفتوحة</button>
+        <button class="secondary" @onclick="LoadAsync">كل المراجعات</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-database"></i> مراجعات الأمن السيبراني</span></div>
     <table>
-        <thead><tr><th>النطاق</th><th>الملاحظة</th><th>الشدة</th><th>الحالة</th><th>المعالجة</th></tr></thead>
+        <thead><tr><th>النطاق</th><th>الملاحظة</th><th>الشدة</th><th>الحالة</th><th>المعالجة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var item in reviews)
             {
-                <tr><td>@item.Area<br />@item.Owner</td><td>@item.Finding</td><td>@item.Severity</td><td>@item.Status<br />@item.DueDate?.ToString("yyyy-MM-dd")</td><td>@item.MitigationPlan</td></tr>
+                <tr>
+                    <td>@item.Area<br />@item.Owner</td>
+                    <td>@item.Finding</td>
+                    <td>@item.Severity</td>
+                    <td>@item.Status<br />@item.DueDate?.ToString("yyyy-MM-dd")</td>
+                    <td>@item.MitigationPlan</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => Edit(item))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => UpdateStatusAsync(item, CybersecurityReviewStatus.InReview))">مراجعة</button>
+                        <button class="secondary" @onclick="@(() => UpdateStatusAsync(item, CybersecurityReviewStatus.Mitigated))">معالجة</button>
+                        <button class="secondary" @onclick="@(() => UpdateStatusAsync(item, CybersecurityReviewStatus.Accepted))">قبول</button>
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
@@ -39,6 +59,7 @@
 
 @code {
     private List<CybersecurityReviewResponse> reviews = [];
+    private int? editingId;
     private string area = string.Empty;
     private string finding = string.Empty;
     private string severity = "Medium";
@@ -52,5 +73,28 @@
     protected override async Task OnInitializedAsync() => await LoadAsync();
     private async Task LoadAsync() => reviews = await Tech.GetCybersecurityReviewsAsync();
     private async Task LoadOpenAsync() => reviews = await Tech.GetCybersecurityReviewsAsync(CybersecurityReviewStatus.Open);
-    private async Task SaveAsync(){ var result = await Tech.SaveCybersecurityReviewAsync(null, new SaveCybersecurityReviewRequest(area, finding, severity, status, owner, dueDate, mitigationPlan)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task SaveAsync(){ var result = await Tech.SaveCybersecurityReviewAsync(editingId, new SaveCybersecurityReviewRequest(area, finding, severity, status, owner, dueDate, mitigationPlan)); success = result.Success; message = result.Message; if (success) ResetForm(); await LoadAsync(); }
+    private async Task UpdateStatusAsync(CybersecurityReviewResponse item, CybersecurityReviewStatus nextStatus){ var result = await Tech.UpdateCybersecurityStatusAsync(item.Id, nextStatus, owner ?? item.Owner, dueDate ?? item.DueDate, mitigationPlan ?? item.MitigationPlan); success = result.Success; message = result.Message; await LoadAsync(); }
+    private void Edit(CybersecurityReviewResponse item)
+    {
+        editingId = item.Id;
+        area = item.Area;
+        finding = item.Finding;
+        severity = item.Severity;
+        status = Enum.TryParse<CybersecurityReviewStatus>(item.Status, out var parsedStatus) ? parsedStatus : CybersecurityReviewStatus.Open;
+        owner = item.Owner;
+        dueDate = item.DueDate;
+        mitigationPlan = item.MitigationPlan;
+    }
+    private void ResetForm()
+    {
+        editingId = null;
+        area = string.Empty;
+        finding = string.Empty;
+        severity = "Medium";
+        status = CybersecurityReviewStatus.Open;
+        owner = null;
+        dueDate = DateTime.UtcNow.AddHours(3).Date.AddDays(14);
+        mitigationPlan = null;
+    }
 }

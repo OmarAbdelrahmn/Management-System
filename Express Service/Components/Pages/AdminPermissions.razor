@@ -11,14 +11,14 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-key"></i><div><h2>إضافة صلاحية</h2><p>تستخدم كطبقة تفصيلية فوق الأدوار الحالية.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-key"></i><div><h2>إضافة/تعديل صلاحية</h2><p>تستخدم كطبقة تفصيلية فوق الأدوار الحالية.</p></div></div>
     <div class="form-grid">
         <label>المفتاح<input @bind="permissionKey" /></label>
         <label>الاسم العربي<input @bind="permissionName" /></label>
         <label>التصنيف<input @bind="category" /></label>
         <label class="span-2">الوصف<textarea @bind="description"></textarea></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SavePermissionAsync">حفظ الصلاحية</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SavePermissionAsync">حفظ الصلاحية</button><button class="secondary" @onclick="ResetPermissionForm">تفريغ</button></div>
 </section>
 
 <section class="panel">
@@ -34,11 +34,11 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-table"></i> الصلاحيات الممنوحة</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
     <table>
-        <thead><tr><th>الدور</th><th>الصلاحية</th><th>المفتاح</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الدور</th><th>الصلاحية</th><th>المفتاح</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var grant in grants)
             {
-                <tr><td>@grant.RoleName</td><td>@grant.PermissionNameAr</td><td>@grant.PermissionKey</td><td><span class="status @(grant.IsGranted ? "ok" : "warn")">@(grant.IsGranted ? "ممنوحة" : "موقوفة")</span></td></tr>
+                <tr><td>@grant.RoleName</td><td>@grant.PermissionNameAr</td><td>@grant.PermissionKey</td><td><span class="status @(grant.IsGranted ? "ok" : "warn")">@(grant.IsGranted ? "ممنوحة" : "موقوفة")</span></td><td><button class="secondary" @onclick="@(() => EditPermission(grant.PermissionId))">تعديل الصلاحية</button><button class="secondary" @onclick="@(() => SetGrantAsync(grant, true))">منح</button><button class="secondary" @onclick="@(() => SetGrantAsync(grant, false))">إيقاف</button></td></tr>
             }
         </tbody>
     </table>
@@ -75,11 +75,7 @@
         success = result.Success;
         message = result.Message;
         if (success)
-        {
-            permissionKey = string.Empty;
-            permissionName = string.Empty;
-            description = null;
-        }
+            ResetPermissionForm();
         await LoadAsync();
     }
 
@@ -89,5 +85,33 @@
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private async Task SetGrantAsync(RolePermissionResponse grant, bool granted)
+    {
+        var result = await Admin.GrantPermissionAsync(new GrantRolePermissionRequest(grant.RoleId, grant.PermissionId, granted));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void EditPermission(int id)
+    {
+        var permission = permissions.FirstOrDefault(x => x.Id == id);
+        if (permission is null)
+            return;
+        permissionKey = permission.Key;
+        permissionName = permission.NameAr;
+        category = permission.Category;
+        description = permission.Description;
+        permissionId = permission.Id;
+    }
+
+    private void ResetPermissionForm()
+    {
+        permissionKey = string.Empty;
+        permissionName = string.Empty;
+        category = "General";
+        description = null;
     }
 }

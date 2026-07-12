@@ -32,10 +32,24 @@ public class BeneficiaryServicesController(IBeneficiaryServicesService service) 
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("aid-requests/{id:int}")]
+    public async Task<IActionResult> UpdateAidRequest(int id, [FromBody] SaveAidRequestRequest request, CancellationToken cancellationToken)
+    {
+        var result = await service.SaveAidRequestAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpPost("aid-requests/{id:int}/decision")]
     public async Task<IActionResult> DecideAidRequest(int id, [FromBody] DecideAidRequestRequest request, CancellationToken cancellationToken)
     {
         var result = await service.DecideAidRequestAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("aid-requests/{id:int}/payment-order")]
+    public async Task<IActionResult> CreatePaymentOrderFromAidRequest(int id, [FromBody] CreatePaymentOrderFromAidRequestRequest request, CancellationToken cancellationToken)
+    {
+        var result = await service.CreatePaymentOrderFromAidRequestAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -50,6 +64,13 @@ public class BeneficiaryServicesController(IBeneficiaryServicesService service) 
     public async Task<IActionResult> SavePaymentOrder([FromBody] SavePaymentOrderRequest request, CancellationToken cancellationToken)
     {
         var result = await service.SavePaymentOrderAsync(null, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("payment-orders/{id:int}")]
+    public async Task<IActionResult> UpdatePaymentOrder(int id, [FromBody] SavePaymentOrderRequest request, CancellationToken cancellationToken)
+    {
+        var result = await service.SavePaymentOrderAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -74,6 +95,13 @@ public class BeneficiaryServicesController(IBeneficiaryServicesService service) 
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("sponsors/{id:int}")]
+    public async Task<IActionResult> UpdateSponsor(int id, [FromBody] SaveSponsorRequest request, CancellationToken cancellationToken)
+    {
+        var result = await service.SaveSponsorAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("sponsorship-requirements")]
     public async Task<IActionResult> SponsorshipRequirements([FromQuery] SponsorshipStatus? status, CancellationToken cancellationToken)
     {
@@ -85,6 +113,13 @@ public class BeneficiaryServicesController(IBeneficiaryServicesService service) 
     public async Task<IActionResult> SaveSponsorshipRequirement([FromBody] SaveSponsorshipRequirementRequest request, CancellationToken cancellationToken)
     {
         var result = await service.SaveSponsorshipRequirementAsync(null, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("sponsorship-requirements/{id:int}")]
+    public async Task<IActionResult> UpdateSponsorshipRequirement(int id, [FromBody] SaveSponsorshipRequirementRequest request, CancellationToken cancellationToken)
+    {
+        var result = await service.SaveSponsorshipRequirementAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -102,6 +137,13 @@ public class BeneficiaryServicesController(IBeneficiaryServicesService service) 
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("sponsorship-records/{id:int}")]
+    public async Task<IActionResult> UpdateSponsorshipRecord(int id, [FromBody] SaveSponsorshipRecordRequest request, CancellationToken cancellationToken)
+    {
+        var result = await service.SaveSponsorshipRecordAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("sponsorship-payments")]
     public async Task<IActionResult> SponsorshipPayments([FromQuery] SponsorshipPaymentStatus? status, CancellationToken cancellationToken)
     {
@@ -109,10 +151,24 @@ public class BeneficiaryServicesController(IBeneficiaryServicesService service) 
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPost("sponsorship-records/{id:int}/payments/generate")]
+    public async Task<IActionResult> GenerateSponsorshipPayments(int id, [FromBody] GenerateSponsorshipPaymentsRequest request, CancellationToken cancellationToken)
+    {
+        var result = await service.GenerateSponsorshipPaymentsAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpPost("sponsorship-payments")]
     public async Task<IActionResult> SaveSponsorshipPayment([FromBody] SaveSponsorshipPaymentRequest request, CancellationToken cancellationToken)
     {
         var result = await service.SaveSponsorshipPaymentAsync(null, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("sponsorship-payments/{id:int}")]
+    public async Task<IActionResult> UpdateSponsorshipPayment(int id, [FromBody] SaveSponsorshipPaymentRequest request, CancellationToken cancellationToken)
+    {
+        var result = await service.SaveSponsorshipPaymentAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -130,10 +186,24 @@ public class BeneficiaryServicesController(IBeneficiaryServicesService service) 
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("entity-supports/{id:int}")]
+    public async Task<IActionResult> UpdateEntitySupport(int id, [FromBody] SaveEntitySupportRequest request, CancellationToken cancellationToken)
+    {
+        var result = await service.SaveEntitySupportAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpPost("entity-supports/{id:int}/decision")]
     public async Task<IActionResult> DecideEntitySupport(int id, [FromBody] DecideEntitySupportRequest request, CancellationToken cancellationToken)
     {
         var result = await service.DecideEntitySupportAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("entity-supports/{id:int}/payment-order")]
+    public async Task<IActionResult> CreatePaymentOrderFromEntitySupport(int id, [FromBody] CreatePaymentOrderFromEntitySupportRequest request, CancellationToken cancellationToken)
+    {
+        var result = await service.CreatePaymentOrderFromEntitySupportAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -148,6 +218,13 @@ public class BeneficiaryServicesController(IBeneficiaryServicesService service) 
     public async Task<IActionResult> SaveCoupon([FromBody] SaveCouponRequestRequest request, CancellationToken cancellationToken)
     {
         var result = await service.SaveCouponAsync(null, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("coupons/{id:int}")]
+    public async Task<IActionResult> UpdateCoupon(int id, [FromBody] SaveCouponRequestRequest request, CancellationToken cancellationToken)
+    {
+        var result = await service.SaveCouponAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 

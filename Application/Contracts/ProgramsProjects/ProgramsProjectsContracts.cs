@@ -11,7 +11,16 @@ public record ProgramsProjectsDashboardResponse(
     int PendingApprovalsCount,
     decimal TotalBudget,
     decimal TotalIncome,
-    decimal TotalExpenses);
+    decimal TotalExpenses,
+    int OverdueTasksCount,
+    int PendingRegistrationsCount,
+    int AttendedRegistrationsCount,
+    int UpcomingSessionsCount,
+    int ActiveSurveysCount,
+    int IssuedCertificatesCount,
+    int PendingSupplierProposalsCount,
+    int OpenQualificationCasesCount,
+    int RecentActivityCount);
 
 public record ProgramProjectResponse(
     int Id,
@@ -129,6 +138,18 @@ public record SaveProgramProjectContractRequest(
     DateTime? EndsAt,
     string? Notes);
 
+public record RecordProgramContractPaymentRequest(
+    decimal Amount,
+    DateTime? PaidAt,
+    string? PaymentReference,
+    string? Notes);
+
+public record ProgramContractPaymentResponse(
+    ProgramProjectContractResponse Contract,
+    ProgramProjectFinanceEntryResponse FinanceEntry,
+    decimal PaidAmount,
+    decimal RemainingAmount);
+
 public record ProgramProjectFinanceEntryResponse(
     int Id,
     int ProgramProjectId,
@@ -196,6 +217,12 @@ public record AddProgramProjectReportRequest(
     string Summary,
     string? FilePath);
 
+public record CloseProgramProjectRequest(
+    DateTime? ClosedAt,
+    string Summary,
+    string? FilePath,
+    string? Notes);
+
 public record ProgramSupplierResponse(
     int Id,
     string Name,
@@ -215,6 +242,47 @@ public record SaveProgramSupplierRequest(
     ProgramSupplierStatus Status,
     string? Notes);
 
+public record ProgramSupplierProposalResponse(
+    int Id,
+    int ProgramProjectId,
+    string ProjectName,
+    int ProgramSupplierId,
+    string SupplierName,
+    string ProposalNumber,
+    string Title,
+    string? Scope,
+    decimal Amount,
+    DateTime SubmittedAt,
+    DateTime? ValidUntil,
+    string Status,
+    string? DecisionNotes,
+    DateTime? DecidedAt,
+    int? ConvertedContractId,
+    string? ConvertedContractNumber,
+    string? Notes);
+
+public record SaveProgramSupplierProposalRequest(
+    int ProgramProjectId,
+    int ProgramSupplierId,
+    string? ProposalNumber,
+    string Title,
+    string? Scope,
+    decimal Amount,
+    DateTime? SubmittedAt,
+    DateTime? ValidUntil,
+    ProgramSupplierProposalStatus Status,
+    string? Notes);
+
+public record DecideProgramSupplierProposalRequest(
+    ProgramSupplierProposalStatus Status,
+    string? DecisionNotes);
+
+public record ConvertProgramSupplierProposalRequest(
+    string? ContractNumber,
+    DateTime? SignedAt,
+    DateTime? EndsAt,
+    string? Notes);
+
 public record ProgramIdeaResponse(
     int Id,
     string Title,
@@ -225,6 +293,8 @@ public record ProgramIdeaResponse(
     string Status,
     string? DecisionNotes,
     DateTime? DecidedAt,
+    int? ConvertedProjectId,
+    string? ConvertedProjectCode,
     DateTime CreatedAt);
 
 public record SaveProgramIdeaRequest(
@@ -238,6 +308,15 @@ public record SaveProgramIdeaRequest(
 public record UpdateProgramIdeaStatusRequest(
     ProgramIdeaStatus Status,
     string? DecisionNotes);
+
+public record ConvertProgramIdeaToProjectRequest(
+    string ProjectType,
+    string? ManagerName,
+    DateTime? StartsAt,
+    DateTime? EndsAt,
+    ProgramProjectStatus Status,
+    decimal TargetBeneficiaries,
+    string? Notes);
 
 public record ProgramApprovalResponse(
     int Id,
@@ -388,6 +467,15 @@ public record IssueProgramCertificateRequest(
     DateTime? IssuedAt,
     string? Notes);
 
+public record IssueProgramCertificateFromRegistrationRequest(
+    int? ProgramCertificateTemplateId,
+    string? CertificateNumber,
+    DateTime? IssuedAt,
+    string? Notes);
+
+public record CancelProgramCertificateIssueRequest(
+    string? Notes);
+
 public record ProgramQualificationCaseResponse(
     int Id,
     int? ProgramProjectId,
@@ -432,6 +520,11 @@ public record SaveProgramQualificationInstallmentRequest(
     int ProgramQualificationCaseId,
     DateTime DueDate,
     decimal Amount,
+    string? Notes);
+
+public record GenerateQualificationInstallmentsRequest(
+    DateTime FirstDueDate,
+    int MonthsBetweenInstallments,
     string? Notes);
 
 public record RecordQualificationInstallmentPaymentRequest(

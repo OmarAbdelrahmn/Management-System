@@ -15,6 +15,7 @@ public record SaveVisualAssetTemplateRequest(string Name, VisualAssetType AssetT
 
 public record CybersecurityReviewResponse(int Id, string Area, string Finding, string Severity, string Status, string? Owner, DateTime? DueDate, string? MitigationPlan);
 public record SaveCybersecurityReviewRequest(string Area, string Finding, string Severity, CybersecurityReviewStatus Status, string? Owner, DateTime? DueDate, string? MitigationPlan);
+public record UpdateCybersecurityReviewStatusRequest(CybersecurityReviewStatus Status, string? Owner, DateTime? DueDate, string? MitigationPlan);
 
 public record NcnpDataRecordResponse(int Id, string ReferenceNumber, string BeneficiaryName, string SupportType, DateTime? SupportDate, decimal Cost, string Status, string? PlatformReference, string? Notes);
 public record SaveNcnpDataRecordRequest(string ReferenceNumber, string BeneficiaryName, string SupportType, DateTime? SupportDate, decimal Cost, NcnpDataStatus Status, string? PlatformReference, string? Notes);

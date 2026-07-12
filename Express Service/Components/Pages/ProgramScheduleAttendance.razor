@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-calendar-days"></i><div><h2>موعد برنامج</h2><p>إدارة جدول البرنامج وجلساته.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-calendar-days"></i><div><h2>@(editingSessionId.HasValue ? "تعديل موعد برنامج" : "موعد برنامج")</h2><p>إدارة جدول البرنامج وجلساته.</p></div></div>
     <div class="form-grid compact">
         <label>البرنامج<select @bind="projectId">@foreach (var project in projects){<option value="@project.Id">@project.Name</option>}</select></label>
         <label>عنوان الموعد<input @bind="sessionTitle" /></label>
@@ -20,11 +20,17 @@
         <label>الموقع<input @bind="location" /></label>
         <label>ملاحظات<input @bind="sessionNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveSessionAsync">حفظ الموعد</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveSessionAsync">@(editingSessionId.HasValue ? "حفظ التعديل" : "حفظ الموعد")</button>
+        @if (editingSessionId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetSessionForm">إلغاء التعديل</button>
+        }
+    </div>
 </section>
 
 <section class="panel" style="margin-top:14px">
-    <div class="panel-heading"><i class="fa-solid fa-user-check"></i><div><h2>تحضير مشارك</h2><p>تسجيل الحضور والغياب والأعذار.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-user-check"></i><div><h2>@(editingAttendanceId.HasValue ? "تعديل حضور مشارك" : "تحضير مشارك")</h2><p>تسجيل وتصحيح الحضور والغياب والأعذار.</p></div></div>
     <div class="form-grid compact">
         <label>الموعد<select @bind="sessionId">@foreach (var session in sessions){<option value="@session.Id">@session.Title</option>}</select></label>
         <label>اسم المشارك<input @bind="participantName" /></label>
@@ -32,21 +38,28 @@
         <label>الحالة<select @bind="attendanceStatus"><option value="@ProgramAttendanceStatus.Present">حاضر</option><option value="@ProgramAttendanceStatus.Absent">غائب</option><option value="@ProgramAttendanceStatus.Excused">بعذر</option></select></label>
         <label class="span-2">ملاحظات<input @bind="attendanceNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAttendanceAsync">حفظ الحضور</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAttendanceAsync">@(editingAttendanceId.HasValue ? "حفظ التعديل" : "حفظ الحضور")</button>
+        @if (editingAttendanceId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetAttendanceForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-list-check"></i> الجداول والحضور</span></div>
     <table>
-        <thead><tr><th>النوع</th><th>البرنامج/الموعد</th><th>التفاصيل</th><th>النتيجة</th></tr></thead>
+        <thead><tr><th>النوع</th><th>البرنامج/الموعد</th><th>التفاصيل</th><th>النتيجة</th><th>إجراءات</th></tr></thead>
         <tbody>
             @foreach (var session in sessions)
             {
-                <tr><td>موعد</td><td>@session.ProjectName</td><td>@session.Title<br />@session.StartsAt.ToString("yyyy-MM-dd HH:mm")</td><td>حضور @session.PresentCount / غياب @session.AbsentCount</td></tr>
+                <tr><td>موعد</td><td>@session.ProjectName</td><td>@session.Title<br />@session.StartsAt.ToString("yyyy-MM-dd HH:mm")</td><td>حضور @session.PresentCount / غياب @session.AbsentCount</td><td><button class="secondary small" @onclick="() => EditSession(session)">تعديل</button></td></tr>
             }
             @foreach (var item in attendance)
             {
-                <tr><td>حضور</td><td>@item.SessionTitle</td><td>@item.ParticipantName<br />@item.ExternalReference</td><td>@item.Status</td></tr>
+                <tr><td>حضور</td><td>@item.SessionTitle</td><td>@item.ParticipantName<br />@item.ExternalReference</td><td>@item.Status</td><td><button class="secondary small" @onclick="() => EditAttendance(item)">تعديل</button></td></tr>
             }
         </tbody>
     </table>
@@ -63,10 +76,12 @@
     private DateTime endsAt = DateTime.UtcNow.AddHours(3).Date.AddHours(11);
     private string? location;
     private string? sessionNotes;
+    private int? editingSessionId;
     private string participantName = string.Empty;
     private string? externalReference;
     private ProgramAttendanceStatus attendanceStatus = ProgramAttendanceStatus.Present;
     private string? attendanceNotes;
+    private int? editingAttendanceId;
     private bool success;
     private string? message;
 
@@ -88,23 +103,63 @@
 
     private async Task SaveSessionAsync()
     {
-        var result = await ProgramsProjects.SaveSessionAsync(null, new SaveProgramSessionRequest(projectId, sessionTitle, startsAt, endsAt, location, sessionNotes));
+        var result = await ProgramsProjects.SaveSessionAsync(editingSessionId, new SaveProgramSessionRequest(projectId, sessionTitle, startsAt, endsAt, location, sessionNotes));
         success = result.Success;
         message = result.Message;
+        if (success)
+            ResetSessionForm();
         await LoadAsync();
     }
 
     private async Task SaveAttendanceAsync()
     {
-        var result = await ProgramsProjects.SaveAttendanceAsync(null, new SaveProgramSessionAttendanceRequest(sessionId, participantName, externalReference, attendanceStatus, attendanceNotes));
+        var result = await ProgramsProjects.SaveAttendanceAsync(editingAttendanceId, new SaveProgramSessionAttendanceRequest(sessionId, participantName, externalReference, attendanceStatus, attendanceNotes));
         success = result.Success;
         message = result.Message;
         if (success)
-        {
-            participantName = string.Empty;
-            externalReference = null;
-            attendanceNotes = null;
-        }
+            ResetAttendanceForm();
         await LoadAsync();
+    }
+
+    private void EditSession(ProgramSessionResponse session)
+    {
+        editingSessionId = session.Id;
+        projectId = session.ProgramProjectId;
+        sessionTitle = session.Title;
+        startsAt = session.StartsAt;
+        endsAt = session.EndsAt;
+        location = session.Location;
+        sessionNotes = session.Notes;
+    }
+
+    private void ResetSessionForm()
+    {
+        editingSessionId = null;
+        projectId = projects.FirstOrDefault()?.Id ?? 0;
+        sessionTitle = string.Empty;
+        startsAt = DateTime.UtcNow.AddHours(3).Date.AddHours(9);
+        endsAt = DateTime.UtcNow.AddHours(3).Date.AddHours(11);
+        location = null;
+        sessionNotes = null;
+    }
+
+    private void EditAttendance(ProgramSessionAttendanceResponse item)
+    {
+        editingAttendanceId = item.Id;
+        sessionId = item.ProgramSessionId;
+        participantName = item.ParticipantName;
+        externalReference = item.ExternalReference;
+        attendanceStatus = Enum.TryParse<ProgramAttendanceStatus>(item.Status, out var parsedStatus) ? parsedStatus : ProgramAttendanceStatus.Present;
+        attendanceNotes = item.Notes;
+    }
+
+    private void ResetAttendanceForm()
+    {
+        editingAttendanceId = null;
+        sessionId = sessions.FirstOrDefault()?.Id ?? 0;
+        participantName = string.Empty;
+        externalReference = null;
+        attendanceStatus = ProgramAttendanceStatus.Present;
+        attendanceNotes = null;
     }
 }

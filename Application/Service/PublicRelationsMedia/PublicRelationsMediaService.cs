@@ -136,7 +136,10 @@ public class PublicRelationsMediaService(ApplicationDbcontext dbcontext) : IPubl
 
     public async Task<Result<IEnumerable<CommunicationCampaignResponse>>> GetCampaignsAsync(CommunicationChannelType? channelType, CommunicationMessageStatus? status, CancellationToken cancellationToken = default)
     {
-        var query = dbcontext.CommunicationCampaigns.AsNoTracking().AsQueryable();
+        var query = dbcontext.CommunicationCampaigns
+            .AsNoTracking()
+            .Include(x => x.Recipients)
+            .AsQueryable();
         if (channelType.HasValue) query = query.Where(x => x.ChannelType == channelType.Value);
         if (status.HasValue) query = query.Where(x => x.Status == status.Value);
         return Result.Success<IEnumerable<CommunicationCampaignResponse>>(await query.OrderByDescending(x => x.CreatedAt).Select(x => MapCampaign(x)).ToListAsync(cancellationToken));
@@ -149,15 +152,44 @@ public class PublicRelationsMediaService(ApplicationDbcontext dbcontext) : IPubl
         if (entity is null) return Result.Failure<CommunicationCampaignResponse>(PublicRelationsMediaErrors.CampaignNotFound);
         entity.ChannelType = request.ChannelType; entity.CommunicationTemplateId = request.CommunicationTemplateId; entity.CommunicationListId = request.CommunicationListId; entity.Title = request.Title.Trim(); entity.MessageBody = request.MessageBody.Trim(); entity.Status = request.Status; entity.SentAt = request.Status == CommunicationMessageStatus.Sent ? DateTime.UtcNow.AddHours(3) : entity.SentAt;
         await dbcontext.SaveChangesAsync(cancellationToken);
+        await dbcontext.Entry(entity).Collection(x => x.Recipients).LoadAsync(cancellationToken);
         return Result.Success(MapCampaign(entity));
     }
 
     public async Task<Result<CommunicationCampaignResponse>> SendCampaignAsync(int id, SendCommunicationCampaignRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = await dbcontext.CommunicationCampaigns.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var entity = await dbcontext.CommunicationCampaigns
+            .Include(x => x.CommunicationList)
+            .Include(x => x.Recipients)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (entity is null) return Result.Failure<CommunicationCampaignResponse>(PublicRelationsMediaErrors.CampaignNotFound);
+        if (entity.Status != CommunicationMessageStatus.Draft)
+            return Result.Failure<CommunicationCampaignResponse>(PublicRelationsMediaErrors.InvalidCampaignStatus);
+        if (entity.CommunicationList is null || !entity.CommunicationList.IsActive || entity.CommunicationList.ChannelType != entity.ChannelType)
+            return Result.Failure<CommunicationCampaignResponse>(PublicRelationsMediaErrors.InvalidRequest);
+
+        var recipients = ParseRecipients(entity.CommunicationList.RecipientsCsv);
+        if (recipients.Count == 0)
+            return Result.Failure<CommunicationCampaignResponse>(PublicRelationsMediaErrors.CampaignRecipientsRequired);
+
+        var now = DateTime.UtcNow.AddHours(3);
         entity.Status = request.MarkSent ? CommunicationMessageStatus.Sent : CommunicationMessageStatus.Failed;
-        entity.SentAt = request.MarkSent ? DateTime.UtcNow.AddHours(3) : null;
+        entity.SentAt = request.MarkSent ? now : null;
+        dbcontext.CommunicationCampaignRecipients.RemoveRange(entity.Recipients);
+        entity.Recipients.Clear();
+
+        foreach (var recipient in recipients)
+        {
+            entity.Recipients.Add(new CommunicationCampaignRecipient
+            {
+                Recipient = recipient,
+                Status = entity.Status,
+                AttemptedAt = now,
+                DeliveredAt = request.MarkSent ? now : null,
+                Error = request.MarkSent ? null : "تم تسجيل فشل إرسال الحملة."
+            });
+        }
+
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapCampaign(entity));
     }
@@ -227,6 +259,24 @@ public class PublicRelationsMediaService(ApplicationDbcontext dbcontext) : IPubl
         var entity = await FindOrCreateAsync(dbcontext.WebsiteContentItems, id, PublicRelationsMediaErrors.ContentNotFound, cancellationToken);
         if (entity is null) return Result.Failure<WebsiteContentItemResponse>(PublicRelationsMediaErrors.ContentNotFound);
         entity.ContentType = request.ContentType; entity.Title = request.Title.Trim(); entity.Slug = request.Slug?.Trim(); entity.Summary = request.Summary?.Trim(); entity.Body = request.Body.Trim(); entity.MediaUrl = request.MediaUrl?.Trim(); entity.Status = request.Status; entity.PublishedAt = request.Status == WebsiteContentStatus.Published ? DateTime.UtcNow.AddHours(3) : entity.PublishedAt;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapContent(entity));
+    }
+
+    public async Task<Result<WebsiteContentItemResponse>> UpdateContentStatusAsync(int id, UpdateWebsiteContentStatusRequest request, CancellationToken cancellationToken = default)
+    {
+        var entity = await dbcontext.WebsiteContentItems.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (entity is null) return Result.Failure<WebsiteContentItemResponse>(PublicRelationsMediaErrors.ContentNotFound);
+
+        if (request.Status == WebsiteContentStatus.Published && RequiresPublicSlug(entity.ContentType) && string.IsNullOrWhiteSpace(entity.Slug))
+            return Result.Failure<WebsiteContentItemResponse>(PublicRelationsMediaErrors.InvalidRequest);
+
+        entity.Status = request.Status;
+        if (request.Status == WebsiteContentStatus.Published)
+            entity.PublishedAt = request.PublishedAt ?? DateTime.UtcNow.AddHours(3);
+        else if (request.Status == WebsiteContentStatus.Draft)
+            entity.PublishedAt = null;
+
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapContent(entity));
     }
@@ -311,7 +361,34 @@ public class PublicRelationsMediaService(ApplicationDbcontext dbcontext) : IPubl
     private static WebsiteUserAccountResponse MapWebsiteUser(WebsiteUserAccount x) => new(x.Id, x.FullName, x.Username, x.Email, x.RoleName, x.Status.ToString(), x.LastLoginAt);
     private static CommunicationTemplateResponse MapTemplate(CommunicationTemplate x) => new(x.Id, x.ChannelType.ToString(), x.Name, x.Body, x.IsActive);
     private static CommunicationListResponse MapList(CommunicationList x) => new(x.Id, x.ChannelType.ToString(), x.Name, x.RecipientsCsv, x.IsActive);
-    private static CommunicationCampaignResponse MapCampaign(CommunicationCampaign x) => new(x.Id, x.ChannelType.ToString(), x.CommunicationTemplateId, x.CommunicationListId, x.Title, x.MessageBody, x.Status.ToString(), x.SentAt);
+    private static CommunicationCampaignResponse MapCampaign(CommunicationCampaign x)
+    {
+        var recipients = x.Recipients.Select(MapCampaignRecipient).ToList();
+        return new(
+            x.Id,
+            x.ChannelType.ToString(),
+            x.CommunicationTemplateId,
+            x.CommunicationListId,
+            x.Title,
+            x.MessageBody,
+            x.Status.ToString(),
+            x.SentAt,
+            recipients.Count,
+            recipients.Count(r => r.Status == CommunicationMessageStatus.Sent.ToString()),
+            recipients.Count(r => r.Status == CommunicationMessageStatus.Failed.ToString()),
+            recipients);
+    }
+
+    private static CommunicationCampaignRecipientResponse MapCampaignRecipient(CommunicationCampaignRecipient x) =>
+        new(x.Id, x.Recipient, x.Status.ToString(), x.AttemptedAt, x.DeliveredAt, x.Error);
+
+    private static IReadOnlyList<string> ParseRecipients(string? recipientsCsv) =>
+        string.IsNullOrWhiteSpace(recipientsCsv)
+            ? []
+            : recipientsCsv
+                .Split([',', ';', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
     private static PushSubscriberResponse MapPushSubscriber(PushSubscriber x) => new(x.Id, x.DisplayName, x.Endpoint, x.IsActive);
     private static WebsiteDesignSettingResponse MapDesign(WebsiteDesignSetting x) => new(x.Id, x.ThemeName, x.PrimaryColor, x.FontFamily, x.TemplateName, x.CustomCss, x.IsActive);
     private static WebsiteNavigationItemResponse MapNav(WebsiteNavigationItem x) => new(x.Id, x.Label, x.Url, x.Placement, x.SortOrder, x.IsActive);
@@ -319,4 +396,5 @@ public class PublicRelationsMediaService(ApplicationDbcontext dbcontext) : IPubl
     private static WebsiteFormResponse MapForm(WebsiteForm x) => new(x.Id, x.Title, x.FieldsJson, x.IsActive, x.Submissions.Count);
     private static WebsiteFormSubmissionResponse MapSubmission(WebsiteFormSubmission x) => new(x.Id, x.WebsiteFormId, x.WebsiteForm?.Title ?? string.Empty, x.SubmitterName, x.ValuesJson, x.SubmittedAt);
     private static WebsiteContactRequestResponse MapContact(WebsiteContactRequest x) => new(x.Id, x.FullName, x.Email, x.Mobile, x.Subject, x.Message, x.Status.ToString(), x.CreatedAt);
+    private static bool RequiresPublicSlug(WebsiteContentType contentType) => contentType is WebsiteContentType.About or WebsiteContentType.News or WebsiteContentType.Service or WebsiteContentType.Page or WebsiteContentType.Initiative or WebsiteContentType.AnnualReport or WebsiteContentType.Regulation;
 }

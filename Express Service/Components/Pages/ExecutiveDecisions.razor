@@ -5,10 +5,11 @@
 
 <h1 class="page-title">إدارة القرارات الإدارية</h1>
 @if (!string.IsNullOrWhiteSpace(message)){<section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>}
-<section class="panel"><div class="panel-heading"><i class="fa-solid fa-scale-balanced"></i><div><h2>قرار إداري</h2><p>القرارات الإدارية، قرارات الاجتماعات، مهام القرارات، وتصدير نماذج القرارات.</p></div></div><div class="form-grid compact"><label>رقم القرار<input @bind="decisionNumber" /></label><label>النوع<select @bind="decisionType"><option value="@AdministrativeDecisionType.Administrative">إداري</option><option value="@AdministrativeDecisionType.Meeting">اجتماع</option><option value="@AdministrativeDecisionType.DecisionTask">مهمة قرار</option><option value="@AdministrativeDecisionType.ExportTemplate">نموذج تصدير</option></select></label><label>العنوان<input @bind="title" /></label><label>رمز الاجتماع<input @bind="relatedMeetingCode" /></label><label>المسند إليه<input @bind="assignedTo" /></label><label>الحالة<select @bind="status"><option value="@ExecutiveWorkflowStatus.Pending">معلق</option><option value="@ExecutiveWorkflowStatus.Approved">معتمد</option><option value="@ExecutiveWorkflowStatus.Completed">مكتمل</option></select></label><label>تاريخ القرار<input type="date" @bind="decisionDate" /></label><label>نموذج التصدير<input @bind="exportTemplateName" /></label><label class="span-2">ملاحظات<input @bind="notes" /></label></div><div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ القرار</button><button class="secondary" @onclick="LoadMeetingsAsync">قرارات الاجتماعات</button><button class="secondary" @onclick="LoadAsync">كل القرارات</button></div></section>
-<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> القرارات</span></div><table><thead><tr><th>القرار</th><th>النوع</th><th>العنوان</th><th>المسند</th><th>الحالة</th></tr></thead><tbody>@foreach (var item in decisions){<tr><td>@item.DecisionNumber<br />@item.DecisionDate.ToString("yyyy-MM-dd")</td><td>@item.DecisionType</td><td>@item.Title<br />@item.RelatedMeetingCode</td><td>@item.AssignedTo<br />@item.ExportTemplateName</td><td>@item.Status<br />@item.Notes</td></tr>}</tbody></table></section>
+<section class="panel"><div class="panel-heading"><i class="fa-solid fa-scale-balanced"></i><div><h2>@(editingDecisionId.HasValue ? "تعديل قرار إداري" : "قرار إداري")</h2><p>القرارات الإدارية، قرارات الاجتماعات، مهام القرارات، وتصدير نماذج القرارات.</p></div></div><div class="form-grid compact"><label>رقم القرار<input @bind="decisionNumber" /></label><label>النوع<select @bind="decisionType"><option value="@AdministrativeDecisionType.Administrative">إداري</option><option value="@AdministrativeDecisionType.Meeting">اجتماع</option><option value="@AdministrativeDecisionType.DecisionTask">مهمة قرار</option><option value="@AdministrativeDecisionType.ExportTemplate">نموذج تصدير</option></select></label><label>العنوان<input @bind="title" /></label><label>رمز الاجتماع<input @bind="relatedMeetingCode" /></label><label>المسند إليه<input @bind="assignedTo" /></label><label>الحالة<select @bind="status"><option value="@ExecutiveWorkflowStatus.Pending">معلق</option><option value="@ExecutiveWorkflowStatus.Approved">معتمد</option><option value="@ExecutiveWorkflowStatus.RejectedWithNote">مرفوض بملاحظة</option><option value="@ExecutiveWorkflowStatus.FinalRejected">مرفوض نهائي</option><option value="@ExecutiveWorkflowStatus.Completed">مكتمل</option></select></label><label>تاريخ القرار<input type="date" @bind="decisionDate" /></label><label>نموذج التصدير<input @bind="exportTemplateName" /></label><label class="span-2">ملاحظات<input @bind="notes" /></label></div><div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingDecisionId.HasValue ? "حفظ التعديل" : "حفظ القرار")</button>@if (editingDecisionId.HasValue){<button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>}<button class="secondary" @onclick="LoadMeetingsAsync">قرارات الاجتماعات</button><button class="secondary" @onclick="LoadAsync">كل القرارات</button></div></section>
+<section class="table-section"><div class="table-title"><span><i class="fa-solid fa-database"></i> القرارات</span></div><table><thead><tr><th>القرار</th><th>النوع</th><th>العنوان</th><th>المسند</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>@foreach (var item in decisions){<tr><td>@item.DecisionNumber<br />@item.DecisionDate.ToString("yyyy-MM-dd")</td><td>@item.DecisionType</td><td>@item.Title<br />@item.RelatedMeetingCode</td><td>@item.AssignedTo<br />@item.ExportTemplateName</td><td>@item.Status<br />@item.Notes</td><td><button class="secondary" @onclick="@(() => Edit(item))">تعديل</button><button class="secondary" @onclick="@(() => ChangeStatusAsync(item, ExecutiveWorkflowStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => ChangeStatusAsync(item, ExecutiveWorkflowStatus.Completed))">إكمال</button></td></tr>}</tbody></table></section>
 @code {
     private List<AdministrativeDecisionRecordResponse> decisions = [];
+    private int? editingDecisionId;
     private string decisionNumber = $"DEC-{DateTime.UtcNow:yyyyMMddHHmm}";
     private AdministrativeDecisionType decisionType = AdministrativeDecisionType.Administrative;
     private string title = string.Empty;
@@ -23,5 +24,39 @@
     protected override async Task OnInitializedAsync() => await LoadAsync();
     private async Task LoadAsync() => decisions = await Executive.GetAdministrativeDecisionsAsync();
     private async Task LoadMeetingsAsync() => decisions = await Executive.GetAdministrativeDecisionsAsync(AdministrativeDecisionType.Meeting);
-    private async Task SaveAsync(){ var result = await Executive.SaveAdministrativeDecisionAsync(null, new SaveAdministrativeDecisionRecordRequest(decisionNumber, decisionType, title, relatedMeetingCode, assignedTo, status, decisionDate, exportTemplateName, notes)); success = result.Success; message = result.Message; if (success) decisionNumber = $"DEC-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+    private async Task SaveAsync(){ var result = await Executive.SaveAdministrativeDecisionAsync(editingDecisionId, new SaveAdministrativeDecisionRecordRequest(decisionNumber, decisionType, title, relatedMeetingCode, assignedTo, status, decisionDate, exportTemplateName, notes)); success = result.Success; message = result.Message; if (success) ResetForm(); await LoadAsync(); }
+    private async Task ChangeStatusAsync(AdministrativeDecisionRecordResponse item, ExecutiveWorkflowStatus newStatus)
+    {
+        var parsedType = Enum.TryParse<AdministrativeDecisionType>(item.DecisionType, out var type) ? type : AdministrativeDecisionType.Administrative;
+        var result = await Executive.SaveAdministrativeDecisionAsync(item.Id, new SaveAdministrativeDecisionRecordRequest(item.DecisionNumber, parsedType, item.Title, item.RelatedMeetingCode, item.AssignedTo, newStatus, item.DecisionDate, item.ExportTemplateName, item.Notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+    private void Edit(AdministrativeDecisionRecordResponse item)
+    {
+        editingDecisionId = item.Id;
+        decisionNumber = item.DecisionNumber;
+        decisionType = Enum.TryParse<AdministrativeDecisionType>(item.DecisionType, out var parsedType) ? parsedType : AdministrativeDecisionType.Administrative;
+        title = item.Title;
+        relatedMeetingCode = item.RelatedMeetingCode;
+        assignedTo = item.AssignedTo;
+        status = Enum.TryParse<ExecutiveWorkflowStatus>(item.Status, out var parsedStatus) ? parsedStatus : ExecutiveWorkflowStatus.Pending;
+        decisionDate = item.DecisionDate;
+        exportTemplateName = item.ExportTemplateName;
+        notes = item.Notes;
+    }
+    private void ResetForm()
+    {
+        editingDecisionId = null;
+        decisionNumber = $"DEC-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        decisionType = AdministrativeDecisionType.Administrative;
+        title = string.Empty;
+        relatedMeetingCode = null;
+        assignedTo = null;
+        status = ExecutiveWorkflowStatus.Pending;
+        decisionDate = DateTime.UtcNow.AddHours(3).Date;
+        exportTemplateName = null;
+        notes = null;
+    }
 }

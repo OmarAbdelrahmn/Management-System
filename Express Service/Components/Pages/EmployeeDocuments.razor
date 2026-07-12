@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-file-lines"></i><div><h2>إضافة مستند</h2><p>تسجيل عقود وملفات الموظفين ومواعيد الانتهاء.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-file-lines"></i><div><h2>@(editingDocumentId.HasValue ? "تعديل مستند" : "إضافة مستند")</h2><p>تسجيل وتصحيح عقود وملفات الموظفين ومواعيد الانتهاء.</p></div></div>
     <div class="form-grid">
         <label>الموظف<select @bind="employeeId">@foreach (var employee in employees){<option value="@employee.Id">@employee.FullName</option>}</select></label>
         <label>العنوان<input @bind="title" /></label>
@@ -20,17 +20,24 @@
         <label>تاريخ الانتهاء<input type="date" @bind="expiresAt" /></label>
         <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">إضافة المستند</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingDocumentId.HasValue ? "حفظ التعديل" : "إضافة المستند")</button>
+        @if (editingDocumentId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-folder-open"></i> المستندات</span></div>
     <table>
-        <thead><tr><th>الموظف</th><th>العنوان</th><th>النوع</th><th>المسار</th><th>ينتهي في</th><th>ملاحظات</th></tr></thead>
+        <thead><tr><th>الموظف</th><th>العنوان</th><th>النوع</th><th>المسار</th><th>ينتهي في</th><th>ملاحظات</th><th>إجراءات</th></tr></thead>
         <tbody>
             @foreach (var item in documents)
             {
-                <tr><td>@item.EmployeeName</td><td>@item.Title</td><td>@item.DocumentType</td><td>@item.FilePath</td><td>@item.ExpiresAt?.ToString("yyyy-MM-dd")</td><td>@item.Notes</td></tr>
+                <tr><td>@item.EmployeeName</td><td>@item.Title</td><td>@item.DocumentType</td><td>@item.FilePath</td><td>@item.ExpiresAt?.ToString("yyyy-MM-dd")</td><td>@item.Notes</td><td><button class="secondary small" @onclick="() => Edit(item)">تعديل</button></td></tr>
             }
         </tbody>
     </table>
@@ -45,6 +52,7 @@
     private string? filePath;
     private DateTime? expiresAt;
     private string? notes;
+    private int? editingDocumentId;
     private bool success;
     private string? message;
 
@@ -59,16 +67,36 @@
 
     private async Task SaveAsync()
     {
-        var result = await HR.AddDocumentAsync(new AddEmployeeDocumentRequest(employeeId, title, documentType, filePath, expiresAt, notes));
+        var request = new AddEmployeeDocumentRequest(employeeId, title, documentType, filePath, expiresAt, notes);
+        var result = editingDocumentId.HasValue
+            ? await HR.UpdateDocumentAsync(editingDocumentId.Value, request)
+            : await HR.AddDocumentAsync(request);
         success = result.Success;
         message = result.Message;
         if (success)
-        {
-            title = string.Empty;
-            filePath = null;
-            expiresAt = null;
-            notes = null;
-        }
+            ResetForm();
         await LoadAsync();
+    }
+
+    private void Edit(EmployeeDocumentResponse item)
+    {
+        editingDocumentId = item.Id;
+        employeeId = item.EmployeeProfileId;
+        title = item.Title;
+        documentType = item.DocumentType;
+        filePath = item.FilePath;
+        expiresAt = item.ExpiresAt;
+        notes = item.Notes;
+    }
+
+    private void ResetForm()
+    {
+        editingDocumentId = null;
+        employeeId = employees.FirstOrDefault()?.Id ?? 0;
+        title = string.Empty;
+        documentType = "عقد";
+        filePath = null;
+        expiresAt = null;
+        notes = null;
     }
 }

@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-user-plus"></i><div><h2>تسجيل مستفيد في برنامج</h2><p>إدارة التسجيلات والطلبات واعتمادها.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-user-plus"></i><div><h2>@(editingRegistrationId.HasValue ? "تعديل تسجيل برنامج" : "تسجيل مستفيد في برنامج")</h2><p>إدارة التسجيلات والطلبات واعتمادها.</p></div></div>
     <div class="form-grid compact">
         <label>البرنامج<select @bind="projectId">@foreach (var project in projects){<option value="@project.Id">@project.Name</option>}</select></label>
         <label>اسم المشارك<input @bind="participantName" /></label>
@@ -21,7 +21,13 @@
         <label>تاريخ التسجيل<input type="date" @bind="registeredAt" /></label>
         <label class="span-2">ملاحظات<input @bind="notes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ التسجيل</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingRegistrationId.HasValue ? "حفظ التعديل" : "حفظ التسجيل")</button>
+        @if (editingRegistrationId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+    </div>
 </section>
 
 <section class="panel" style="margin-top:14px">
@@ -36,7 +42,7 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-clipboard-list"></i> قاعدة بيانات التسجيلات</span></div>
     <table>
-        <thead><tr><th>البرنامج</th><th>المشارك</th><th>التواصل</th><th>الحالة</th><th>قرار</th></tr></thead>
+        <thead><tr><th>البرنامج</th><th>المشارك</th><th>التواصل</th><th>الحالة</th><th>قرار</th><th>إجراءات</th></tr></thead>
         <tbody>
             @foreach (var item in registrations)
             {
@@ -46,10 +52,14 @@
                     <td>@item.Mobile<br />@item.Email</td>
                     <td><span class="status">@item.Status</span></td>
                     <td>
-                        <button class="secondary" @onclick="@(() => DecideAsync(item.Id, ProgramRegistrationStatus.Approved))">اعتماد</button>
-                        <button class="secondary" @onclick="@(() => DecideAsync(item.Id, ProgramRegistrationStatus.Rejected))">رفض</button>
-                        <button class="secondary" @onclick="@(() => DecideAsync(item.Id, ProgramRegistrationStatus.Attended))">حضر</button>
+                        @if (CanDecide(item))
+                        {
+                            <button class="secondary" @onclick="@(() => DecideAsync(item.Id, ProgramRegistrationStatus.Approved))">اعتماد</button>
+                            <button class="secondary" @onclick="@(() => DecideAsync(item.Id, ProgramRegistrationStatus.Rejected))">رفض</button>
+                            <button class="secondary" @onclick="@(() => DecideAsync(item.Id, ProgramRegistrationStatus.Cancelled))">إلغاء</button>
+                        }
                     </td>
+                    <td><button class="secondary small" @onclick="() => Edit(item)">تعديل</button></td>
                 </tr>
             }
         </tbody>
@@ -66,6 +76,7 @@
     private string? externalReference;
     private DateTime? registeredAt = DateTime.UtcNow.AddHours(3).Date;
     private string? notes;
+    private int? editingRegistrationId;
     private string statusText = string.Empty;
     private string? decisionNotes;
     private bool success;
@@ -88,17 +99,11 @@
 
     private async Task SaveAsync()
     {
-        var result = await ProgramsProjects.SaveRegistrationAsync(null, new SaveProgramRegistrationRequest(projectId, participantName, mobile, email, externalReference, registeredAt, notes));
+        var result = await ProgramsProjects.SaveRegistrationAsync(editingRegistrationId, new SaveProgramRegistrationRequest(projectId, participantName, mobile, email, externalReference, registeredAt, notes));
         success = result.Success;
         message = result.Message;
         if (success)
-        {
-            participantName = string.Empty;
-            mobile = null;
-            email = null;
-            externalReference = null;
-            notes = null;
-        }
+            ResetForm();
         await LoadAsync();
     }
 
@@ -107,6 +112,35 @@
         var result = await ProgramsProjects.DecideRegistrationAsync(id, status, decisionNotes);
         success = result.Success;
         message = result.Message;
+        if (success)
+            decisionNotes = null;
         await LoadAsync();
+    }
+
+    private static bool CanDecide(ProgramRegistrationResponse registration) =>
+        registration.Status == ProgramRegistrationStatus.Pending.ToString();
+
+    private void Edit(ProgramRegistrationResponse item)
+    {
+        editingRegistrationId = item.Id;
+        projectId = item.ProgramProjectId;
+        participantName = item.ParticipantName;
+        mobile = item.Mobile;
+        email = item.Email;
+        externalReference = item.ExternalReference;
+        registeredAt = item.RegisteredAt;
+        notes = item.Notes;
+    }
+
+    private void ResetForm()
+    {
+        editingRegistrationId = null;
+        projectId = projects.FirstOrDefault()?.Id ?? 0;
+        participantName = string.Empty;
+        mobile = null;
+        email = null;
+        externalReference = null;
+        registeredAt = DateTime.UtcNow.AddHours(3).Date;
+        notes = null;
     }
 }

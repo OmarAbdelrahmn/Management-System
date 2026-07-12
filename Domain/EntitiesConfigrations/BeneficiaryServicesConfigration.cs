@@ -34,6 +34,7 @@ public class BeneficiaryPaymentOrderConfigration : IEntityTypeConfiguration<Bene
         entity.HasIndex(x => x.OrderNumber).IsUnique();
         entity.HasIndex(x => new { x.OrderType, x.Status });
         entity.HasOne(x => x.BeneficiaryAidRequest).WithMany().HasForeignKey(x => x.BeneficiaryAidRequestId).OnDelete(DeleteBehavior.SetNull);
+        entity.HasOne(x => x.EntitySupportRequest).WithMany().HasForeignKey(x => x.EntitySupportRequestId).OnDelete(DeleteBehavior.SetNull);
         entity.HasOne(x => x.BeneficiaryProfile).WithMany().HasForeignKey(x => x.BeneficiaryProfileId).OnDelete(DeleteBehavior.SetNull);
     }
 }

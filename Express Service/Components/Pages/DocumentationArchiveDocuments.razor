@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-box-archive"></i><div><h2>سجل ملف</h2><p>إدارة سجلات الملفات والأرشيف العام والمالي والميزانية والإدارة والملفات السرية.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-box-archive"></i><div><h2>@(editingId.HasValue ? "تعديل سجل ملف" : "سجل ملف")</h2><p>إدارة سجلات الملفات والأرشيف العام والمالي والميزانية والإدارة والملفات السرية.</p></div></div>
     <div class="form-grid compact">
         <label>رقم الملف<input @bind="documentNumber" /></label>
         <label>العنوان<input @bind="title" /></label>
@@ -21,17 +21,39 @@
         <label>رابط الملف<input @bind="fileUrl" /></label>
         <label class="span-2">ملاحظات<input @bind="notes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الملف</button><button class="secondary" @onclick="LoadActiveAsync">النشطة</button><button class="secondary" @onclick="LoadSecretAsync">السرية</button><button class="secondary" @onclick="LoadAsync">كل الأرشيف</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingId.HasValue ? "حفظ التعديل" : "حفظ الملف")</button>
+        @if (editingId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadActiveAsync">النشطة</button>
+        <button class="secondary" @onclick="LoadSecretAsync">السرية</button>
+        <button class="secondary" @onclick="LoadAsync">كل الأرشيف</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-database"></i> قاعدة بيانات الأرشيف</span></div>
     <table>
-        <thead><tr><th>الرقم</th><th>الملف</th><th>التصنيف</th><th>الإدارة</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الرقم</th><th>الملف</th><th>التصنيف</th><th>الإدارة</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var item in documents)
             {
-                <tr><td>@item.DocumentNumber</td><td>@item.Title<br />@item.FileUrl</td><td>@item.Category</td><td>@item.OwnerDepartment</td><td>@item.Status<br />@item.Notes</td></tr>
+                <tr>
+                    <td>@item.DocumentNumber</td>
+                    <td>@item.Title<br />@item.FileUrl</td>
+                    <td>@item.Category</td>
+                    <td>@item.OwnerDepartment</td>
+                    <td>@item.Status<br />@item.Notes</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => Edit(item))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => ChangeStatusAsync(item, ArchiveDocumentStatus.Active))">تفعيل</button>
+                        <button class="secondary" @onclick="@(() => ChangeStatusAsync(item, ArchiveDocumentStatus.Archived))">أرشفة</button>
+                        <button class="secondary" @onclick="@(() => ChangeStatusAsync(item, ArchiveDocumentStatus.Restricted))">تقييد</button>
+                        <button class="secondary" @onclick="@(() => ChangeStatusAsync(item, ArchiveDocumentStatus.Removed))">حذف</button>
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
@@ -39,6 +61,7 @@
 
 @code {
     private List<ArchiveDocumentResponse> documents = [];
+    private int? editingId;
     private string documentNumber = $"DOC-{DateTime.UtcNow:yyyyMMddHHmm}";
     private string title = string.Empty;
     private ArchiveDocumentCategory category = ArchiveDocumentCategory.General;
@@ -55,10 +78,40 @@
     private async Task LoadSecretAsync() => documents = await Documentation.GetArchiveDocumentsAsync(ArchiveDocumentCategory.Secret);
     private async Task SaveAsync()
     {
-        var result = await Documentation.SaveArchiveDocumentAsync(null, new SaveArchiveDocumentRequest(documentNumber, title, category, fileUrl, ownerDepartment, status, notes));
+        var result = await Documentation.SaveArchiveDocumentAsync(editingId, new SaveArchiveDocumentRequest(documentNumber, title, category, fileUrl, ownerDepartment, status, notes));
         success = result.Success;
         message = result.Message;
-        if (success) documentNumber = $"DOC-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        if (success) ResetForm();
         await LoadAsync();
+    }
+    private async Task ChangeStatusAsync(ArchiveDocumentResponse item, ArchiveDocumentStatus newStatus)
+    {
+        var parsedCategory = Enum.TryParse<ArchiveDocumentCategory>(item.Category, out var value) ? value : ArchiveDocumentCategory.General;
+        var result = await Documentation.SaveArchiveDocumentAsync(item.Id, new SaveArchiveDocumentRequest(item.DocumentNumber, item.Title, parsedCategory, item.FileUrl, item.OwnerDepartment, newStatus, item.Notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+    private void Edit(ArchiveDocumentResponse item)
+    {
+        editingId = item.Id;
+        documentNumber = item.DocumentNumber;
+        title = item.Title;
+        category = Enum.TryParse<ArchiveDocumentCategory>(item.Category, out var parsedCategory) ? parsedCategory : ArchiveDocumentCategory.General;
+        status = Enum.TryParse<ArchiveDocumentStatus>(item.Status, out var parsedStatus) ? parsedStatus : ArchiveDocumentStatus.Active;
+        fileUrl = item.FileUrl;
+        ownerDepartment = item.OwnerDepartment;
+        notes = item.Notes;
+    }
+    private void ResetForm()
+    {
+        editingId = null;
+        documentNumber = $"DOC-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        title = string.Empty;
+        category = ArchiveDocumentCategory.General;
+        status = ArchiveDocumentStatus.Active;
+        fileUrl = null;
+        ownerDepartment = null;
+        notes = null;
     }
 }

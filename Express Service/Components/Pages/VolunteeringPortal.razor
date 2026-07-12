@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-user-plus"></i><div><h2>حساب متطوع</h2><p>إدارة حسابات المتطوعين وقاعدة بياناتهم في بوابة التطوع.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-user-plus"></i><div><h2>@(editingUserId.HasValue ? "تعديل حساب متطوع" : "حساب متطوع")</h2><p>إدارة حسابات المتطوعين وقاعدة بياناتهم في بوابة التطوع.</p></div></div>
     <div class="form-grid compact">
         <label>رقم المتطوع<input @bind="volunteerNumber" /></label>
         <label>الاسم<input @bind="fullName" /></label>
@@ -23,11 +23,19 @@
         <label class="span-2">المهارات<input @bind="skills" /></label>
         <label class="span-2">ملاحظات<input @bind="notes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveUserAsync">حفظ المتطوع</button><button class="secondary" @onclick="LoadActiveUsersAsync">النشطون</button><button class="secondary" @onclick="LoadAsync">تحديث القائمة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveUserAsync">@(editingUserId.HasValue ? "حفظ التعديل" : "حفظ المتطوع")</button>
+        @if (editingUserId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetUserForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadActiveUsersAsync">النشطون</button>
+        <button class="secondary" @onclick="LoadAsync">تحديث القائمة</button>
+    </div>
 </section>
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-file-signature"></i><div><h2>طلب تطوع</h2><p>طلبات التطوع الداخلية والخارجية وربطها بالمتطوع أو الفرصة عند الحاجة.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-file-signature"></i><div><h2>@(editingRequestId.HasValue ? "تعديل طلب تطوع" : "طلب تطوع")</h2><p>طلبات التطوع الداخلية والخارجية وربطها بالمتطوع أو الفرصة عند الحاجة.</p></div></div>
     <div class="form-grid compact">
         <label>رقم الطلب<input @bind="requestNumber" /></label>
         <label>المصدر<select @bind="requestSource"><option value="@VolunteerRequestSource.Internal">داخلي</option><option value="@VolunteerRequestSource.External">خارجي</option></select></label>
@@ -37,19 +45,41 @@
         <label>الحالة<select @bind="requestStatus"><option value="@VolunteerRequestStatus.Submitted">مقدم</option><option value="@VolunteerRequestStatus.UnderReview">تحت الدراسة</option><option value="@VolunteerRequestStatus.Approved">معتمد</option><option value="@VolunteerRequestStatus.Rejected">مرفوض</option><option value="@VolunteerRequestStatus.Completed">مكتمل</option></select></label>
         <label>تاريخ الطلب<input type="date" @bind="requestDate" /></label>
         <label>ربط متطوع<select @bind="linkedVolunteerId"><option value="">بدون</option>@foreach (var item in users){<option value="@item.Id">@item.FullName</option>}</select></label>
+        <label>ربط فرصة<select @bind="linkedOpportunityId"><option value="">بدون</option>@foreach (var item in opportunities){<option value="@item.Id">@item.OpportunityNumber - @item.Title</option>}</select></label>
         <label class="span-2">ملاحظة القرار<input @bind="decisionNote" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveRequestAsync">حفظ الطلب</button><button class="secondary" @onclick="LoadInternalRequestsAsync">الداخلية</button><button class="secondary" @onclick="LoadExternalRequestsAsync">الخارجية</button><button class="secondary" @onclick="LoadPendingRequestsAsync">المعلقة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveRequestAsync">@(editingRequestId.HasValue ? "حفظ التعديل" : "حفظ الطلب")</button>
+        @if (editingRequestId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetRequestForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadInternalRequestsAsync">الداخلية</button>
+        <button class="secondary" @onclick="LoadExternalRequestsAsync">الخارجية</button>
+        <button class="secondary" @onclick="LoadPendingRequestsAsync">المعلقة</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-users"></i> قاعدة بيانات المتطوعين</span></div>
     <table>
-        <thead><tr><th>الرقم</th><th>الاسم</th><th>التواصل</th><th>المهارات</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>الرقم</th><th>الاسم</th><th>التواصل</th><th>المهارات</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var user in users)
             {
-                <tr><td>@user.VolunteerNumber</td><td>@user.FullName<br />@user.NationalId</td><td>@user.Mobile<br />@user.Email</td><td>@user.Skills</td><td>@user.Status<br />@user.JoinedAt.ToString("yyyy-MM-dd")</td></tr>
+                <tr>
+                    <td>@user.VolunteerNumber</td>
+                    <td>@user.FullName<br />@user.NationalId</td>
+                    <td>@user.Mobile<br />@user.Email</td>
+                    <td>@user.Skills</td>
+                    <td>@user.Status<br />@user.JoinedAt.ToString("yyyy-MM-dd")</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => EditUser(user))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => ChangeUserStatusAsync(user, VolunteerUserStatus.Active))">تفعيل</button>
+                        <button class="secondary" @onclick="@(() => ChangeUserStatusAsync(user, VolunteerUserStatus.Inactive))">إيقاف</button>
+                        <button class="secondary" @onclick="@(() => ChangeUserStatusAsync(user, VolunteerUserStatus.Suspended))">تعليق</button>
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
@@ -63,8 +93,15 @@
             @foreach (var request in requests)
             {
                 <tr>
-                    <td>@request.RequestNumber<br />@request.RequestDate.ToString("yyyy-MM-dd")</td><td>@request.ApplicantName<br />@request.Mobile</td><td>@request.Source</td><td>@request.OpportunityTitle<br />@request.LinkedOpportunityTitle</td><td>@request.Status<br />@request.DecisionNote</td>
-                    <td><button class="secondary" @onclick="@(() => ChangeRequestStatusAsync(request.Id, VolunteerRequestStatus.UnderReview))">دراسة</button><button class="secondary" @onclick="@(() => ChangeRequestStatusAsync(request.Id, VolunteerRequestStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => ChangeRequestStatusAsync(request.Id, VolunteerRequestStatus.Rejected))">رفض</button></td>
+                    <td>@request.RequestNumber<br />@request.RequestDate.ToString("yyyy-MM-dd")</td><td>@request.ApplicantName<br />@request.Mobile</td><td>@request.Source</td><td>@request.OpportunityTitle<br />@request.LinkedOpportunityTitle</td><td>@request.Status<br />@request.DecisionNote<br />@request.VolunteerName</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => EditRequest(request))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => ChangeRequestStatusAsync(request.Id, VolunteerRequestStatus.UnderReview))">دراسة</button>
+                        <button class="secondary" @onclick="@(() => ChangeRequestStatusAsync(request.Id, VolunteerRequestStatus.Approved))">اعتماد</button>
+                        <button class="secondary" @onclick="@(() => ChangeRequestStatusAsync(request.Id, VolunteerRequestStatus.Rejected))">رفض</button>
+                        <button class="secondary" @onclick="@(() => ChangeRequestStatusAsync(request.Id, VolunteerRequestStatus.Completed))">إكمال</button>
+                        <button class="secondary" @onclick="@(() => ConvertRequestAsync(request))">تحويل لحساب</button>
+                    </td>
                 </tr>
             }
         </tbody>
@@ -74,6 +111,8 @@
 @code {
     private List<VolunteerUserResponse> users = [];
     private List<VolunteerRequestResponse> requests = [];
+    private List<VolunteerOpportunityResponse> opportunities = [];
+    private int? editingUserId;
     private string volunteerNumber = $"VOL-{DateTime.UtcNow:yyyyMMddHHmm}";
     private string fullName = string.Empty;
     private string? nationalId;
@@ -84,6 +123,7 @@
     private DateTime joinedAt = DateTime.UtcNow.AddHours(3).Date;
     private string? notes;
     private string requestNumber = $"VR-{DateTime.UtcNow:yyyyMMddHHmm}";
+    private int? editingRequestId;
     private VolunteerRequestSource requestSource = VolunteerRequestSource.Internal;
     private string applicantName = string.Empty;
     private string requestMobile = string.Empty;
@@ -91,17 +131,82 @@
     private VolunteerRequestStatus requestStatus = VolunteerRequestStatus.Submitted;
     private DateTime requestDate = DateTime.UtcNow.AddHours(3).Date;
     private int? linkedVolunteerId;
+    private int? linkedOpportunityId;
     private string? decisionNote;
     private bool success;
     private string? message;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
-    private async Task LoadAsync(){ users = await Volunteering.GetUsersAsync(); requests = await Volunteering.GetRequestsAsync(); }
+    private async Task LoadAsync(){ users = await Volunteering.GetUsersAsync(); requests = await Volunteering.GetRequestsAsync(); opportunities = await Volunteering.GetOpportunitiesAsync(VolunteerOpportunityStatus.Open); }
     private async Task LoadActiveUsersAsync() => users = await Volunteering.GetUsersAsync(VolunteerUserStatus.Active);
     private async Task LoadInternalRequestsAsync() => requests = await Volunteering.GetRequestsAsync(VolunteerRequestSource.Internal);
     private async Task LoadExternalRequestsAsync() => requests = await Volunteering.GetRequestsAsync(VolunteerRequestSource.External);
     private async Task LoadPendingRequestsAsync() => requests = await Volunteering.GetRequestsAsync(status: VolunteerRequestStatus.Submitted);
-    private async Task SaveUserAsync(){ var result = await Volunteering.SaveUserAsync(null, new SaveVolunteerUserRequest(volunteerNumber, fullName, nationalId, mobile, email, skills, userStatus, joinedAt, notes)); success = result.Success; message = result.Message; if (success) volunteerNumber = $"VOL-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
-    private async Task SaveRequestAsync(){ var result = await Volunteering.SaveRequestAsync(null, new SaveVolunteerRequestRequest(requestNumber, requestSource, applicantName, requestMobile, opportunityTitle, requestStatus, requestDate, decisionNote, notes, linkedVolunteerId, null)); success = result.Success; message = result.Message; if (success) requestNumber = $"VR-{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+    private async Task SaveUserAsync(){ var result = await Volunteering.SaveUserAsync(editingUserId, new SaveVolunteerUserRequest(volunteerNumber, fullName, nationalId, mobile, email, skills, userStatus, joinedAt, notes)); success = result.Success; message = result.Message; if (success) ResetUserForm(); await LoadAsync(); }
+    private async Task SaveRequestAsync(){ var result = await Volunteering.SaveRequestAsync(editingRequestId, new SaveVolunteerRequestRequest(requestNumber, requestSource, applicantName, requestMobile, opportunityTitle, requestStatus, requestDate, decisionNote, notes, linkedVolunteerId, linkedOpportunityId)); success = result.Success; message = result.Message; if (success) ResetRequestForm(); await LoadAsync(); }
     private async Task ChangeRequestStatusAsync(int id, VolunteerRequestStatus status){ var result = await Volunteering.UpdateRequestStatusAsync(id, status, decisionNote); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task ConvertRequestAsync(VolunteerRequestResponse request){ var result = await Volunteering.ConvertRequestToVolunteerAsync(request.Id, new ConvertVolunteerRequestRequest(null, request.VolunteerOpportunityId ?? linkedOpportunityId, skills, joinedAt, notes, decisionNote)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task ChangeUserStatusAsync(VolunteerUserResponse user, VolunteerUserStatus newStatus)
+    {
+        var result = await Volunteering.SaveUserAsync(user.Id, new SaveVolunteerUserRequest(user.VolunteerNumber, user.FullName, user.NationalId, user.Mobile, user.Email, user.Skills, newStatus, user.JoinedAt, user.Notes));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+    private void EditUser(VolunteerUserResponse user)
+    {
+        editingUserId = user.Id;
+        volunteerNumber = user.VolunteerNumber;
+        fullName = user.FullName;
+        nationalId = user.NationalId;
+        mobile = user.Mobile;
+        email = user.Email;
+        skills = user.Skills;
+        userStatus = Enum.TryParse<VolunteerUserStatus>(user.Status, out var parsedStatus) ? parsedStatus : VolunteerUserStatus.Active;
+        joinedAt = user.JoinedAt;
+        notes = user.Notes;
+    }
+    private void ResetUserForm()
+    {
+        editingUserId = null;
+        volunteerNumber = $"VOL-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        fullName = string.Empty;
+        nationalId = null;
+        mobile = string.Empty;
+        email = null;
+        skills = null;
+        userStatus = VolunteerUserStatus.Active;
+        joinedAt = DateTime.UtcNow.AddHours(3).Date;
+        notes = null;
+    }
+    private void EditRequest(VolunteerRequestResponse request)
+    {
+        editingRequestId = request.Id;
+        requestNumber = request.RequestNumber;
+        requestSource = Enum.TryParse<VolunteerRequestSource>(request.Source, out var parsedSource) ? parsedSource : VolunteerRequestSource.Internal;
+        applicantName = request.ApplicantName;
+        requestMobile = request.Mobile;
+        opportunityTitle = request.OpportunityTitle;
+        requestStatus = Enum.TryParse<VolunteerRequestStatus>(request.Status, out var parsedStatus) ? parsedStatus : VolunteerRequestStatus.Submitted;
+        requestDate = request.RequestDate;
+        decisionNote = request.DecisionNote;
+        notes = request.Notes;
+        linkedVolunteerId = request.VolunteerUserId;
+        linkedOpportunityId = request.VolunteerOpportunityId;
+    }
+    private void ResetRequestForm()
+    {
+        editingRequestId = null;
+        requestNumber = $"VR-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        requestSource = VolunteerRequestSource.Internal;
+        applicantName = string.Empty;
+        requestMobile = string.Empty;
+        opportunityTitle = null;
+        requestStatus = VolunteerRequestStatus.Submitted;
+        requestDate = DateTime.UtcNow.AddHours(3).Date;
+        linkedVolunteerId = null;
+        linkedOpportunityId = null;
+        decisionNote = null;
+        notes = null;
+    }
 }

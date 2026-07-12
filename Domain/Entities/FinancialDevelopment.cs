@@ -45,6 +45,13 @@ public enum DonationContributionStatus
     Cancelled = 3
 }
 
+public enum DonationContributionActivityType
+{
+    Created = 0,
+    Updated = 1,
+    StatusChanged = 2
+}
+
 public enum DigitalMarketingChannel
 {
     Website = 0,
@@ -162,6 +169,25 @@ public class DonationContribution : IAuditable
 
     public FinancialSupporter? FinancialSupporter { get; set; }
     public FundraisingOpportunity? FundraisingOpportunity { get; set; }
+    public ICollection<DonationContributionActivity> Activities { get; set; } = new List<DonationContributionActivity>();
+}
+
+public class DonationContributionActivity : IAuditable
+{
+    public int Id { get; set; }
+    public int DonationContributionId { get; set; }
+    public DonationContributionActivityType Type { get; set; }
+    public DonationContributionStatus? FromStatus { get; set; }
+    public DonationContributionStatus ToStatus { get; set; }
+    public decimal Amount { get; set; }
+    public string? Notes { get; set; }
+    public DateTime OccurredAt { get; set; } = DateTime.UtcNow.AddHours(3);
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
+    public string? CreatedByUserId { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedByUserId { get; set; }
+
+    public DonationContribution? DonationContribution { get; set; }
 }
 
 public class DigitalMarketingCampaign : IAuditable

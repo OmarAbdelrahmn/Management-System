@@ -15,6 +15,7 @@ public interface IMovementMaintenanceService
     Task<Result<IEnumerable<VehicleAssignmentResponse>>> GetVehicleAssignmentsAsync(VehicleAssignmentStatus? status = null, CancellationToken cancellationToken = default);
     Task<Result<VehicleAssignmentResponse>> HandVehicleAsync(SaveVehicleAssignmentRequest request, CancellationToken cancellationToken = default);
     Task<Result<VehicleAssignmentResponse>> ReceiveVehicleAsync(int assignmentId, ReceiveVehicleRequest request, CancellationToken cancellationToken = default);
+    Task<Result<VehicleAssignmentOverdueResponse>> MarkOverdueAssignmentsAsync(MarkOverdueVehicleAssignmentsRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<MaintenanceRequestResponse>>> GetMaintenanceRequestsAsync(MaintenanceRequestType? type = null, MaintenanceRequestStatus? status = null, CancellationToken cancellationToken = default);
     Task<Result<MaintenanceRequestResponse>> SaveMaintenanceRequestAsync(int? id, SaveMaintenanceRequestRequest request, CancellationToken cancellationToken = default);
     Task<Result<MaintenanceRequestResponse>> UpdateMaintenanceStatusAsync(int id, UpdateMaintenanceStatusRequest request, CancellationToken cancellationToken = default);

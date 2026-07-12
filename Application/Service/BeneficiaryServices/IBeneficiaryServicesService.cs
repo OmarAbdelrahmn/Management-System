@@ -10,6 +10,8 @@ public interface IBeneficiaryServicesService
     Task<Result<IEnumerable<AidRequestResponse>>> GetAidRequestsAsync(AidRequestStatus? status, bool? isExternal, CancellationToken cancellationToken = default);
     Task<Result<AidRequestResponse>> SaveAidRequestAsync(int? id, SaveAidRequestRequest request, CancellationToken cancellationToken = default);
     Task<Result<AidRequestResponse>> DecideAidRequestAsync(int id, DecideAidRequestRequest request, CancellationToken cancellationToken = default);
+    Task<Result<PaymentOrderResponse>> CreatePaymentOrderFromAidRequestAsync(int aidRequestId, CreatePaymentOrderFromAidRequestRequest request, CancellationToken cancellationToken = default);
+    Task<Result<PaymentOrderResponse>> CreatePaymentOrderFromEntitySupportAsync(int entitySupportId, CreatePaymentOrderFromEntitySupportRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<PaymentOrderResponse>>> GetPaymentOrdersAsync(PaymentOrderType? type, PaymentOrderStatus? status, CancellationToken cancellationToken = default);
     Task<Result<PaymentOrderResponse>> SavePaymentOrderAsync(int? id, SavePaymentOrderRequest request, CancellationToken cancellationToken = default);
     Task<Result<PaymentOrderResponse>> DecidePaymentOrderAsync(int id, DecidePaymentOrderRequest request, CancellationToken cancellationToken = default);
@@ -20,6 +22,7 @@ public interface IBeneficiaryServicesService
     Task<Result<IEnumerable<SponsorshipRecordResponse>>> GetSponsorshipRecordsAsync(SponsorshipStatus? status, CancellationToken cancellationToken = default);
     Task<Result<SponsorshipRecordResponse>> SaveSponsorshipRecordAsync(int? id, SaveSponsorshipRecordRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<SponsorshipPaymentResponse>>> GetSponsorshipPaymentsAsync(SponsorshipPaymentStatus? status, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<SponsorshipPaymentResponse>>> GenerateSponsorshipPaymentsAsync(int recordId, GenerateSponsorshipPaymentsRequest request, CancellationToken cancellationToken = default);
     Task<Result<SponsorshipPaymentResponse>> SaveSponsorshipPaymentAsync(int? id, SaveSponsorshipPaymentRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<EntitySupportResponse>>> GetEntitySupportsAsync(EntitySupportStatus? status, bool? isExternal, CancellationToken cancellationToken = default);
     Task<Result<EntitySupportResponse>> SaveEntitySupportAsync(int? id, SaveEntitySupportRequest request, CancellationToken cancellationToken = default);

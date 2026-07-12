@@ -20,7 +20,7 @@
         <label>العداد<input @bind="odometer" /></label>
         <label>الحالة<select @bind="vehicleStatus"><option value="@FleetVehicleStatus.Available">متاحة</option><option value="@FleetVehicleStatus.Assigned">مسلمة</option><option value="@FleetVehicleStatus.InMaintenance">تحت الصيانة</option><option value="@FleetVehicleStatus.Retired">مستبعدة</option></select></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveVehicleAsync">حفظ السيارة</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveVehicleAsync">@(editingVehicleId.HasValue ? "تحديث السيارة" : "حفظ السيارة")</button><button class="secondary" @onclick="ResetVehicle">تفريغ</button></div>
 </section>
 
 <section class="panel" style="margin-top:14px">
@@ -35,17 +35,17 @@
         <label>الموظف<input @bind="employeeName" /></label>
         <label>عداد التسليم<input @bind="handOdometer" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveRequestAsync">حفظ طلب سيارة</button><button class="secondary" @onclick="ApproveFirstRequestAsync">اعتماد أول طلب</button><button class="secondary" @onclick="HandVehicleAsync">تسليم سيارة</button><button class="secondary" @onclick="ReceiveFirstAssignmentAsync">استلام أول حركة</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveRequestAsync">@(editingRequestId.HasValue ? "تحديث طلب سيارة" : "حفظ طلب سيارة")</button><button class="secondary" @onclick="ResetRequest">تفريغ الطلب</button><button class="secondary" @onclick="ApproveFirstRequestAsync">اعتماد أول طلب</button><button class="secondary" @onclick="HandVehicleAsync">تسليم سيارة</button><button class="secondary" @onclick="MarkOverdueAssignmentsAsync">تحديث المتأخرات</button><button class="secondary" @onclick="ReceiveFirstAssignmentAsync">استلام أول حركة</button></div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-database"></i> قاعدة بيانات السيارات والحركة</span></div>
     <table>
-        <thead><tr><th>النوع</th><th>السيارة/الطلب</th><th>الموظف/الطالب</th><th>التاريخ</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>النوع</th><th>السيارة/الطلب</th><th>الموظف/الطالب</th><th>التاريخ</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
-            @foreach (var vehicle in vehicles){<tr><td>سيارة</td><td>@vehicle.PlateNumber<br />@vehicle.Model @vehicle.Year</td><td>@vehicle.Color</td><td>@vehicle.Odometer</td><td>@vehicle.Status</td></tr>}
-            @foreach (var request in requests){<tr><td>طلب</td><td>@request.RequestNumber<br />@request.Purpose</td><td>@request.RequesterName</td><td>@request.RequestedFrom.ToString("yyyy-MM-dd") - @request.RequestedTo.ToString("yyyy-MM-dd")</td><td>@request.Status</td></tr>}
-            @foreach (var assignment in assignments){<tr><td>حركة</td><td>@assignment.VehiclePlateNumber<br />@assignment.RequestNumber</td><td>@assignment.EmployeeName</td><td>@assignment.HandedAt.ToString("yyyy-MM-dd")<br />@assignment.ReceivedAt?.ToString("yyyy-MM-dd")</td><td>@assignment.Status</td></tr>}
+            @foreach (var vehicle in vehicles){<tr><td>سيارة</td><td>@vehicle.PlateNumber<br />@vehicle.Model @vehicle.Year</td><td>@vehicle.Color</td><td>@vehicle.Odometer</td><td>@vehicle.Status</td><td><button class="secondary" @onclick="@(() => EditVehicle(vehicle))">تعديل</button><button class="secondary" @onclick="@(() => ChangeVehicleStatusAsync(vehicle, FleetVehicleStatus.InMaintenance))">صيانة</button><button class="secondary" @onclick="@(() => ChangeVehicleStatusAsync(vehicle, FleetVehicleStatus.Available))">متاحة</button></td></tr>}
+            @foreach (var request in requests){<tr><td>طلب</td><td>@request.RequestNumber<br />@request.Purpose</td><td>@request.RequesterName</td><td>@request.RequestedFrom.ToString("yyyy-MM-dd") - @request.RequestedTo.ToString("yyyy-MM-dd")</td><td>@request.Status</td><td><button class="secondary" @onclick="@(() => EditRequest(request))">تعديل</button><button class="secondary" @onclick="@(() => ChangeRequestStatusAsync(request.Id, VehicleRequestStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => ChangeRequestStatusAsync(request.Id, VehicleRequestStatus.Rejected))">رفض</button></td></tr>}
+            @foreach (var assignment in assignments){<tr><td>حركة</td><td>@assignment.VehiclePlateNumber<br />@assignment.RequestNumber</td><td>@assignment.EmployeeName</td><td>@assignment.HandedAt.ToString("yyyy-MM-dd")<br />@assignment.ReceivedAt?.ToString("yyyy-MM-dd")</td><td>@assignment.Status</td><td><button class="secondary" @onclick="@(() => ReceiveAssignmentAsync(assignment))">استلام</button></td></tr>}
         </tbody>
     </table>
 </section>
@@ -54,16 +54,21 @@
     private List<FleetVehicleResponse> vehicles = [];
     private List<VehicleRequestResponse> requests = [];
     private List<VehicleAssignmentResponse> assignments = [];
+    private int? editingVehicleId;
     private string plateNumber = string.Empty;
     private string model = string.Empty;
     private int year = DateTime.UtcNow.AddHours(3).Year;
     private string? color;
     private string? odometer;
     private FleetVehicleStatus vehicleStatus = FleetVehicleStatus.Available;
+    private string? vehicleNotes;
+    private int? editingRequestId;
     private string requesterName = string.Empty;
     private DateTime requestedFrom = DateTime.UtcNow.AddHours(3).Date;
     private DateTime requestedTo = DateTime.UtcNow.AddHours(3).Date.AddDays(1);
     private string purpose = string.Empty;
+    private VehicleRequestStatus requestStatus = VehicleRequestStatus.Requested;
+    private string? requestDecisionNote;
     private int assignmentVehicleId;
     private int? assignmentRequestId;
     private string employeeName = string.Empty;
@@ -73,9 +78,17 @@
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
     private async Task LoadAsync(){ vehicles = await Movement.GetVehiclesAsync(); requests = await Movement.GetVehicleRequestsAsync(); assignments = await Movement.GetVehicleAssignmentsAsync(); }
-    private async Task SaveVehicleAsync(){ var result = await Movement.SaveVehicleAsync(null, new SaveFleetVehicleRequest(plateNumber, model, year, color, odometer, vehicleStatus, null)); success = result.Success; message = result.Message; await LoadAsync(); }
-    private async Task SaveRequestAsync(){ var result = await Movement.SaveVehicleRequestAsync(null, new SaveVehicleRequestRequest(requesterName, requestedFrom, requestedTo, purpose, VehicleRequestStatus.Requested, null)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task SaveVehicleAsync(){ var result = await Movement.SaveVehicleAsync(editingVehicleId, new SaveFleetVehicleRequest(plateNumber, model, year, color, odometer, vehicleStatus, vehicleNotes)); success = result.Success; message = result.Message; if (result.Success) ResetVehicle(); await LoadAsync(); }
+    private async Task SaveRequestAsync(){ var result = await Movement.SaveVehicleRequestAsync(editingRequestId, new SaveVehicleRequestRequest(requesterName, requestedFrom, requestedTo, purpose, requestStatus, requestDecisionNote)); success = result.Success; message = result.Message; if (result.Success) ResetRequest(); await LoadAsync(); }
     private async Task ApproveFirstRequestAsync(){ var request = requests.FirstOrDefault(x => x.Status == VehicleRequestStatus.Requested.ToString()); if (request is null){ success = false; message = "لا يوجد طلب سيارة."; return; } var result = await Movement.UpdateVehicleRequestStatusAsync(request.Id, VehicleRequestStatus.Approved, "معتمد"); success = result.Success; message = result.Message; await LoadAsync(); }
     private async Task HandVehicleAsync(){ var result = await Movement.HandVehicleAsync(new SaveVehicleAssignmentRequest(assignmentVehicleId, assignmentRequestId, employeeName, DateTime.UtcNow.AddHours(3), DateTime.UtcNow.AddHours(3).AddDays(1), handOdometer, null)); success = result.Success; message = result.Message; await LoadAsync(); }
-    private async Task ReceiveFirstAssignmentAsync(){ var assignment = assignments.FirstOrDefault(x => x.Status == VehicleAssignmentStatus.Handed.ToString()); if (assignment is null){ success = false; message = "لا توجد حركة سيارة مفتوحة."; return; } var result = await Movement.ReceiveVehicleAsync(assignment.Id, new ReceiveVehicleRequest(DateTime.UtcNow.AddHours(3), handOdometer, "استلام")); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task MarkOverdueAssignmentsAsync(){ var result = await Movement.MarkOverdueAssignmentsAsync("تحديث حالة التأخير من شاشة الحركة"); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task ReceiveFirstAssignmentAsync(){ var assignment = assignments.FirstOrDefault(x => x.Status == VehicleAssignmentStatus.Handed.ToString() || x.Status == VehicleAssignmentStatus.Overdue.ToString()); if (assignment is null){ success = false; message = "لا توجد حركة سيارة مفتوحة."; return; } var result = await Movement.ReceiveVehicleAsync(assignment.Id, new ReceiveVehicleRequest(DateTime.UtcNow.AddHours(3), handOdometer, "استلام")); success = result.Success; message = result.Message; await LoadAsync(); }
+    private void EditVehicle(FleetVehicleResponse vehicle){ editingVehicleId = vehicle.Id; plateNumber = vehicle.PlateNumber; model = vehicle.Model; year = vehicle.Year; color = vehicle.Color; odometer = vehicle.Odometer; vehicleStatus = Enum.TryParse<FleetVehicleStatus>(vehicle.Status, out var parsedStatus) ? parsedStatus : FleetVehicleStatus.Available; vehicleNotes = vehicle.Notes; message = null; }
+    private async Task ChangeVehicleStatusAsync(FleetVehicleResponse vehicle, FleetVehicleStatus status){ var result = await Movement.SaveVehicleAsync(vehicle.Id, new SaveFleetVehicleRequest(vehicle.PlateNumber, vehicle.Model, vehicle.Year, vehicle.Color, vehicle.Odometer, status, vehicle.Notes)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private void EditRequest(VehicleRequestResponse request){ editingRequestId = request.Id; requesterName = request.RequesterName; requestedFrom = request.RequestedFrom; requestedTo = request.RequestedTo; purpose = request.Purpose; requestStatus = Enum.TryParse<VehicleRequestStatus>(request.Status, out var parsedStatus) ? parsedStatus : VehicleRequestStatus.Requested; requestDecisionNote = request.DecisionNote; message = null; }
+    private async Task ChangeRequestStatusAsync(int id, VehicleRequestStatus status){ var result = await Movement.UpdateVehicleRequestStatusAsync(id, status, requestDecisionNote ?? status.ToString()); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task ReceiveAssignmentAsync(VehicleAssignmentResponse assignment){ var result = await Movement.ReceiveVehicleAsync(assignment.Id, new ReceiveVehicleRequest(DateTime.UtcNow.AddHours(3), handOdometer, "استلام")); success = result.Success; message = result.Message; await LoadAsync(); }
+    private void ResetVehicle(){ editingVehicleId = null; plateNumber = string.Empty; model = string.Empty; year = DateTime.UtcNow.AddHours(3).Year; color = null; odometer = null; vehicleStatus = FleetVehicleStatus.Available; vehicleNotes = null; }
+    private void ResetRequest(){ editingRequestId = null; requesterName = string.Empty; requestedFrom = DateTime.UtcNow.AddHours(3).Date; requestedTo = DateTime.UtcNow.AddHours(3).Date.AddDays(1); purpose = string.Empty; requestStatus = VehicleRequestStatus.Requested; requestDecisionNote = null; }
 }

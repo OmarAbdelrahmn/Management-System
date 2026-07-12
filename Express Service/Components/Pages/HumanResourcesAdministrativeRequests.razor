@@ -24,19 +24,37 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-list-check"></i> الطلبات</span></div>
     <table>
-        <thead><tr><th>الموظف</th><th>النوع</th><th>العنوان</th><th>الحالة</th><th>قرار</th></tr></thead>
+        <thead><tr><th>الموظف</th><th>النوع</th><th>العنوان</th><th>الحالة</th><th>قرار</th><th>السجل</th></tr></thead>
         <tbody>
             @foreach (var item in requests)
             {
-                <tr><td>@item.EmployeeName</td><td>@item.RequestType</td><td>@item.Title</td><td><span class="status">@item.Status</span></td><td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Rejected))">رفض</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Completed))">إكمال</button></td></tr>
+                <tr><td>@item.EmployeeName</td><td>@item.RequestType</td><td>@item.Title</td><td><span class="status">@item.Status</span></td><td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Rejected))">رفض</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Completed))">إكمال</button></td><td><button class="secondary" @onclick="@(() => LoadActivityAsync(item))">السجل</button></td></tr>
             }
         </tbody>
     </table>
 </section>
 
+@if (activities.Count > 0)
+{
+    <section class="table-section" style="margin-top:14px">
+        <div class="table-title"><span><i class="fa-solid fa-clock-rotate-left"></i> سجل @activityTitle</span></div>
+        <table>
+            <thead><tr><th>الوقت</th><th>الإجراء</th><th>من</th><th>إلى</th><th>ملاحظات</th></tr></thead>
+            <tbody>
+                @foreach (var item in activities)
+                {
+                    <tr><td>@item.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td><td>@item.Action</td><td>@item.FromStatus</td><td>@item.ToStatus</td><td>@item.Notes</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
 @code {
     private List<EmployeeResponse> employees = [];
     private List<EmployeeAdministrativeRequestResponse> requests = [];
+    private List<HumanResourceActivityResponse> activities = [];
+    private string? activityTitle;
     private string employeeIdText = string.Empty;
     private string requestType = "طلب إداري";
     private string title = string.Empty;
@@ -72,5 +90,11 @@
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private async Task LoadActivityAsync(EmployeeAdministrativeRequestResponse item)
+    {
+        activityTitle = item.Title;
+        activities = await HR.GetActivitiesAsync(HumanResourceActivityEntityType.AdministrativeRequest, item.Id);
     }
 }

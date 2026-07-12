@@ -145,7 +145,17 @@ public record HumanResourceDashboardResponse(
     int PendingLeaveRequestsCount,
     int TodayAttendanceCount,
     int ExpiringDocumentsCount,
-    decimal MonthlyPayrollTotal);
+    decimal MonthlyPayrollTotal,
+    int PendingAttendanceExcusesCount,
+    int PendingAdministrativeRequestsCount,
+    int PendingEvaluationsCount,
+    int OpenSafetyInspectionsCount,
+    int OpenRecruitmentRequestsCount,
+    int DraftPayrollRecordsCount,
+    int ReviewedPayrollRecordsCount,
+    int ApprovedPayrollRecordsCount,
+    decimal ApprovedPayrollTotal,
+    int RecentActivityCount);
 
 public record EmployeeDisciplinaryRecordResponse(
     int Id,
@@ -206,6 +216,9 @@ public record EmployeeEvaluationResponse(
     string? EvaluatorName,
     string? Strengths,
     string? ImprovementAreas,
+    string Status,
+    string? DecisionNotes,
+    DateTime? DecidedAt,
     string? Notes);
 
 public record SaveEmployeeEvaluationRequest(
@@ -218,7 +231,12 @@ public record SaveEmployeeEvaluationRequest(
     string? EvaluatorName,
     string? Strengths,
     string? ImprovementAreas,
-    string? Notes);
+    string? Notes,
+    EmployeeEvaluationStatus Status = EmployeeEvaluationStatus.Draft);
+
+public record DecideEmployeeEvaluationRequest(
+    EmployeeEvaluationStatus Status,
+    string? DecisionNotes);
 
 public record EmployeeCardIssueResponse(
     int Id,
@@ -237,6 +255,10 @@ public record IssueEmployeeCardRequest(
     string? CardNumber,
     DateTime? IssuedAt,
     DateTime? ExpiresAt,
+    string? Notes);
+
+public record DecideEmployeeCardIssueRequest(
+    HumanResourceRequestStatus Status,
     string? Notes);
 
 public record EmployeeLetterRequestResponse(
@@ -268,11 +290,19 @@ public record EmployeePayrollRecordResponse(
     decimal Deductions,
     decimal NetSalary,
     string Status,
-    string? Notes);
+    string? Notes,
+    string? DecisionNotes,
+    DateTime? ReviewedAt,
+    DateTime? ApprovedAt,
+    DateTime? PaidAt);
 
 public record GeneratePayrollPreviewRequest(
     DateTime PayrollMonth,
     decimal DefaultDeductions,
+    string? Notes);
+
+public record DecidePayrollRecordRequest(
+    PayrollRecordStatus Status,
     string? Notes);
 
 public record AttendancePolicyResponse(
@@ -417,6 +447,8 @@ public record RecruitmentRequestResponse(
     DateTime? InterviewAt,
     string? InterviewNotes,
     DateTime? CompletedAt,
+    int? ConvertedEmployeeProfileId,
+    string? ConvertedEmployeeName,
     string? Notes);
 
 public record SaveRecruitmentRequest(
@@ -436,6 +468,15 @@ public record UpdateRecruitmentStatusRequest(
     RecruitmentRequestStatus Status,
     DateTime? AnnouncedAt,
     DateTime? CompletedAt,
+    string? Notes,
+    DateTime? InterviewAt = null);
+
+public record ConvertRecruitmentToEmployeeRequest(
+    string? EmployeeNumber,
+    string? NationalId,
+    DateTime? HireDate,
+    decimal BasicSalary,
+    decimal Allowances,
     string? Notes);
 
 public record EmployeeAdministrativeRequestResponse(
@@ -454,3 +495,16 @@ public record CreateEmployeeAdministrativeRequest(
     string RequestType,
     string Title,
     string Details);
+
+public record HumanResourceActivityResponse(
+    int Id,
+    string EntityType,
+    int EntityId,
+    int? EmployeeProfileId,
+    string? EmployeeName,
+    string Action,
+    string Title,
+    string? FromStatus,
+    string? ToStatus,
+    string? Notes,
+    DateTime OccurredAt);

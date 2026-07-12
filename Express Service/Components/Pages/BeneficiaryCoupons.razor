@@ -12,7 +12,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-ticket"></i><div><h2>قسيمة شرائية</h2><p>طلب وإصدار واعتماد وتسليم القسائم.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-ticket"></i><div><h2>@(editingCouponId.HasValue ? "تعديل قسيمة" : "قسيمة شرائية")</h2><p>طلب وإصدار واعتماد وتسليم القسائم.</p></div></div>
     <div class="form-grid compact">
         <label>المستفيد<select @bind="beneficiaryIdText"><option value="">بدون مستفيد</option>@foreach (var beneficiary in beneficiaries){<option value="@beneficiary.Id">@beneficiary.FullName</option>}</select></label>
         <label>نوع القسيمة<input @bind="couponType" /></label>
@@ -20,13 +20,19 @@
         <label>تاريخ الطلب<input type="date" @bind="requiredAt" /></label>
         <label class="span-2">ملاحظات<input @bind="notes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ القسيمة</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingCouponId.HasValue ? "تحديث القسيمة" : "حفظ القسيمة")</button>
+        @if (editingCouponId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-database"></i> القسائم</span></div>
     <table>
-        <thead><tr><th>المستفيد</th><th>النوع</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead>
+        <thead><tr><th>المستفيد</th><th>النوع</th><th>المبلغ</th><th>مطلوبة في</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var coupon in coupons)
             {
@@ -34,8 +40,15 @@
                     <td>@coupon.BeneficiaryName</td>
                     <td>@coupon.CouponType</td>
                     <td>@coupon.Amount</td>
+                    <td>@coupon.RequiredAt.ToString("yyyy-MM-dd")</td>
                     <td>@coupon.Status</td>
-                    <td><button class="secondary" @onclick="@(() => StatusAsync(coupon.Id, CouponStatus.Issued))">إصدار</button><button class="secondary" @onclick="@(() => StatusAsync(coupon.Id, CouponStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => StatusAsync(coupon.Id, CouponStatus.Delivered))">تسليم</button></td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => EditCoupon(coupon))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => StatusAsync(coupon.Id, CouponStatus.Issued))">إصدار</button>
+                        <button class="secondary" @onclick="@(() => StatusAsync(coupon.Id, CouponStatus.Approved))">اعتماد</button>
+                        <button class="secondary" @onclick="@(() => StatusAsync(coupon.Id, CouponStatus.Delivered))">تسليم</button>
+                        <button class="secondary" @onclick="@(() => StatusAsync(coupon.Id, CouponStatus.Cancelled))">إلغاء</button>
+                    </td>
                 </tr>
             }
         </tbody>
@@ -45,6 +58,7 @@
 @code {
     private List<BeneficiaryResponse> beneficiaries = [];
     private List<CouponRequestResponse> coupons = [];
+    private int? editingCouponId;
     private string beneficiaryIdText = string.Empty;
     private string couponType = string.Empty;
     private decimal amount;
@@ -64,10 +78,23 @@
     private async Task SaveAsync()
     {
         var beneficiaryId = int.TryParse(beneficiaryIdText, out var value) ? value : (int?)null;
-        var result = await Services.SaveCouponAsync(null, new SaveCouponRequestRequest(beneficiaryId, couponType, amount, requiredAt, notes));
+        var result = await Services.SaveCouponAsync(editingCouponId, new SaveCouponRequestRequest(beneficiaryId, couponType, amount, requiredAt, notes));
         success = result.Success;
         message = result.Message;
+        if (result.Success)
+            ResetForm();
         await LoadAsync();
+    }
+
+    private void EditCoupon(CouponRequestResponse coupon)
+    {
+        editingCouponId = coupon.Id;
+        beneficiaryIdText = coupon.BeneficiaryProfileId?.ToString() ?? string.Empty;
+        couponType = coupon.CouponType;
+        amount = coupon.Amount;
+        requiredAt = coupon.RequiredAt;
+        notes = coupon.Notes;
+        message = null;
     }
 
     private async Task StatusAsync(int id, CouponStatus status)
@@ -76,5 +103,15 @@
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private void ResetForm()
+    {
+        editingCouponId = null;
+        beneficiaryIdText = string.Empty;
+        couponType = string.Empty;
+        amount = 0;
+        requiredAt = DateTime.UtcNow.AddHours(3).Date;
+        notes = null;
     }
 }

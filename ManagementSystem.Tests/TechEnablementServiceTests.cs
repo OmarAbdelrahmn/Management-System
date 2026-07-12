@@ -55,4 +55,49 @@ public class TechEnablementServiceTests
         Assert.Equal(1, dashboard.Value.OpenSecurityReviewsCount);
         Assert.Equal(1, dashboard.Value.NcnpReadyCount);
     }
+
+    [Fact]
+    public async Task NcnpWorkflow_RequiresReadyStatusAndPlatformReferenceBeforeRegistration()
+    {
+        await using var dbcontext = ServiceTestFactory.CreateDbContext();
+        var service = new TechEnablementService(dbcontext);
+        var ncnp = await service.SaveNcnpDataAsync(null, new SaveNcnpDataRecordRequest("HELP-2", "مستفيد", "إعانة مالية", new DateTime(2026, 7, 8), 500, NcnpDataStatus.NeedsUpdate, null, null));
+
+        var directRegistration = await service.UpdateNcnpStatusAsync(ncnp.Value.Id, new UpdateNcnpDataStatusRequest(NcnpDataStatus.Registered, "NCNP-DIRECT", "محاولة مباشرة"));
+        var ready = await service.UpdateNcnpStatusAsync(ncnp.Value.Id, new UpdateNcnpDataStatusRequest(NcnpDataStatus.ReadyToRegister, null, "جاهز للإرسال"));
+        var missingPlatformReference = await service.UpdateNcnpStatusAsync(ncnp.Value.Id, new UpdateNcnpDataStatusRequest(NcnpDataStatus.Registered, null, "بدون مرجع منصة"));
+        var registered = await service.UpdateNcnpStatusAsync(ncnp.Value.Id, new UpdateNcnpDataStatusRequest(NcnpDataStatus.Registered, "NCNP-2", "تم التسجيل"));
+        var archivedRegistered = await service.UpdateNcnpStatusAsync(ncnp.Value.Id, new UpdateNcnpDataStatusRequest(NcnpDataStatus.ArchivedExternalSupport, null, "أرشفة بعد التسجيل"));
+        var registeredRecords = await service.GetNcnpDataAsync(NcnpDataStatus.Registered);
+        var dashboard = await service.GetDashboardAsync();
+
+        Assert.True(ncnp.IsSuccess);
+        Assert.False(directRegistration.IsSuccess);
+        Assert.True(ready.IsSuccess);
+        Assert.False(missingPlatformReference.IsSuccess);
+        Assert.True(registered.IsSuccess);
+        Assert.False(archivedRegistered.IsSuccess);
+        var registeredRecord = Assert.Single(registeredRecords.Value);
+        Assert.Equal("NCNP-2", registeredRecord.PlatformReference);
+        Assert.Equal(0, dashboard.Value.NcnpReadyCount);
+    }
+
+    [Fact]
+    public async Task UpdateCybersecurityStatusAsync_ValidatesAndClosesReview()
+    {
+        await using var dbcontext = ServiceTestFactory.CreateDbContext();
+        var service = new TechEnablementService(dbcontext);
+        var review = await service.SaveCybersecurityReviewAsync(null, new SaveCybersecurityReviewRequest("الصلاحيات", "صلاحية عالية", "Critical", CybersecurityReviewStatus.Open, null, null, null));
+
+        var invalidMitigation = await service.UpdateCybersecurityStatusAsync(review.Value.Id, new UpdateCybersecurityReviewStatusRequest(CybersecurityReviewStatus.Mitigated, null, null, null));
+        var inReview = await service.UpdateCybersecurityStatusAsync(review.Value.Id, new UpdateCybersecurityReviewStatusRequest(CybersecurityReviewStatus.InReview, "مسؤول الأمن", new DateTime(2026, 7, 20), null));
+        var mitigated = await service.UpdateCybersecurityStatusAsync(review.Value.Id, new UpdateCybersecurityReviewStatusRequest(CybersecurityReviewStatus.Mitigated, null, null, "تم تقليل الصلاحيات"));
+        var dashboard = await service.GetDashboardAsync();
+
+        Assert.False(invalidMitigation.IsSuccess);
+        Assert.Equal("InReview", inReview.Value.Status);
+        Assert.Equal("Mitigated", mitigated.Value.Status);
+        Assert.Equal("تم تقليل الصلاحيات", mitigated.Value.MitigationPlan);
+        Assert.Equal(0, dashboard.Value.OpenSecurityReviewsCount);
+    }
 }

@@ -26,7 +26,7 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-list-check"></i> السجلات</span></div>
     <table>
-        <thead><tr><th>الموظف</th><th>النوع</th><th>التاريخ</th><th>العنوان</th><th>الحالة</th><th>قرار</th></tr></thead>
+        <thead><tr><th>الموظف</th><th>النوع</th><th>التاريخ</th><th>العنوان</th><th>الحالة</th><th>قرار</th><th>السجل</th></tr></thead>
         <tbody>
             @foreach (var item in records)
             {
@@ -37,15 +37,34 @@
                     <td>@item.Title</td>
                     <td><span class="status">@item.Status</span></td>
                     <td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Cancelled))">إلغاء</button></td>
+                    <td><button class="secondary" @onclick="@(() => LoadActivityAsync(item))">السجل</button></td>
                 </tr>
             }
         </tbody>
     </table>
 </section>
 
+@if (activities.Count > 0)
+{
+    <section class="table-section" style="margin-top:14px">
+        <div class="table-title"><span><i class="fa-solid fa-clock-rotate-left"></i> سجل @activityTitle</span></div>
+        <table>
+            <thead><tr><th>الوقت</th><th>الإجراء</th><th>من</th><th>إلى</th><th>ملاحظات</th></tr></thead>
+            <tbody>
+                @foreach (var item in activities)
+                {
+                    <tr><td>@item.OccurredAt.ToString("yyyy-MM-dd HH:mm")</td><td>@item.Action</td><td>@item.FromStatus</td><td>@item.ToStatus</td><td>@item.Notes</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
 @code {
     private List<EmployeeResponse> employees = [];
     private List<EmployeeDisciplinaryRecordResponse> records = [];
+    private List<HumanResourceActivityResponse> activities = [];
+    private string? activityTitle;
     private int employeeId;
     private EmployeeDisciplinaryRecordType recordType = EmployeeDisciplinaryRecordType.Warning;
     private DateTime recordDate = DateTime.UtcNow.AddHours(3).Date;
@@ -84,5 +103,11 @@
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private async Task LoadActivityAsync(EmployeeDisciplinaryRecordResponse item)
+    {
+        activityTitle = $"{item.EmployeeName} - {item.Title}";
+        activities = await HR.GetActivitiesAsync(HumanResourceActivityEntityType.DisciplinaryRecord, item.Id);
     }
 }

@@ -11,28 +11,59 @@
 }
 
 <section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-globe"></i><div><h2>محتوى الموقع والنماذج والتواصل</h2><p>إدارة الأخبار والصفحات والنماذج وطلبات التواصل مع النشر والأرشفة.</p></div></div>
     <div class="form-grid">
-        <label>نوع المحتوى<select @bind="contentType"><option value="@WebsiteContentType.About">عن الجمعية</option><option value="@WebsiteContentType.News">خبر</option><option value="@WebsiteContentType.Gallery">معرض</option><option value="@WebsiteContentType.Video">فيديو</option><option value="@WebsiteContentType.Partner">شريك</option><option value="@WebsiteContentType.Regulation">لائحة</option><option value="@WebsiteContentType.AnnualReport">تقرير سنوي</option><option value="@WebsiteContentType.Initiative">مبادرة</option><option value="@WebsiteContentType.Testimonial">قالوا عنا</option><option value="@WebsiteContentType.Service">خدمة</option><option value="@WebsiteContentType.Link">رابط</option><option value="@WebsiteContentType.Popup">نافذة</option><option value="@WebsiteContentType.Contest">مسابقة</option><option value="@WebsiteContentType.Page">صفحة</option></select></label>
+        <label>نوع المحتوى<select @bind="contentType">@foreach (var value in Enum.GetValues<WebsiteContentType>()){<option value="@value">@value</option>}</select></label>
+        <label>حالة المحتوى<select @bind="contentStatus">@foreach (var value in Enum.GetValues<WebsiteContentStatus>()){<option value="@value">@value</option>}</select></label>
         <label>العنوان<input @bind="title" /></label>
         <label>الرابط المختصر<input @bind="slug" /></label>
+        <label>الملخص<input @bind="summary" /></label>
         <label>رابط وسائط<input @bind="mediaUrl" /></label>
         <label class="span-2">النص<textarea @bind="body"></textarea></label>
         <label>النموذج<input @bind="formTitle" /></label>
-        <label>الحقول JSON<input @bind="fieldsJson" /></label>
+        <label>النموذج فعال<select @bind="formActiveText"><option value="true">نعم</option><option value="false">لا</option></select></label>
+        <label class="span-2">الحقول JSON<input @bind="fieldsJson" /></label>
         <label>صاحب الطلب<input @bind="contactName" /></label>
+        <label>بريد التواصل<input @bind="contactEmail" /></label>
+        <label>جوال التواصل<input @bind="contactMobile" /></label>
         <label>موضوع التواصل<input @bind="subject" /></label>
+        <label>حالة التواصل<select @bind="contactStatus">@foreach (var value in Enum.GetValues<WebsiteContentStatus>()){<option value="@value">@value</option>}</select></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveContentAsync">حفظ محتوى</button><button class="secondary" @onclick="SaveFormAsync">حفظ نموذج</button><button class="secondary" @onclick="SaveContactAsync">حفظ تواصل</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveContentAsync">@(editingContentId.HasValue ? "تحديث محتوى" : "حفظ محتوى")</button>
+        <button class="secondary" @onclick="SaveFormAsync">@(editingFormId.HasValue ? "تحديث نموذج" : "حفظ نموذج")</button>
+        <button class="secondary" @onclick="SaveContactAsync">@(editingContactId.HasValue ? "تحديث تواصل" : "حفظ تواصل")</button>
+        @if (editingContentId.HasValue || editingFormId.HasValue || editingContactId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForms">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-globe"></i> محتوى الموقع</span></div>
     <table>
-        <thead><tr><th>النوع</th><th>العنوان</th><th>التفاصيل</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>النوع</th><th>العنوان</th><th>التفاصيل</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
-            @foreach (var item in content){<tr><td>@item.ContentType</td><td>@item.Title</td><td>@item.Slug<br />@item.MediaUrl</td><td>@item.Status</td></tr>}
-            @foreach (var item in forms){<tr><td>نموذج</td><td>@item.Title</td><td>@item.SubmissionsCount إدخالات</td><td>@item.IsActive</td></tr>}
-            @foreach (var item in contacts){<tr><td>تواصل</td><td>@item.FullName</td><td>@item.Subject</td><td>@item.Status</td></tr>}
+            @foreach (var item in content)
+            {
+                <tr>
+                    <td>@item.ContentType</td>
+                    <td>@item.Title</td>
+                    <td>@item.Slug<br />@item.MediaUrl</td>
+                    <td>@item.Status<br />@item.PublishedAt?.ToString("yyyy-MM-dd")</td>
+                    <td><button class="secondary" @onclick="@(() => EditContent(item))">تعديل</button><button class="secondary" @onclick="@(() => UpdateContentStatusAsync(item.Id, WebsiteContentStatus.Published))">نشر</button><button class="secondary" @onclick="@(() => UpdateContentStatusAsync(item.Id, WebsiteContentStatus.Draft))">مسودة</button><button class="secondary" @onclick="@(() => UpdateContentStatusAsync(item.Id, WebsiteContentStatus.Archived))">أرشفة</button></td>
+                </tr>
+            }
+            @foreach (var item in forms)
+            {
+                <tr><td>نموذج</td><td>@item.Title</td><td>@item.SubmissionsCount إدخالات</td><td>@(item.IsActive ? "فعال" : "غير فعال")</td><td><button class="secondary" @onclick="@(() => EditForm(item))">تعديل</button><button class="secondary" @onclick="@(() => SetFormActiveAsync(item, false))">تعطيل</button><button class="secondary" @onclick="@(() => SetFormActiveAsync(item, true))">تفعيل</button></td></tr>
+            }
+            @foreach (var item in contacts)
+            {
+                <tr><td>تواصل</td><td>@item.FullName</td><td>@item.Subject</td><td>@item.Status</td><td><button class="secondary" @onclick="@(() => EditContact(item))">تعديل</button><button class="secondary" @onclick="@(() => UpdateContactStatusAsync(item.Id, WebsiteContentStatus.Published))">معالجة</button><button class="secondary" @onclick="@(() => UpdateContactStatusAsync(item.Id, WebsiteContentStatus.Archived))">أرشفة</button></td></tr>
+            }
         </tbody>
     </table>
 </section>
@@ -41,20 +72,158 @@
     private List<WebsiteContentItemResponse> content = [];
     private List<WebsiteFormResponse> forms = [];
     private List<WebsiteContactRequestResponse> contacts = [];
+    private int? editingContentId;
+    private int? editingFormId;
+    private int? editingContactId;
     private WebsiteContentType contentType = WebsiteContentType.News;
+    private WebsiteContentStatus contentStatus = WebsiteContentStatus.Published;
     private string title = string.Empty;
     private string? slug;
+    private string? summary;
     private string? mediaUrl;
     private string body = string.Empty;
     private string formTitle = string.Empty;
     private string fieldsJson = "[{\"name\":\"name\",\"label\":\"الاسم\"}]";
+    private string formActiveText = "true";
     private string contactName = string.Empty;
+    private string? contactEmail;
+    private string? contactMobile;
     private string subject = string.Empty;
+    private WebsiteContentStatus contactStatus = WebsiteContentStatus.Draft;
     private bool success;
     private string? message;
+
     protected override async Task OnInitializedAsync() => await LoadAsync();
-    private async Task LoadAsync(){ content = await PrMedia.GetContentItemsAsync(); forms = await PrMedia.GetFormsAsync(); contacts = await PrMedia.GetContactRequestsAsync(); }
-    private async Task SaveContentAsync(){ var r = await PrMedia.SaveContentItemAsync(null, new SaveWebsiteContentItemRequest(contentType, title, slug, null, body, mediaUrl, WebsiteContentStatus.Published)); success = r.Success; message = r.Message; await LoadAsync(); }
-    private async Task SaveFormAsync(){ var r = await PrMedia.SaveFormAsync(null, new SaveWebsiteFormRequest(formTitle, fieldsJson, true)); success = r.Success; message = r.Message; await LoadAsync(); }
-    private async Task SaveContactAsync(){ var r = await PrMedia.SaveContactRequestAsync(null, new SaveWebsiteContactRequestRequest(contactName, null, null, subject, body, WebsiteContentStatus.Draft)); success = r.Success; message = r.Message; await LoadAsync(); }
+
+    private async Task LoadAsync()
+    {
+        content = await PrMedia.GetContentItemsAsync();
+        forms = await PrMedia.GetFormsAsync();
+        contacts = await PrMedia.GetContactRequestsAsync();
+    }
+
+    private async Task SaveContentAsync()
+    {
+        var result = await PrMedia.SaveContentItemAsync(editingContentId, new SaveWebsiteContentItemRequest(contentType, title, slug, summary, body, mediaUrl, contentStatus));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetContentForm();
+        await LoadAsync();
+    }
+
+    private async Task SaveFormAsync()
+    {
+        var result = await PrMedia.SaveFormAsync(editingFormId, new SaveWebsiteFormRequest(formTitle, fieldsJson, formActiveText == "true"));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetFormForm();
+        await LoadAsync();
+    }
+
+    private async Task SaveContactAsync()
+    {
+        var result = await PrMedia.SaveContactRequestAsync(editingContactId, new SaveWebsiteContactRequestRequest(contactName, contactEmail, contactMobile, subject, body, contactStatus));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success)
+            ResetContactForm();
+        await LoadAsync();
+    }
+
+    private void EditContent(WebsiteContentItemResponse item)
+    {
+        editingContentId = item.Id;
+        contentType = Enum.TryParse<WebsiteContentType>(item.ContentType, out var parsedType) ? parsedType : WebsiteContentType.News;
+        contentStatus = Enum.TryParse<WebsiteContentStatus>(item.Status, out var parsedStatus) ? parsedStatus : WebsiteContentStatus.Draft;
+        title = item.Title;
+        slug = item.Slug;
+        summary = item.Summary;
+        body = item.Body;
+        mediaUrl = item.MediaUrl;
+        message = null;
+    }
+
+    private void EditForm(WebsiteFormResponse item)
+    {
+        editingFormId = item.Id;
+        formTitle = item.Title;
+        fieldsJson = item.FieldsJson;
+        formActiveText = item.IsActive ? "true" : "false";
+        message = null;
+    }
+
+    private void EditContact(WebsiteContactRequestResponse item)
+    {
+        editingContactId = item.Id;
+        contactName = item.FullName;
+        contactEmail = item.Email;
+        contactMobile = item.Mobile;
+        subject = item.Subject;
+        body = item.Message;
+        contactStatus = Enum.TryParse<WebsiteContentStatus>(item.Status, out var parsedStatus) ? parsedStatus : WebsiteContentStatus.Draft;
+        message = null;
+    }
+
+    private async Task UpdateContentStatusAsync(int id, WebsiteContentStatus status)
+    {
+        var result = await PrMedia.UpdateContentStatusAsync(id, status);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SetFormActiveAsync(WebsiteFormResponse item, bool isActive)
+    {
+        var result = await PrMedia.SaveFormAsync(item.Id, new SaveWebsiteFormRequest(item.Title, item.FieldsJson, isActive));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task UpdateContactStatusAsync(int id, WebsiteContentStatus status)
+    {
+        var result = await PrMedia.UpdateContactStatusAsync(id, status);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void ResetForms()
+    {
+        ResetContentForm();
+        ResetFormForm();
+        ResetContactForm();
+    }
+
+    private void ResetContentForm()
+    {
+        editingContentId = null;
+        contentType = WebsiteContentType.News;
+        contentStatus = WebsiteContentStatus.Published;
+        title = string.Empty;
+        slug = null;
+        summary = null;
+        mediaUrl = null;
+        body = string.Empty;
+    }
+
+    private void ResetFormForm()
+    {
+        editingFormId = null;
+        formTitle = string.Empty;
+        fieldsJson = "[{\"name\":\"name\",\"label\":\"الاسم\"}]";
+        formActiveText = "true";
+    }
+
+    private void ResetContactForm()
+    {
+        editingContactId = null;
+        contactName = string.Empty;
+        contactEmail = null;
+        contactMobile = null;
+        subject = string.Empty;
+        contactStatus = WebsiteContentStatus.Draft;
+    }
 }

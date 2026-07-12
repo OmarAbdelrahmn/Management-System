@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-clock-rotate-left"></i><div><h2>سياسة الحضور</h2><p>أوقات الدوام وسماحية التأخير وأيام العمل.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-clock-rotate-left"></i><div><h2>@(editingPolicyId.HasValue ? "تعديل سياسة الحضور" : "سياسة الحضور")</h2><p>أوقات الدوام وسماحية التأخير وأيام العمل.</p></div></div>
     <div class="form-grid compact">
         <label>اسم السياسة<input @bind="policyName" /></label>
         <label>بداية الدوام<input type="time" @bind="workStart" /></label>
@@ -21,11 +21,11 @@
         <label class="check-row"><input type="checkbox" @bind="isDefaultPolicy" /> افتراضية</label>
         <label class="check-row"><input type="checkbox" @bind="policyActive" /> فعالة</label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SavePolicyAsync">حفظ السياسة</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SavePolicyAsync">@(editingPolicyId.HasValue ? "حفظ التعديل" : "حفظ السياسة")</button>@if (editingPolicyId.HasValue){<button class="secondary" @onclick="ResetPolicyForm">إلغاء التعديل</button>}</div>
 </section>
 
 <section class="panel" style="margin-top:14px">
-    <div class="panel-heading"><i class="fa-solid fa-location-dot"></i><div><h2>مكان تسجيل حضور</h2><p>إدارة أماكن التسجيل ونطاق الموقع.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-location-dot"></i><div><h2>@(editingLocationId.HasValue ? "تعديل مكان تسجيل حضور" : "مكان تسجيل حضور")</h2><p>إدارة أماكن التسجيل ونطاق الموقع.</p></div></div>
     <div class="form-grid compact">
         <label>اسم الموقع<input @bind="locationName" /></label>
         <label>خط العرض<input type="number" step="0.0000001" @bind="latitude" /></label>
@@ -34,11 +34,11 @@
         <label class="span-2">ملاحظات<input @bind="locationNotes" /></label>
         <label class="check-row"><input type="checkbox" @bind="locationActive" /> فعال</label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveLocationAsync">حفظ الموقع</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveLocationAsync">@(editingLocationId.HasValue ? "حفظ التعديل" : "حفظ الموقع")</button>@if (editingLocationId.HasValue){<button class="secondary" @onclick="ResetLocationForm">إلغاء التعديل</button>}</div>
 </section>
 
 <section class="panel" style="margin-top:14px">
-    <div class="panel-heading"><i class="fa-solid fa-umbrella-beach"></i><div><h2>إجازة رسمية</h2><p>تعريف أيام الإجازات الرسمية.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-umbrella-beach"></i><div><h2>@(editingVacationId.HasValue ? "تعديل إجازة رسمية" : "إجازة رسمية")</h2><p>تعريف أيام الإجازات الرسمية.</p></div></div>
     <div class="form-grid compact">
         <label>اسم الإجازة<input @bind="vacationName" /></label>
         <label>من<input type="date" @bind="vacationStart" /></label>
@@ -46,25 +46,25 @@
         <label class="check-row"><input type="checkbox" @bind="vacationRecurring" /> تتكرر سنوياً</label>
         <label class="span-2">ملاحظات<input @bind="vacationNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveVacationAsync">حفظ الإجازة الرسمية</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveVacationAsync">@(editingVacationId.HasValue ? "حفظ التعديل" : "حفظ الإجازة الرسمية")</button>@if (editingVacationId.HasValue){<button class="secondary" @onclick="ResetVacationForm">إلغاء التعديل</button>}<button class="secondary" @onclick="LoadAsync">تحديث</button></div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-list"></i> إعدادات الحضور</span></div>
     <table>
-        <thead><tr><th>النوع</th><th>الاسم</th><th>تفاصيل</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>النوع</th><th>الاسم</th><th>تفاصيل</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var policy in policies)
             {
-                <tr><td>سياسة</td><td>@policy.Name</td><td>@policy.WorkStart - @policy.WorkEnd / @policy.GraceMinutes دقيقة</td><td>@(policy.IsDefault ? "افتراضية" : policy.IsActive ? "فعالة" : "موقوفة")</td></tr>
+                <tr><td>سياسة</td><td>@policy.Name</td><td>@policy.WorkStart - @policy.WorkEnd / @policy.GraceMinutes دقيقة</td><td>@(policy.IsDefault ? "افتراضية" : policy.IsActive ? "فعالة" : "موقوفة")</td><td><button class="secondary" @onclick="@(() => EditPolicy(policy))">تعديل</button></td></tr>
             }
             @foreach (var location in locations)
             {
-                <tr><td>موقع</td><td>@location.Name</td><td>@location.Latitude, @location.Longitude / @location.RadiusMeters م</td><td>@(location.IsActive ? "فعال" : "موقوف")</td></tr>
+                <tr><td>موقع</td><td>@location.Name</td><td>@location.Latitude, @location.Longitude / @location.RadiusMeters م</td><td>@(location.IsActive ? "فعال" : "موقوف")</td><td><button class="secondary" @onclick="@(() => EditLocation(location))">تعديل</button></td></tr>
             }
             @foreach (var vacation in vacations)
             {
-                <tr><td>إجازة رسمية</td><td>@vacation.Name</td><td>@vacation.StartsAt.ToString("yyyy-MM-dd") - @vacation.EndsAt.ToString("yyyy-MM-dd")</td><td>@(vacation.IsRecurring ? "متكررة" : "مرة واحدة")</td></tr>
+                <tr><td>إجازة رسمية</td><td>@vacation.Name</td><td>@vacation.StartsAt.ToString("yyyy-MM-dd") - @vacation.EndsAt.ToString("yyyy-MM-dd")</td><td>@(vacation.IsRecurring ? "متكررة" : "مرة واحدة")</td><td><button class="secondary" @onclick="@(() => EditVacation(vacation))">تعديل</button></td></tr>
             }
         </tbody>
     </table>
@@ -74,6 +74,7 @@
     private List<AttendancePolicyResponse> policies = [];
     private List<AttendanceLocationResponse> locations = [];
     private List<OfficialVacationResponse> vacations = [];
+    private int? editingPolicyId;
     private string policyName = "الدوام الرسمي";
     private TimeOnly workStart = new(8, 0);
     private TimeOnly workEnd = new(16, 0);
@@ -82,12 +83,14 @@
     private bool isDefaultPolicy = true;
     private bool policyActive = true;
     private string locationName = string.Empty;
+    private int? editingLocationId;
     private decimal? latitude;
     private decimal? longitude;
     private int radiusMeters = 100;
     private bool locationActive = true;
     private string? locationNotes;
     private string vacationName = string.Empty;
+    private int? editingVacationId;
     private DateTime vacationStart = DateTime.UtcNow.AddHours(3).Date;
     private DateTime vacationEnd = DateTime.UtcNow.AddHours(3).Date;
     private bool vacationRecurring;
@@ -106,29 +109,97 @@
 
     private async Task SavePolicyAsync()
     {
-        var result = await HR.SaveAttendancePolicyAsync(null, new SaveAttendancePolicyRequest(policyName, workStart.ToTimeSpan(), workEnd.ToTimeSpan(), graceMinutes, workDays, isDefaultPolicy, policyActive));
+        var result = await HR.SaveAttendancePolicyAsync(editingPolicyId, new SaveAttendancePolicyRequest(policyName, workStart.ToTimeSpan(), workEnd.ToTimeSpan(), graceMinutes, workDays, isDefaultPolicy, policyActive));
         success = result.Success;
         message = result.Message;
+        if (success)
+            ResetPolicyForm();
         await LoadAsync();
     }
 
     private async Task SaveLocationAsync()
     {
-        var result = await HR.SaveAttendanceLocationAsync(null, new SaveAttendanceLocationRequest(locationName, latitude, longitude, radiusMeters, locationActive, locationNotes));
+        var result = await HR.SaveAttendanceLocationAsync(editingLocationId, new SaveAttendanceLocationRequest(locationName, latitude, longitude, radiusMeters, locationActive, locationNotes));
         success = result.Success;
         message = result.Message;
         if (success)
-            locationName = string.Empty;
+            ResetLocationForm();
         await LoadAsync();
     }
 
     private async Task SaveVacationAsync()
     {
-        var result = await HR.SaveOfficialVacationAsync(null, new SaveOfficialVacationRequest(vacationName, vacationStart, vacationEnd, vacationRecurring, vacationNotes));
+        var result = await HR.SaveOfficialVacationAsync(editingVacationId, new SaveOfficialVacationRequest(vacationName, vacationStart, vacationEnd, vacationRecurring, vacationNotes));
         success = result.Success;
         message = result.Message;
         if (success)
-            vacationName = string.Empty;
+            ResetVacationForm();
         await LoadAsync();
+    }
+
+    private void EditPolicy(AttendancePolicyResponse policy)
+    {
+        editingPolicyId = policy.Id;
+        policyName = policy.Name;
+        workStart = TimeOnly.FromTimeSpan(policy.WorkStart);
+        workEnd = TimeOnly.FromTimeSpan(policy.WorkEnd);
+        graceMinutes = policy.GraceMinutes;
+        workDays = policy.WorkDays;
+        isDefaultPolicy = policy.IsDefault;
+        policyActive = policy.IsActive;
+    }
+
+    private void ResetPolicyForm()
+    {
+        editingPolicyId = null;
+        policyName = "الدوام الرسمي";
+        workStart = new(8, 0);
+        workEnd = new(16, 0);
+        graceMinutes = 15;
+        workDays = "Sunday,Monday,Tuesday,Wednesday,Thursday";
+        isDefaultPolicy = true;
+        policyActive = true;
+    }
+
+    private void EditLocation(AttendanceLocationResponse location)
+    {
+        editingLocationId = location.Id;
+        locationName = location.Name;
+        latitude = location.Latitude;
+        longitude = location.Longitude;
+        radiusMeters = location.RadiusMeters;
+        locationActive = location.IsActive;
+        locationNotes = location.Notes;
+    }
+
+    private void ResetLocationForm()
+    {
+        editingLocationId = null;
+        locationName = string.Empty;
+        latitude = null;
+        longitude = null;
+        radiusMeters = 100;
+        locationActive = true;
+        locationNotes = null;
+    }
+
+    private void EditVacation(OfficialVacationResponse vacation)
+    {
+        editingVacationId = vacation.Id;
+        vacationName = vacation.Name;
+        vacationStart = vacation.StartsAt;
+        vacationEnd = vacation.EndsAt;
+        vacationRecurring = vacation.IsRecurring;
+        vacationNotes = vacation.Notes;
+    }
+
+    private void ResetVacationForm()
+    {
+        editingVacationId = null;
+        vacationName = string.Empty;
+        vacationStart = DateTime.UtcNow.AddHours(3).Date;
+        vacationEnd = DateTime.UtcNow.AddHours(3).Date;
+        vacationRecurring = false;
+        vacationNotes = null;
     }
 }

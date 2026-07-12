@@ -1062,6 +1062,9 @@ namespace Domain.Migrations
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("EntitySupportRequestId")
+                        .HasColumnType("int");
+
                     b.Property<string>("ItemDescription")
                         .IsRequired()
                         .HasMaxLength(2000)
@@ -1090,6 +1093,8 @@ namespace Domain.Migrations
                     b.HasIndex("BeneficiaryAidRequestId");
 
                     b.HasIndex("BeneficiaryProfileId");
+
+                    b.HasIndex("EntitySupportRequestId");
 
                     b.HasIndex("OrderNumber")
                         .IsUnique();
@@ -1715,6 +1720,58 @@ namespace Domain.Migrations
                     b.ToTable("CommunicationCampaigns");
                 });
 
+            modelBuilder.Entity("Domain.Entities.CommunicationCampaignRecipient", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AttemptedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CommunicationCampaignId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeliveredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Recipient")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Recipient");
+
+                    b.HasIndex("CommunicationCampaignId", "Status");
+
+                    b.ToTable("CommunicationCampaignRecipients");
+                });
+
             modelBuilder.Entity("Domain.Entities.CommunicationList", b =>
                 {
                     b.Property<int>("Id")
@@ -2315,6 +2372,60 @@ namespace Domain.Migrations
                     b.ToTable("DonationContributions");
                 });
 
+            modelBuilder.Entity("Domain.Entities.DonationContributionActivity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("DonationContributionId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("FromStatus")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ToStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Type");
+
+                    b.HasIndex("DonationContributionId", "OccurredAt");
+
+                    b.ToTable("DonationContributionActivities");
+                });
+
             modelBuilder.Entity("Domain.Entities.EmailOutbox", b =>
                 {
                     b.Property<int>("Id")
@@ -2870,6 +2981,13 @@ namespace Domain.Migrations
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DecisionNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<int>("EmployeeProfileId")
                         .HasColumnType("int");
 
@@ -2902,6 +3020,9 @@ namespace Domain.Migrations
                     b.Property<decimal>("Score")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
                     b.Property<string>("Strengths")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -2914,6 +3035,8 @@ namespace Domain.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Status");
 
                     b.HasIndex("EmployeeProfileId", "PeriodStart", "PeriodEnd");
 
@@ -3150,6 +3273,9 @@ namespace Domain.Migrations
                     b.Property<decimal>("Allowances")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal>("BasicSalary")
                         .HasColumnType("decimal(18,2)");
 
@@ -3159,6 +3285,10 @@ namespace Domain.Migrations
                     b.Property<string>("CreatedByUserId")
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("DecisionNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<decimal>("Deductions")
                         .HasColumnType("decimal(18,2)");
@@ -3173,7 +3303,13 @@ namespace Domain.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("PayrollMonth")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ReviewedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("Status")
@@ -3190,6 +3326,8 @@ namespace Domain.Migrations
 
                     b.HasIndex("EmployeeProfileId", "PayrollMonth")
                         .IsUnique();
+
+                    b.HasIndex("PayrollMonth", "Status");
 
                     b.ToTable("EmployeePayrollRecords");
                 });
@@ -4737,6 +4875,69 @@ namespace Domain.Migrations
                     b.HasIndex("HrSafetyCategoryId");
 
                     b.ToTable("HrSafetyProcedures");
+                });
+
+            modelBuilder.Entity("Domain.Entities.HumanResourceActivity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Action")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("EmployeeProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EntityId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EntityType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FromStatus")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(220)
+                        .HasColumnType("nvarchar(220)");
+
+                    b.Property<string>("ToStatus")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeProfileId", "OccurredAt");
+
+                    b.HasIndex("EntityType", "EntityId", "OccurredAt");
+
+                    b.ToTable("HumanResourceActivities");
                 });
 
             modelBuilder.Entity("Domain.Entities.InternalMailMessage", b =>
@@ -6984,6 +7185,9 @@ namespace Domain.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("ConvertedProjectId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -7030,6 +7234,8 @@ namespace Domain.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ConvertedProjectId");
 
                     b.HasIndex("Status");
 
@@ -7848,6 +8054,88 @@ namespace Domain.Migrations
                     b.ToTable("ProgramSuppliers");
                 });
 
+            modelBuilder.Entity("Domain.Entities.ProgramSupplierProposal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("ConvertedContractId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DecisionNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("ProgramProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProgramSupplierId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProposalNumber")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("Scope")
+                        .HasMaxLength(3000)
+                        .HasColumnType("nvarchar(3000)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ValidUntil")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConvertedContractId");
+
+                    b.HasIndex("ProposalNumber")
+                        .IsUnique();
+
+                    b.HasIndex("ProgramProjectId", "Status");
+
+                    b.HasIndex("ProgramSupplierId", "Status");
+
+                    b.ToTable("ProgramSupplierProposals");
+                });
+
             modelBuilder.Entity("Domain.Entities.ProgramSurvey", b =>
                 {
                     b.Property<int>("Id")
@@ -8072,6 +8360,9 @@ namespace Domain.Migrations
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("ConvertedEmployeeProfileId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -8119,6 +8410,8 @@ namespace Domain.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ConvertedEmployeeProfileId");
 
                     b.HasIndex("DepartmentId");
 
@@ -10649,9 +10942,16 @@ namespace Domain.Migrations
                         .HasForeignKey("BeneficiaryProfileId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("Domain.Entities.EntitySupportRequest", "EntitySupportRequest")
+                        .WithMany()
+                        .HasForeignKey("EntitySupportRequestId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("BeneficiaryAidRequest");
 
                     b.Navigation("BeneficiaryProfile");
+
+                    b.Navigation("EntitySupportRequest");
                 });
 
             modelBuilder.Entity("Domain.Entities.BeneficiaryUpdateRequest", b =>
@@ -10715,6 +11015,17 @@ namespace Domain.Migrations
                     b.Navigation("CommunicationTemplate");
                 });
 
+            modelBuilder.Entity("Domain.Entities.CommunicationCampaignRecipient", b =>
+                {
+                    b.HasOne("Domain.Entities.CommunicationCampaign", "CommunicationCampaign")
+                        .WithMany("Recipients")
+                        .HasForeignKey("CommunicationCampaignId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CommunicationCampaign");
+                });
+
             modelBuilder.Entity("Domain.Entities.CorrespondenceOperation", b =>
                 {
                     b.HasOne("Domain.Entities.CorrespondenceRecord", "CorrespondenceRecord")
@@ -10762,6 +11073,17 @@ namespace Domain.Migrations
                     b.Navigation("FinancialSupporter");
 
                     b.Navigation("FundraisingOpportunity");
+                });
+
+            modelBuilder.Entity("Domain.Entities.DonationContributionActivity", b =>
+                {
+                    b.HasOne("Domain.Entities.DonationContribution", "DonationContribution")
+                        .WithMany("Activities")
+                        .HasForeignKey("DonationContributionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DonationContribution");
                 });
 
             modelBuilder.Entity("Domain.Entities.EmployeeAdministrativeRequest", b =>
@@ -11022,6 +11344,16 @@ namespace Domain.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("HrSafetyCategory");
+                });
+
+            modelBuilder.Entity("Domain.Entities.HumanResourceActivity", b =>
+                {
+                    b.HasOne("Domain.Entities.EmployeeProfile", "EmployeeProfile")
+                        .WithMany()
+                        .HasForeignKey("EmployeeProfileId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("EmployeeProfile");
                 });
 
             modelBuilder.Entity("Domain.Entities.InternalMailMessage", b =>
@@ -11366,6 +11698,16 @@ namespace Domain.Migrations
                     b.Navigation("ProgramProject");
                 });
 
+            modelBuilder.Entity("Domain.Entities.ProgramIdea", b =>
+                {
+                    b.HasOne("Domain.Entities.ProgramProject", "ConvertedProject")
+                        .WithMany()
+                        .HasForeignKey("ConvertedProjectId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ConvertedProject");
+                });
+
             modelBuilder.Entity("Domain.Entities.ProgramProjectActivity", b =>
                 {
                     b.HasOne("Domain.Entities.ProgramProject", "ProgramProject")
@@ -11504,6 +11846,32 @@ namespace Domain.Migrations
                     b.Navigation("ProgramSession");
                 });
 
+            modelBuilder.Entity("Domain.Entities.ProgramSupplierProposal", b =>
+                {
+                    b.HasOne("Domain.Entities.ProgramProjectContract", "ConvertedContract")
+                        .WithMany()
+                        .HasForeignKey("ConvertedContractId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Domain.Entities.ProgramProject", "ProgramProject")
+                        .WithMany("SupplierProposals")
+                        .HasForeignKey("ProgramProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.ProgramSupplier", "ProgramSupplier")
+                        .WithMany("Proposals")
+                        .HasForeignKey("ProgramSupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ConvertedContract");
+
+                    b.Navigation("ProgramProject");
+
+                    b.Navigation("ProgramSupplier");
+                });
+
             modelBuilder.Entity("Domain.Entities.ProgramSurvey", b =>
                 {
                     b.HasOne("Domain.Entities.ProgramProject", "ProgramProject")
@@ -11528,6 +11896,11 @@ namespace Domain.Migrations
 
             modelBuilder.Entity("Domain.Entities.RecruitmentRequest", b =>
                 {
+                    b.HasOne("Domain.Entities.EmployeeProfile", "ConvertedEmployeeProfile")
+                        .WithMany()
+                        .HasForeignKey("ConvertedEmployeeProfileId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Domain.Entities.EmployeeDepartment", "Department")
                         .WithMany()
                         .HasForeignKey("DepartmentId")
@@ -11539,6 +11912,8 @@ namespace Domain.Migrations
                         .HasForeignKey("JobTitleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("ConvertedEmployeeProfile");
 
                     b.Navigation("Department");
 
@@ -11954,9 +12329,19 @@ namespace Domain.Migrations
                     b.Navigation("RepeatDrafts");
                 });
 
+            modelBuilder.Entity("Domain.Entities.CommunicationCampaign", b =>
+                {
+                    b.Navigation("Recipients");
+                });
+
             modelBuilder.Entity("Domain.Entities.CorrespondenceRecord", b =>
                 {
                     b.Navigation("Operations");
+                });
+
+            modelBuilder.Entity("Domain.Entities.DonationContribution", b =>
+                {
+                    b.Navigation("Activities");
                 });
 
             modelBuilder.Entity("Domain.Entities.EmployeeDepartment", b =>
@@ -12107,6 +12492,8 @@ namespace Domain.Migrations
 
                     b.Navigation("Reports");
 
+                    b.Navigation("SupplierProposals");
+
                     b.Navigation("Tasks");
                 });
 
@@ -12123,6 +12510,8 @@ namespace Domain.Migrations
             modelBuilder.Entity("Domain.Entities.ProgramSupplier", b =>
                 {
                     b.Navigation("Contracts");
+
+                    b.Navigation("Proposals");
                 });
 
             modelBuilder.Entity("Domain.Entities.ProgramSurvey", b =>

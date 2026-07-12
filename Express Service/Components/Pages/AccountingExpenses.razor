@@ -11,23 +11,84 @@
 }
 
 <section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-money-bill-transfer"></i><div><h2>@(editingExpenseId.HasValue ? "تعديل سند صرف" : "سند صرف")</h2><p>تسجيل وتصحيح سندات الصرف وترحيلها إلى اليومية.</p></div></div>
     <div class="form-grid compact">
-        <label>نوع الصرف<select @bind="expenseKind"><option value="@ExpenseVoucherKind.Generic">عام</option><option value="@ExpenseVoucherKind.Authorization">تعميد</option><option value="@ExpenseVoucherKind.PaymentOrder">أمر صرف</option><option value="@ExpenseVoucherKind.Sponsorship">كفالة</option><option value="@ExpenseVoucherKind.CustodySettlement">تسوية عهدة</option></select></label>
+        <label>نوع الصرف<select @bind="expenseKind"><option value="@ExpenseVoucherKind.Generic">عام</option><option value="@ExpenseVoucherKind.Authorization">تعميد</option><option value="@ExpenseVoucherKind.PaymentOrder">أمر صرف</option><option value="@ExpenseVoucherKind.Sponsorship">كفالة</option><option value="@ExpenseVoucherKind.Demand">مطالبة</option><option value="@ExpenseVoucherKind.CustodySettlement">تسوية عهدة</option><option value="@ExpenseVoucherKind.ExchangeOrder">أمر صرف</option><option value="@ExpenseVoucherKind.Salary">رواتب</option></select></label>
+        <label>رقم السند<input @bind="expenseNumber" placeholder="يولد تلقائياً عند تركه فارغاً" /></label>
+        <label>تاريخ الصرف<input type="date" @bind="expenseDate" /></label>
         <label>المستفيد من الصرف<input @bind="payeeName" /></label>
         <label>المبلغ<input type="number" step="0.01" @bind="amount" /></label>
+        <label>الحالة<select @bind="expenseStatus"><option value="@AccountingRecordStatus.Draft">مسودة</option><option value="@AccountingRecordStatus.Approved">معتمد</option><option value="@AccountingRecordStatus.Posted">مرحل</option><option value="@AccountingRecordStatus.Rejected">مرفوض</option><option value="@AccountingRecordStatus.Canceled">ملغى</option><option value="@AccountingRecordStatus.Closed">مغلق</option></select></label>
+        <label class="span-2">ملاحظات الصرف<input @bind="expenseNotes" /></label>
+        <label>حساب مدين<select @bind="expenseDebitAccountId"><option value="0">اختر الحساب</option>@foreach (var account in expenseAccounts){<option value="@account.Id">@account.Code - @account.NameAr</option>}</select></label>
+        <label>حساب دائن<select @bind="expenseCreditAccountId"><option value="0">اختر الحساب</option>@foreach (var account in assetAccounts){<option value="@account.Id">@account.Code - @account.NameAr</option>}</select></label>
+    </div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveExpenseAsync">@(editingExpenseId.HasValue ? "حفظ التعديل" : "حفظ سند صرف")</button>
+        @if (editingExpenseId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetExpenseForm">إلغاء التعديل</button>
+        }
+    </div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-file-invoice-dollar"></i><div><h2>@(editingSalaryId.HasValue ? "تعديل صرف رواتب" : "صرف رواتب")</h2><p>إدارة مسيرات الرواتب وإنشاء سند صرف منها.</p></div></div>
+    <div class="form-grid compact">
         <label>شهر الرواتب<input type="date" @bind="payrollMonth" /></label>
         <label>إجمالي الرواتب<input type="number" step="0.01" @bind="salaryAmount" /></label>
+        <label>صيغة التصدير<input @bind="salaryExportFormat" /></label>
+        <label>الحالة<select @bind="salaryStatus"><option value="@AccountingRecordStatus.Draft">مسودة</option><option value="@AccountingRecordStatus.Approved">معتمد</option><option value="@AccountingRecordStatus.Posted">مرحل</option><option value="@AccountingRecordStatus.Rejected">مرفوض</option><option value="@AccountingRecordStatus.Closed">مغلق</option></select></label>
+        <label class="span-2">ملاحظات الرواتب<input @bind="salaryNotes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveExpenseAsync">حفظ سند صرف</button><button class="secondary" @onclick="SaveSalaryAsync">حفظ صرف رواتب</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveSalaryAsync">@(editingSalaryId.HasValue ? "حفظ التعديل" : "حفظ صرف رواتب")</button>
+        @if (editingSalaryId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetSalaryForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadAsync">تحديث</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-money-bill-transfer"></i> المصروفات</span></div>
     <table>
-        <thead><tr><th>النوع</th><th>الرقم/الشهر</th><th>المستفيد</th><th>المبلغ</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>النوع</th><th>الرقم/الشهر</th><th>المستفيد</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
-            @foreach (var expense in expenses){<tr><td>@expense.Kind</td><td>@expense.ExpenseNumber</td><td>@expense.PayeeName</td><td>@expense.Amount</td><td>@expense.Status</td></tr>}
-            @foreach (var salary in salaries){<tr><td>رواتب</td><td>@salary.PayrollMonth.ToString("yyyy-MM")</td><td>@salary.ExportFormat</td><td>@salary.TotalAmount</td><td>@salary.Status</td></tr>}
+            @foreach (var expense in expenses)
+            {
+                <tr>
+                    <td>@expense.Kind</td>
+                    <td>@expense.ExpenseNumber</td>
+                    <td>@expense.PayeeName</td>
+                    <td>@expense.Amount</td>
+                    <td>@expense.Status</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => EditExpense(expense))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => DecideExpenseAsync(expense.Id, AccountingRecordStatus.Approved))">اعتماد</button>
+                        <button class="secondary" @onclick="@(() => PostExpenseLedgerAsync(expense.Id))">قيد صرف</button>
+                        <button class="secondary" @onclick="@(() => DecideExpenseAsync(expense.Id, AccountingRecordStatus.Rejected))">رفض</button>
+                    </td>
+                </tr>
+            }
+            @foreach (var salary in salaries)
+            {
+                <tr>
+                    <td>رواتب</td>
+                    <td>@salary.PayrollMonth.ToString("yyyy-MM")</td>
+                    <td>@salary.ExportFormat</td>
+                    <td>@salary.TotalAmount</td>
+                    <td>@salary.Status</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => EditSalary(salary))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => DecideSalaryAsync(salary.Id, AccountingRecordStatus.Approved))">اعتماد</button>
+                        <button class="secondary" @onclick="@(() => CreateSalaryExpenseAsync(salary.Id))">سند صرف</button>
+                        <button class="secondary" @onclick="@(() => DecideSalaryAsync(salary.Id, AccountingRecordStatus.Posted))">ترحيل</button>
+                        <button class="secondary" @onclick="@(() => DecideSalaryAsync(salary.Id, AccountingRecordStatus.Closed))">إغلاق</button>
+                    </td>
+                </tr>
+            }
         </tbody>
     </table>
 </section>
@@ -35,16 +96,132 @@
 @code {
     private List<ExpenseVoucherResponse> expenses = [];
     private List<SalaryDisbursementResponse> salaries = [];
+    private List<FinanceAccountResponse> expenseAccounts = [];
+    private List<FinanceAccountResponse> assetAccounts = [];
     private ExpenseVoucherKind expenseKind = ExpenseVoucherKind.Generic;
+    private string? expenseNumber;
+    private DateTime expenseDate = DateTime.UtcNow.AddHours(3).Date;
     private string payeeName = string.Empty;
     private decimal amount;
+    private AccountingRecordStatus expenseStatus = AccountingRecordStatus.Draft;
+    private string? expenseNotes;
+    private int? editingExpenseId;
     private DateTime payrollMonth = DateTime.UtcNow.AddHours(3).Date;
     private decimal salaryAmount;
+    private string salaryExportFormat = "Rajhi/Export";
+    private AccountingRecordStatus salaryStatus = AccountingRecordStatus.Draft;
+    private string? salaryNotes;
+    private int? editingSalaryId;
+    private int expenseDebitAccountId;
+    private int expenseCreditAccountId;
     private bool success;
     private string? message;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
-    private async Task LoadAsync(){ expenses = await Accounting.GetExpensesAsync(); salaries = await Accounting.GetSalaryDisbursementsAsync(); }
-    private async Task SaveExpenseAsync(){ var r = await Accounting.SaveExpenseAsync(null, new SaveExpenseVoucherRequest(null, expenseKind, DateTime.UtcNow.AddHours(3), amount, payeeName, AccountingRecordStatus.Posted, null)); success = r.Success; message = r.Message; await LoadAsync(); }
-    private async Task SaveSalaryAsync(){ var r = await Accounting.SaveSalaryDisbursementAsync(null, new SaveSalaryDisbursementRequest(payrollMonth, salaryAmount, "Rajhi/Export", AccountingRecordStatus.Posted, null)); success = r.Success; message = r.Message; await LoadAsync(); }
+
+    private async Task LoadAsync()
+    {
+        expenses = await Accounting.GetExpensesAsync();
+        salaries = await Accounting.GetSalaryDisbursementsAsync();
+        expenseAccounts = await Accounting.GetAccountsAsync(AccountingAccountType.Expense);
+        assetAccounts = await Accounting.GetAccountsAsync(AccountingAccountType.Asset);
+        expenseDebitAccountId = expenseDebitAccountId == 0 ? expenseAccounts.FirstOrDefault()?.Id ?? 0 : expenseDebitAccountId;
+        expenseCreditAccountId = expenseCreditAccountId == 0 ? assetAccounts.FirstOrDefault()?.Id ?? 0 : expenseCreditAccountId;
+    }
+
+    private async Task SaveExpenseAsync()
+    {
+        var result = await Accounting.SaveExpenseAsync(editingExpenseId, new SaveExpenseVoucherRequest(expenseNumber, expenseKind, expenseDate, amount, payeeName, expenseStatus, expenseNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetExpenseForm();
+        await LoadAsync();
+    }
+
+    private async Task SaveSalaryAsync()
+    {
+        var result = await Accounting.SaveSalaryDisbursementAsync(editingSalaryId, new SaveSalaryDisbursementRequest(payrollMonth, salaryAmount, salaryExportFormat, salaryStatus, salaryNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetSalaryForm();
+        await LoadAsync();
+    }
+
+    private async Task DecideExpenseAsync(int id, AccountingRecordStatus status)
+    {
+        var result = await Accounting.DecideExpenseAsync(id, status, expenseNotes ?? payeeName);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task PostExpenseLedgerAsync(int id)
+    {
+        var result = await Accounting.CreateLedgerFromExpenseAsync(id, new CreateVoucherLedgerEntryRequest(expenseDebitAccountId, expenseCreditAccountId, null, AccountingRecordStatus.Posted, expenseNotes ?? payeeName));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task DecideSalaryAsync(int id, AccountingRecordStatus status)
+    {
+        var result = await Accounting.DecideSalaryDisbursementAsync(id, status, salaryNotes ?? "تحديث حالة صرف الرواتب");
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task CreateSalaryExpenseAsync(int id)
+    {
+        var result = await Accounting.CreateExpenseFromSalaryDisbursementAsync(id, new CreateSalaryExpenseVoucherRequest(DateTime.UtcNow.AddHours(3), AccountingRecordStatus.Approved, payeeName, salaryNotes ?? "سند صرف من مسير الرواتب"));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void EditExpense(ExpenseVoucherResponse expense)
+    {
+        editingExpenseId = expense.Id;
+        expenseNumber = expense.ExpenseNumber;
+        expenseKind = Enum.TryParse<ExpenseVoucherKind>(expense.Kind, out var parsedKind) ? parsedKind : ExpenseVoucherKind.Generic;
+        expenseDate = expense.ExpenseDate;
+        amount = expense.Amount;
+        payeeName = expense.PayeeName;
+        expenseStatus = Enum.TryParse<AccountingRecordStatus>(expense.Status, out var parsedStatus) ? parsedStatus : AccountingRecordStatus.Draft;
+        expenseNotes = expense.Notes;
+    }
+
+    private void EditSalary(SalaryDisbursementResponse salary)
+    {
+        editingSalaryId = salary.Id;
+        payrollMonth = salary.PayrollMonth;
+        salaryAmount = salary.TotalAmount;
+        salaryExportFormat = salary.ExportFormat;
+        salaryStatus = Enum.TryParse<AccountingRecordStatus>(salary.Status, out var parsedStatus) ? parsedStatus : AccountingRecordStatus.Draft;
+        salaryNotes = salary.Notes;
+    }
+
+    private void ResetExpenseForm()
+    {
+        editingExpenseId = null;
+        expenseNumber = null;
+        expenseKind = ExpenseVoucherKind.Generic;
+        expenseDate = DateTime.UtcNow.AddHours(3).Date;
+        payeeName = string.Empty;
+        amount = 0;
+        expenseStatus = AccountingRecordStatus.Draft;
+        expenseNotes = null;
+    }
+
+    private void ResetSalaryForm()
+    {
+        editingSalaryId = null;
+        payrollMonth = DateTime.UtcNow.AddHours(3).Date;
+        salaryAmount = 0;
+        salaryExportFormat = "Rajhi/Export";
+        salaryStatus = AccountingRecordStatus.Draft;
+        salaryNotes = null;
+    }
 }

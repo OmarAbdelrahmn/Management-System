@@ -30,6 +30,18 @@ public class BeneficiaryServicesUiService(IBeneficiaryServicesService service)
         return result.IsSuccess ? (true, "تم تحديث حالة طلب الإعانة.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> CreatePaymentOrderFromAidRequestAsync(int id, PaymentOrderType orderType, DateTime? dueDate, string? notes, CancellationToken cancellationToken = default)
+    {
+        var result = await service.CreatePaymentOrderFromAidRequestAsync(id, new CreatePaymentOrderFromAidRequestRequest(orderType, dueDate, notes), cancellationToken);
+        return result.IsSuccess ? (true, "تم إنشاء أمر صرف من طلب الإعانة.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> CreatePaymentOrderFromEntitySupportAsync(int id, PaymentOrderType orderType, DateTime? dueDate, string? notes, CancellationToken cancellationToken = default)
+    {
+        var result = await service.CreatePaymentOrderFromEntitySupportAsync(id, new CreatePaymentOrderFromEntitySupportRequest(orderType, dueDate, notes), cancellationToken);
+        return result.IsSuccess ? (true, "تم إنشاء أمر صرف من طلب الجهة.") : (false, result.Error.Description);
+    }
+
     public async Task<List<PaymentOrderResponse>> GetPaymentOrdersAsync(PaymentOrderType? type = null, PaymentOrderStatus? status = null, CancellationToken cancellationToken = default)
     {
         var result = await service.GetPaymentOrdersAsync(type, status, cancellationToken);
@@ -88,6 +100,12 @@ public class BeneficiaryServicesUiService(IBeneficiaryServicesService service)
     {
         var result = await service.GetSponsorshipPaymentsAsync(status, cancellationToken);
         return result.IsSuccess ? result.Value.ToList() : [];
+    }
+
+    public async Task<(bool Success, string Message)> GenerateSponsorshipPaymentsAsync(int recordId, GenerateSponsorshipPaymentsRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await service.GenerateSponsorshipPaymentsAsync(recordId, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم إنشاء جدول دفعات الكفالة.") : (false, result.Error.Description);
     }
 
     public async Task<(bool Success, string Message)> SaveSponsorshipPaymentAsync(int? id, SaveSponsorshipPaymentRequest request, CancellationToken cancellationToken = default)

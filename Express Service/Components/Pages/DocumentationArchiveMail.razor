@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-envelope-open-text"></i><div><h2>سجل بريد</h2><p>إضافة وتحديث الصادر والوارد، الرسائل التي تحتاج إلى رد، الحذف، الموافقة على الحذف، والباركود.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-envelope-open-text"></i><div><h2>@(editingMailId.HasValue ? "تعديل سجل بريد" : "سجل بريد")</h2><p>إضافة وتحديث الصادر والوارد، الرسائل التي تحتاج إلى رد، الحذف، الموافقة على الحذف، والباركود.</p></div></div>
     <div class="form-grid compact">
         <label>رقم البريد<input @bind="mailNumber" /></label>
         <label>الاتجاه<select @bind="direction"><option value="@CorrespondenceDirection.Outgoing">صادر</option><option value="@CorrespondenceDirection.Incoming">وارد</option></select></label>
@@ -22,11 +22,21 @@
         <label>الحالة<select @bind="mailStatus"><option value="@CorrespondenceStatus.Draft">مسودة</option><option value="@CorrespondenceStatus.Registered">مسجل</option><option value="@CorrespondenceStatus.NeedsReply">بحاجة إلى رد</option><option value="@CorrespondenceStatus.Replied">تم الرد</option><option value="@CorrespondenceStatus.Completed">مكتمل</option><option value="@CorrespondenceStatus.Removed">محذوف</option><option value="@CorrespondenceStatus.PendingRemovalApproval">بانتظار اعتماد الحذف</option></select></label>
         <label class="span-2">ملاحظات<input @bind="notes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveMailAsync">حفظ البريد</button><button class="secondary" @onclick="LoadIncomingAsync">الوارد</button><button class="secondary" @onclick="LoadOutgoingAsync">الصادر</button><button class="secondary" @onclick="LoadNeedsReplyAsync">تحتاج رد</button><button class="secondary" @onclick="LoadAsync">كل البريد</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveMailAsync">@(editingMailId.HasValue ? "حفظ التعديل" : "حفظ البريد")</button>
+        @if (editingMailId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetMailForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadIncomingAsync">الوارد</button>
+        <button class="secondary" @onclick="LoadOutgoingAsync">الصادر</button>
+        <button class="secondary" @onclick="LoadNeedsReplyAsync">تحتاج رد</button>
+        <button class="secondary" @onclick="LoadAsync">كل البريد</button>
+    </div>
 </section>
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-list-check"></i><div><h2>معاملة بريد</h2><p>إنشاء معاملات الرسائل، متابعة المفتوح والمنتهي، وقاعدة بيانات المعاملات الداخلية.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-list-check"></i><div><h2>@(editingOperationId.HasValue ? "تعديل معاملة بريد" : "معاملة بريد")</h2><p>إنشاء معاملات الرسائل، متابعة المفتوح والمنتهي، وقاعدة بيانات المعاملات الداخلية.</p></div></div>
     <div class="form-grid compact">
         <label>سجل البريد<select @bind="operationMailId"><option value="0">اختر سجل بريد</option>@foreach (var item in correspondence){<option value="@item.Id">@item.MailNumber - @item.Subject</option>}</select></label>
         <label>رقم المعاملة<input @bind="operationNumber" /></label>
@@ -35,7 +45,15 @@
         <label>تاريخ الاستحقاق<input type="date" @bind="dueDate" /></label>
         <label>الحالة<select @bind="operationStatus"><option value="@CorrespondenceOperationStatus.Open">مفتوحة</option><option value="@CorrespondenceOperationStatus.Completed">منتهية</option><option value="@CorrespondenceOperationStatus.Cancelled">ملغاة</option></select></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveOperationAsync">حفظ المعاملة</button><button class="secondary" @onclick="LoadOpenOperationsAsync">المفتوحة</button><button class="secondary" @onclick="LoadCompletedOperationsAsync">المنتهية</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveOperationAsync">@(editingOperationId.HasValue ? "حفظ التعديل" : "حفظ المعاملة")</button>
+        @if (editingOperationId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetOperationForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="LoadOpenOperationsAsync">المفتوحة</button>
+        <button class="secondary" @onclick="LoadCompletedOperationsAsync">المنتهية</button>
+    </div>
 </section>
 
 <section class="table-section">
@@ -48,9 +66,17 @@
                 <tr>
                     <td>@item.MailNumber<br />@item.BarcodeValue</td><td>@item.Direction</td><td>@item.Subject</td><td>@item.PartyName<br />@item.MailDate.ToString("yyyy-MM-dd")</td><td>@item.Status<br />@item.OperationsCount معاملات</td>
                     <td>
+                        <button class="secondary" @onclick="@(() => EditMail(item))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => ChangeMailStatusAsync(item.Id, CorrespondenceStatus.Registered))">تسجيل</button>
                         <button class="secondary" @onclick="@(() => ChangeMailStatusAsync(item.Id, CorrespondenceStatus.NeedsReply))">بحاجة رد</button>
+                        <button class="secondary" @onclick="@(() => ChangeMailStatusAsync(item.Id, CorrespondenceStatus.Replied))">تم الرد</button>
                         <button class="secondary" @onclick="@(() => ChangeMailStatusAsync(item.Id, CorrespondenceStatus.Completed))">إكمال</button>
-                        <button class="secondary" @onclick="@(() => ChangeMailStatusAsync(item.Id, CorrespondenceStatus.PendingRemovalApproval))">طلب حذف</button>
+                        <button class="secondary" @onclick="@(() => RequestRemovalAsync(item.Id))">طلب حذف</button>
+                        @if (item.Status == nameof(CorrespondenceStatus.PendingRemovalApproval))
+                        {
+                            <button class="secondary" @onclick="@(() => DecideRemovalAsync(item.Id, true))">اعتماد الحذف</button>
+                            <button class="secondary" @onclick="@(() => DecideRemovalAsync(item.Id, false))">رفض الحذف</button>
+                        }
                     </td>
                 </tr>
             }
@@ -65,7 +91,14 @@
         <tbody>
             @foreach (var item in operations)
             {
-                <tr><td>@item.OperationNumber<br />@item.Title</td><td>@item.MailNumber</td><td>@item.AssignedTo</td><td>@item.DueDate?.ToString("yyyy-MM-dd")</td><td>@item.Status<br />@item.Notes</td><td><button class="secondary" @onclick="@(() => CompleteOperationAsync(item.Id))">إكمال</button></td></tr>
+                <tr>
+                    <td>@item.OperationNumber<br />@item.Title</td>
+                    <td>@item.MailNumber</td>
+                    <td>@item.AssignedTo</td>
+                    <td>@item.DueDate?.ToString("yyyy-MM-dd")</td>
+                    <td>@item.Status<br />@item.Notes</td>
+                    <td><button class="secondary" @onclick="@(() => EditOperation(item))">تعديل</button><button class="secondary" @onclick="@(() => CompleteOperationAsync(item.Id))">إكمال</button></td>
+                </tr>
             }
         </tbody>
     </table>
@@ -74,6 +107,7 @@
 @code {
     private List<CorrespondenceRecordResponse> correspondence = [];
     private List<CorrespondenceOperationResponse> operations = [];
+    private int? editingMailId;
     private string mailNumber = $"MAIL-{DateTime.UtcNow:yyyyMMddHHmm}";
     private CorrespondenceDirection direction = CorrespondenceDirection.Outgoing;
     private string subject = string.Empty;
@@ -83,6 +117,7 @@
     private CorrespondenceStatus mailStatus = CorrespondenceStatus.Registered;
     private string? notes;
     private int operationMailId;
+    private int? editingOperationId;
     private string operationNumber = $"OP-{DateTime.UtcNow:yyyyMMddHHmm}";
     private string operationTitle = string.Empty;
     private string? assignedTo;
@@ -101,19 +136,19 @@
 
     private async Task SaveMailAsync()
     {
-        var result = await Documentation.SaveCorrespondenceAsync(null, new SaveCorrespondenceRecordRequest(mailNumber, direction, subject, partyName, mailDate, barcodeValue, mailStatus, notes));
+        var result = await Documentation.SaveCorrespondenceAsync(editingMailId, new SaveCorrespondenceRecordRequest(mailNumber, direction, subject, partyName, mailDate, barcodeValue, mailStatus, notes));
         success = result.Success;
         message = result.Message;
-        if (success) mailNumber = $"MAIL-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        if (success) ResetMailForm();
         await LoadAsync();
     }
 
     private async Task SaveOperationAsync()
     {
-        var result = await Documentation.SaveOperationAsync(null, new SaveCorrespondenceOperationRequest(operationMailId, operationNumber, operationTitle, assignedTo, dueDate, operationStatus, notes));
+        var result = await Documentation.SaveOperationAsync(editingOperationId, new SaveCorrespondenceOperationRequest(operationMailId, operationNumber, operationTitle, assignedTo, dueDate, operationStatus, notes));
         success = result.Success;
         message = result.Message;
-        if (success) operationNumber = $"OP-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        if (success) ResetOperationForm();
         await LoadAsync();
     }
 
@@ -125,11 +160,78 @@
         await LoadAsync();
     }
 
+    private async Task RequestRemovalAsync(int id)
+    {
+        var result = await Documentation.RequestCorrespondenceRemovalAsync(id, notes);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task DecideRemovalAsync(int id, bool approved)
+    {
+        var result = await Documentation.DecideCorrespondenceRemovalAsync(id, approved, notes);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
     private async Task CompleteOperationAsync(int id)
     {
         var result = await Documentation.CompleteOperationAsync(id, notes);
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private void EditMail(CorrespondenceRecordResponse item)
+    {
+        editingMailId = item.Id;
+        mailNumber = item.MailNumber;
+        direction = Enum.TryParse<CorrespondenceDirection>(item.Direction, out var parsedDirection) ? parsedDirection : CorrespondenceDirection.Outgoing;
+        subject = item.Subject;
+        partyName = item.PartyName;
+        mailDate = item.MailDate;
+        barcodeValue = item.BarcodeValue;
+        mailStatus = Enum.TryParse<CorrespondenceStatus>(item.Status, out var parsedStatus) ? parsedStatus : CorrespondenceStatus.Registered;
+        notes = item.Notes;
+        operationMailId = item.Id;
+    }
+
+    private void ResetMailForm()
+    {
+        editingMailId = null;
+        mailNumber = $"MAIL-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        direction = CorrespondenceDirection.Outgoing;
+        subject = string.Empty;
+        partyName = string.Empty;
+        mailDate = DateTime.UtcNow.AddHours(3).Date;
+        barcodeValue = null;
+        mailStatus = CorrespondenceStatus.Registered;
+        notes = null;
+    }
+
+    private void EditOperation(CorrespondenceOperationResponse item)
+    {
+        editingOperationId = item.Id;
+        operationMailId = item.CorrespondenceRecordId;
+        operationNumber = item.OperationNumber;
+        operationTitle = item.Title;
+        assignedTo = item.AssignedTo;
+        dueDate = item.DueDate;
+        operationStatus = Enum.TryParse<CorrespondenceOperationStatus>(item.Status, out var parsedStatus) ? parsedStatus : CorrespondenceOperationStatus.Open;
+        notes = item.Notes;
+    }
+
+    private void ResetOperationForm()
+    {
+        editingOperationId = null;
+        operationMailId = correspondence.FirstOrDefault()?.Id ?? 0;
+        operationNumber = $"OP-{DateTime.UtcNow:yyyyMMddHHmmss}";
+        operationTitle = string.Empty;
+        assignedTo = null;
+        dueDate = DateTime.UtcNow.AddHours(3).Date.AddDays(7);
+        operationStatus = CorrespondenceOperationStatus.Open;
+        notes = null;
     }
 }

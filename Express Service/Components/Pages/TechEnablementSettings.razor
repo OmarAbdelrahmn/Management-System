@@ -13,7 +13,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-gears"></i><div><h2>إعداد تقني</h2><p>معلومات الجمعية، مقدمي الخدمات، أقسام لوحة التحكم، حسابات التكامل، المستودعات، القوالب، المتغيرات، إعدادات الموقع، SEO، والتواصل الداخلي.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-gears"></i><div><h2>@(editingId.HasValue ? "تعديل إعداد تقني" : "إعداد تقني")</h2><p>معلومات الجمعية، مقدمي الخدمات، أقسام لوحة التحكم، حسابات التكامل، المستودعات، القوالب، المتغيرات، إعدادات الموقع، SEO، والتواصل الداخلي.</p></div></div>
     <div class="form-grid compact">
         <label>المفتاح<input @bind="key" /></label>
         <label>الاسم العربي<input @bind="nameAr" /></label>
@@ -22,17 +22,38 @@
         <label class="span-2">القيمة<input @bind="value" /></label>
         <label class="span-2">ملاحظات<input @bind="notes" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الإعداد</button><button class="secondary" @onclick="@(() => LoadCategoryAsync("System"))">النظام</button><button class="secondary" @onclick="@(() => LoadCategoryAsync("Website"))">الموقع</button><button class="secondary" @onclick="@(() => LoadCategoryAsync("Communication"))">التواصل</button><button class="secondary" @onclick="LoadAsync">كل الإعدادات</button></div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync">@(editingId.HasValue ? "حفظ التعديل" : "حفظ الإعداد")</button>
+        @if (editingId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>
+        }
+        <button class="secondary" @onclick="@(() => LoadCategoryAsync("System"))">النظام</button>
+        <button class="secondary" @onclick="@(() => LoadCategoryAsync("Website"))">الموقع</button>
+        <button class="secondary" @onclick="@(() => LoadCategoryAsync("Communication"))">التواصل</button>
+        <button class="secondary" @onclick="LoadAsync">كل الإعدادات</button>
+    </div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-database"></i> إعدادات التمكين التقني</span></div>
     <table>
-        <thead><tr><th>المفتاح</th><th>الاسم</th><th>التصنيف</th><th>القيمة</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>المفتاح</th><th>الاسم</th><th>التصنيف</th><th>القيمة</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var item in settings)
             {
-                <tr><td>@item.Key</td><td>@item.NameAr</td><td>@item.Category</td><td>@item.Value<br />@item.Notes</td><td>@item.Status</td></tr>
+                <tr>
+                    <td>@item.Key</td>
+                    <td>@item.NameAr</td>
+                    <td>@item.Category</td>
+                    <td>@item.Value<br />@item.Notes</td>
+                    <td>@item.Status</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => Edit(item))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => ChangeStatusAsync(item, TechSettingStatus.Active))">تفعيل</button>
+                        <button class="secondary" @onclick="@(() => ChangeStatusAsync(item, TechSettingStatus.Inactive))">إيقاف</button>
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
@@ -40,6 +61,7 @@
 
 @code {
     private List<TechSystemSettingResponse> settings = [];
+    private int? editingId;
     private string key = $"Tech.{DateTime.UtcNow:yyyyMMddHHmm}";
     private string nameAr = string.Empty;
     private string category = "System";
@@ -52,5 +74,32 @@
     protected override async Task OnInitializedAsync() => await LoadAsync();
     private async Task LoadAsync() => settings = await Tech.GetSettingsAsync();
     private async Task LoadCategoryAsync(string selected) => settings = await Tech.GetSettingsAsync(selected);
-    private async Task SaveAsync(){ var result = await Tech.SaveSettingAsync(null, new SaveTechSystemSettingRequest(key, nameAr, category, value, notes, status)); success = result.Success; message = result.Message; if (success) key = $"Tech.{DateTime.UtcNow:yyyyMMddHHmmss}"; await LoadAsync(); }
+    private async Task SaveAsync(){ var result = await Tech.SaveSettingAsync(editingId, new SaveTechSystemSettingRequest(key, nameAr, category, value, notes, status)); success = result.Success; message = result.Message; if (success) ResetForm(); await LoadAsync(); }
+    private async Task ChangeStatusAsync(TechSystemSettingResponse item, TechSettingStatus newStatus)
+    {
+        var result = await Tech.SaveSettingAsync(item.Id, new SaveTechSystemSettingRequest(item.Key, item.NameAr, item.Category, item.Value, item.Notes, newStatus));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+    private void Edit(TechSystemSettingResponse item)
+    {
+        editingId = item.Id;
+        key = item.Key;
+        nameAr = item.NameAr;
+        category = item.Category;
+        value = item.Value;
+        notes = item.Notes;
+        status = Enum.TryParse<TechSettingStatus>(item.Status, out var parsedStatus) ? parsedStatus : TechSettingStatus.Active;
+    }
+    private void ResetForm()
+    {
+        editingId = null;
+        key = $"Tech.{DateTime.UtcNow:yyyyMMddHHmmss}";
+        nameAr = string.Empty;
+        category = "System";
+        value = null;
+        notes = null;
+        status = TechSettingStatus.Active;
+    }
 }

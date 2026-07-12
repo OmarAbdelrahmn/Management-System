@@ -106,15 +106,28 @@ public class MovementMaintenanceService(ApplicationDbcontext dbcontext) : IMovem
 
     public async Task<Result<VehicleAssignmentResponse>> HandVehicleAsync(SaveVehicleAssignmentRequest request, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(request.EmployeeName))
+        if (string.IsNullOrWhiteSpace(request.EmployeeName) || (request.ExpectedReturnAt.HasValue && request.ExpectedReturnAt.Value < request.HandedAt))
             return Result.Failure<VehicleAssignmentResponse>(MovementMaintenanceErrors.InvalidRequest);
 
         var vehicle = await dbcontext.FleetVehicles.FirstOrDefaultAsync(x => x.Id == request.FleetVehicleId, cancellationToken);
         if (vehicle is null)
             return Result.Failure<VehicleAssignmentResponse>(MovementMaintenanceErrors.VehicleNotFound);
 
-        if (request.VehicleRequestId.HasValue && !await dbcontext.VehicleRequests.AnyAsync(x => x.Id == request.VehicleRequestId.Value, cancellationToken))
-            return Result.Failure<VehicleAssignmentResponse>(MovementMaintenanceErrors.VehicleRequestNotFound);
+        if (vehicle.Status != FleetVehicleStatus.Available)
+            return Result.Failure<VehicleAssignmentResponse>(MovementMaintenanceErrors.InvalidRequest);
+
+        if (await HasActiveVehicleAssignmentAsync(vehicle.Id, 0, cancellationToken))
+            return Result.Failure<VehicleAssignmentResponse>(MovementMaintenanceErrors.InvalidRequest);
+
+        VehicleRequest? carRequest = null;
+        if (request.VehicleRequestId.HasValue)
+        {
+            carRequest = await dbcontext.VehicleRequests.FirstOrDefaultAsync(x => x.Id == request.VehicleRequestId.Value, cancellationToken);
+            if (carRequest is null)
+                return Result.Failure<VehicleAssignmentResponse>(MovementMaintenanceErrors.VehicleRequestNotFound);
+            if (carRequest.Status != VehicleRequestStatus.Approved)
+                return Result.Failure<VehicleAssignmentResponse>(MovementMaintenanceErrors.InvalidRequest);
+        }
 
         var entity = new VehicleAssignment
         {
@@ -130,11 +143,8 @@ public class MovementMaintenanceService(ApplicationDbcontext dbcontext) : IMovem
         dbcontext.VehicleAssignments.Add(entity);
         vehicle.Status = FleetVehicleStatus.Assigned;
 
-        if (request.VehicleRequestId.HasValue)
-        {
-            var carRequest = await dbcontext.VehicleRequests.FirstAsync(x => x.Id == request.VehicleRequestId.Value, cancellationToken);
+        if (carRequest is not null)
             carRequest.Status = VehicleRequestStatus.Fulfilled;
-        }
 
         await dbcontext.SaveChangesAsync(cancellationToken);
         var saved = await dbcontext.VehicleAssignments.AsNoTracking().Include(x => x.FleetVehicle).Include(x => x.VehicleRequest).FirstAsync(x => x.Id == entity.Id, cancellationToken);
@@ -146,6 +156,8 @@ public class MovementMaintenanceService(ApplicationDbcontext dbcontext) : IMovem
         var entity = await dbcontext.VehicleAssignments.Include(x => x.FleetVehicle).Include(x => x.VehicleRequest).FirstOrDefaultAsync(x => x.Id == assignmentId, cancellationToken);
         if (entity is null)
             return Result.Failure<VehicleAssignmentResponse>(MovementMaintenanceErrors.AssignmentNotFound);
+        if (entity.Status == VehicleAssignmentStatus.Received || request.ReceivedAt < entity.HandedAt)
+            return Result.Failure<VehicleAssignmentResponse>(MovementMaintenanceErrors.InvalidRequest);
 
         entity.ReceivedAt = request.ReceivedAt;
         entity.ReceiveOdometer = request.ReceiveOdometer?.Trim();
@@ -153,12 +165,35 @@ public class MovementMaintenanceService(ApplicationDbcontext dbcontext) : IMovem
         entity.Status = VehicleAssignmentStatus.Received;
         if (entity.FleetVehicle is not null)
         {
-            entity.FleetVehicle.Status = FleetVehicleStatus.Available;
             entity.FleetVehicle.Odometer = entity.ReceiveOdometer ?? entity.FleetVehicle.Odometer;
+            await ReleaseVehicleAsync(entity.FleetVehicle, 0, entity.Id, cancellationToken);
         }
 
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapAssignment(entity));
+    }
+
+    public async Task<Result<VehicleAssignmentOverdueResponse>> MarkOverdueAssignmentsAsync(MarkOverdueVehicleAssignmentsRequest request, CancellationToken cancellationToken = default)
+    {
+        var asOf = request.AsOf ?? DateTime.UtcNow.AddHours(3);
+        var assignments = await dbcontext.VehicleAssignments
+            .Include(x => x.FleetVehicle)
+            .Include(x => x.VehicleRequest)
+            .Where(x =>
+                x.Status == VehicleAssignmentStatus.Handed &&
+                x.ExpectedReturnAt.HasValue &&
+                x.ExpectedReturnAt.Value < asOf)
+            .OrderBy(x => x.ExpectedReturnAt)
+            .ToListAsync(cancellationToken);
+
+        foreach (var assignment in assignments)
+        {
+            assignment.Status = VehicleAssignmentStatus.Overdue;
+            assignment.Notes = AppendNote(assignment.Notes, request.Notes, 1000);
+        }
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(new VehicleAssignmentOverdueResponse(assignments.Count, assignments.Select(MapAssignment).ToList()));
     }
 
     public async Task<Result<IEnumerable<MaintenanceRequestResponse>>> GetMaintenanceRequestsAsync(MaintenanceRequestType? type = null, MaintenanceRequestStatus? status = null, CancellationToken cancellationToken = default)
@@ -174,18 +209,25 @@ public class MovementMaintenanceService(ApplicationDbcontext dbcontext) : IMovem
         if (string.IsNullOrWhiteSpace(request.RequestedBy) || string.IsNullOrWhiteSpace(request.AssetName) || string.IsNullOrWhiteSpace(request.IssueDescription) || request.EstimatedCost < 0 || request.ActualCost < 0)
             return Result.Failure<MaintenanceRequestResponse>(MovementMaintenanceErrors.InvalidRequest);
 
-        if (request.FleetVehicleId.HasValue && !await dbcontext.FleetVehicles.AnyAsync(x => x.Id == request.FleetVehicleId.Value, cancellationToken))
-            return Result.Failure<MaintenanceRequestResponse>(MovementMaintenanceErrors.VehicleNotFound);
+        FleetVehicle? selectedVehicle = null;
+        if (request.FleetVehicleId.HasValue)
+        {
+            selectedVehicle = await dbcontext.FleetVehicles.FirstOrDefaultAsync(x => x.Id == request.FleetVehicleId.Value, cancellationToken);
+            if (selectedVehicle is null)
+                return Result.Failure<MaintenanceRequestResponse>(MovementMaintenanceErrors.VehicleNotFound);
+        }
 
         var entity = id.HasValue
-            ? await dbcontext.MaintenanceRequests.FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken)
+            ? await dbcontext.MaintenanceRequests.Include(x => x.FleetVehicle).FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken)
             : new MaintenanceRequest { RequestNumber = await GenerateRequestNumberAsync("MNT", cancellationToken) };
         if (entity is null)
             return Result.Failure<MaintenanceRequestResponse>(MovementMaintenanceErrors.MaintenanceRequestNotFound);
         if (!id.HasValue) dbcontext.MaintenanceRequests.Add(entity);
 
+        var previousVehicle = entity.FleetVehicle;
         entity.RequestType = request.RequestType;
         entity.FleetVehicleId = request.FleetVehicleId;
+        entity.FleetVehicle = selectedVehicle;
         entity.RequestedBy = request.RequestedBy.Trim();
         entity.AssetName = request.AssetName.Trim();
         entity.IssueDescription = request.IssueDescription.Trim();
@@ -196,6 +238,12 @@ public class MovementMaintenanceService(ApplicationDbcontext dbcontext) : IMovem
         entity.VendorName = request.VendorName?.Trim();
         entity.CompletionNotes = request.CompletionNotes?.Trim();
 
+        if (previousVehicle is not null && previousVehicle.Id != request.FleetVehicleId)
+            await ReleaseVehicleAsync(previousVehicle, entity.Id, 0, cancellationToken);
+
+        if (!await ApplyMaintenanceVehicleStateAsync(entity, selectedVehicle, cancellationToken))
+            return Result.Failure<MaintenanceRequestResponse>(MovementMaintenanceErrors.InvalidRequest);
+
         await dbcontext.SaveChangesAsync(cancellationToken);
         var saved = await dbcontext.MaintenanceRequests.AsNoTracking().Include(x => x.FleetVehicle).FirstAsync(x => x.Id == entity.Id, cancellationToken);
         return Result.Success(MapMaintenance(saved));
@@ -203,6 +251,9 @@ public class MovementMaintenanceService(ApplicationDbcontext dbcontext) : IMovem
 
     public async Task<Result<MaintenanceRequestResponse>> UpdateMaintenanceStatusAsync(int id, UpdateMaintenanceStatusRequest request, CancellationToken cancellationToken = default)
     {
+        if (request.ActualCost.HasValue && request.ActualCost.Value < 0)
+            return Result.Failure<MaintenanceRequestResponse>(MovementMaintenanceErrors.InvalidRequest);
+
         var entity = await dbcontext.MaintenanceRequests.Include(x => x.FleetVehicle).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (entity is null)
             return Result.Failure<MaintenanceRequestResponse>(MovementMaintenanceErrors.MaintenanceRequestNotFound);
@@ -210,11 +261,65 @@ public class MovementMaintenanceService(ApplicationDbcontext dbcontext) : IMovem
         entity.Status = request.Status;
         if (request.ActualCost.HasValue) entity.ActualCost = request.ActualCost.Value;
         entity.CompletionNotes = request.CompletionNotes?.Trim() ?? entity.CompletionNotes;
-        if (entity.FleetVehicle is not null)
-            entity.FleetVehicle.Status = request.Status == MaintenanceRequestStatus.Completed ? FleetVehicleStatus.Available : FleetVehicleStatus.InMaintenance;
+
+        if (!await ApplyMaintenanceVehicleStateAsync(entity, entity.FleetVehicle, cancellationToken))
+            return Result.Failure<MaintenanceRequestResponse>(MovementMaintenanceErrors.InvalidRequest);
 
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapMaintenance(entity));
+    }
+
+    private async Task<bool> ApplyMaintenanceVehicleStateAsync(MaintenanceRequest maintenanceRequest, FleetVehicle? vehicle, CancellationToken cancellationToken)
+    {
+        if (maintenanceRequest.RequestType != MaintenanceRequestType.Vehicle || vehicle is null)
+            return true;
+
+        if (maintenanceRequest.Status is MaintenanceRequestStatus.Approved or MaintenanceRequestStatus.InProgress)
+        {
+            if (vehicle.Status is FleetVehicleStatus.Assigned or FleetVehicleStatus.Retired)
+                return false;
+
+            vehicle.Status = FleetVehicleStatus.InMaintenance;
+            return true;
+        }
+
+        await ReleaseVehicleAsync(vehicle, maintenanceRequest.Id, 0, cancellationToken);
+        return true;
+    }
+
+    private async Task ReleaseVehicleAsync(FleetVehicle vehicle, int ignoredMaintenanceRequestId, int ignoredAssignmentId, CancellationToken cancellationToken)
+    {
+        if (vehicle.Status == FleetVehicleStatus.Retired)
+            return;
+
+        if (await HasActiveVehicleMaintenanceAsync(vehicle.Id, ignoredMaintenanceRequestId, cancellationToken))
+        {
+            vehicle.Status = FleetVehicleStatus.InMaintenance;
+            return;
+        }
+
+        vehicle.Status = await HasActiveVehicleAssignmentAsync(vehicle.Id, ignoredAssignmentId, cancellationToken)
+            ? FleetVehicleStatus.Assigned
+            : FleetVehicleStatus.Available;
+    }
+
+    private Task<bool> HasActiveVehicleMaintenanceAsync(int vehicleId, int ignoredMaintenanceRequestId, CancellationToken cancellationToken)
+    {
+        return dbcontext.MaintenanceRequests.AnyAsync(x =>
+            x.Id != ignoredMaintenanceRequestId &&
+            x.RequestType == MaintenanceRequestType.Vehicle &&
+            x.FleetVehicleId == vehicleId &&
+            (x.Status == MaintenanceRequestStatus.Approved || x.Status == MaintenanceRequestStatus.InProgress),
+            cancellationToken);
+    }
+
+    private Task<bool> HasActiveVehicleAssignmentAsync(int vehicleId, int ignoredAssignmentId, CancellationToken cancellationToken)
+    {
+        return dbcontext.VehicleAssignments.AnyAsync(x =>
+            x.Id != ignoredAssignmentId &&
+            x.FleetVehicleId == vehicleId &&
+            (x.Status == VehicleAssignmentStatus.Handed || x.Status == VehicleAssignmentStatus.Overdue),
+            cancellationToken);
     }
 
     private async Task<string> GenerateRequestNumberAsync(string prefix, CancellationToken cancellationToken)
@@ -225,6 +330,17 @@ public class MovementMaintenanceService(ApplicationDbcontext dbcontext) : IMovem
             ? await dbcontext.VehicleRequests.CountAsync(x => x.RequestNumber.StartsWith(token), cancellationToken)
             : await dbcontext.MaintenanceRequests.CountAsync(x => x.RequestNumber.StartsWith(token), cancellationToken);
         return $"{token}{vehicleCount + 1:0000}";
+    }
+
+    private static string? AppendNote(string? existingNotes, string? newNote, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(newNote))
+            return existingNotes;
+
+        var combined = string.IsNullOrWhiteSpace(existingNotes)
+            ? newNote.Trim()
+            : $"{existingNotes.Trim()}{Environment.NewLine}{newNote.Trim()}";
+        return combined.Length <= maxLength ? combined : combined[..maxLength];
     }
 
     private static FleetVehicleResponse MapVehicle(FleetVehicle x) => new(x.Id, x.PlateNumber, x.Model, x.Year, x.Color, x.Odometer, x.Status.ToString(), x.Notes);

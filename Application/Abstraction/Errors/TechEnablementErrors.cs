@@ -12,4 +12,6 @@ public static class TechEnablementErrors
     public static readonly Error SecurityReviewNotFound = new("TechEnablement.SecurityReviewNotFound", "Cybersecurity review was not found.", StatusCodes.Status404NotFound);
     public static readonly Error NcnpRecordNotFound = new("TechEnablement.NcnpRecordNotFound", "NCNP data record was not found.", StatusCodes.Status404NotFound);
     public static readonly Error DuplicateNcnpReference = new("TechEnablement.DuplicateNcnpReference", "NCNP reference number is already used.", StatusCodes.Status409Conflict);
+    public static readonly Error InvalidNcnpStatusTransition = new("TechEnablement.InvalidNcnpStatusTransition", "NCNP data record status transition is not allowed.", StatusCodes.Status409Conflict);
+    public static readonly Error NcnpPlatformReferenceRequired = new("TechEnablement.NcnpPlatformReferenceRequired", "NCNP platform reference is required before registration.", StatusCodes.Status400BadRequest);
 }

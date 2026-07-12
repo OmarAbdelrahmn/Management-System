@@ -103,6 +103,7 @@ public class BeneficiaryPaymentOrder : IAuditable
 {
     public int Id { get; set; }
     public int? BeneficiaryAidRequestId { get; set; }
+    public int? EntitySupportRequestId { get; set; }
     public int? BeneficiaryProfileId { get; set; }
     public string OrderNumber { get; set; } = string.Empty;
     public PaymentOrderType OrderType { get; set; } = PaymentOrderType.Finance;
@@ -118,6 +119,7 @@ public class BeneficiaryPaymentOrder : IAuditable
     public string? UpdatedByUserId { get; set; }
 
     public BeneficiaryAidRequest? BeneficiaryAidRequest { get; set; }
+    public EntitySupportRequest? EntitySupportRequest { get; set; }
     public BeneficiaryProfile? BeneficiaryProfile { get; set; }
 }
 

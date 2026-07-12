@@ -43,3 +43,5 @@ public record SaveStrategicIndicatorRequest(int StrategicPlanId, int? StrategicG
 
 public record StrategicVariableResponse(int Id, int StrategicPlanId, string PlanTitle, string Name, decimal Value, string? Source, bool IsAutomated, DateTime? LastFetchedAt);
 public record SaveStrategicVariableRequest(int StrategicPlanId, string Name, decimal Value, string? Source, bool IsAutomated);
+public record ApplyStrategicVariablesRequest(bool UpdateStatuses, string? Notes);
+public record ApplyStrategicVariablesResponse(int StrategicPlanId, int VariablesCount, int UpdatedIndicatorsCount, decimal AchievementPercent, IEnumerable<StrategicIndicatorResponse> UpdatedIndicators);

@@ -33,6 +33,34 @@
     <div class="actions-row"><button class="primary" @onclick="LoadAsync">بحث</button></div>
 </section>
 
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-file-invoice-dollar"></i><div><h2>عروض الموردين</h2><p>تسجيل عروض الأسعار واعتمادها وتحويل العرض المعتمد إلى عقد مشروع.</p></div></div>
+    <div class="form-grid">
+        <label>المشروع<select @bind="proposalProjectId">@foreach (var project in projects){<option value="@project.Id">@project.Name</option>}</select></label>
+        <label>المورد<select @bind="proposalSupplierId">@foreach (var supplier in suppliers){<option value="@supplier.Id">@supplier.Name</option>}</select></label>
+        <label>رقم العرض<input @bind="proposalNumber" placeholder="يولد تلقائياً عند تركه فارغاً" /></label>
+        <label>الحالة<select @bind="proposalStatus"><option value="@ProgramSupplierProposalStatus.Draft">مسودة</option><option value="@ProgramSupplierProposalStatus.Submitted">مقدم</option><option value="@ProgramSupplierProposalStatus.UnderReview">قيد المراجعة</option><option value="@ProgramSupplierProposalStatus.Approved">معتمد</option><option value="@ProgramSupplierProposalStatus.Rejected">مرفوض</option><option value="@ProgramSupplierProposalStatus.Cancelled">ملغي</option></select></label>
+        <label class="span-2">عنوان العرض<input @bind="proposalTitle" /></label>
+        <label>القيمة<input type="number" step="0.01" @bind="proposalAmount" /></label>
+        <label>تاريخ التقديم<input type="date" @bind="proposalSubmittedAt" /></label>
+        <label>صالح حتى<input type="date" @bind="proposalValidUntil" /></label>
+        <label class="span-2">نطاق العمل<textarea @bind="proposalScope"></textarea></label>
+        <label class="span-2">ملاحظات<input @bind="proposalNotes" /></label>
+        <label class="span-2">ملاحظات القرار<textarea @bind="proposalDecisionNotes"></textarea></label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveProposalAsync">حفظ العرض</button><button class="secondary" @onclick="ResetProposalForm">تفريغ العرض</button></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-money-bill-transfer"></i><div><h2>سداد عقود الموردين</h2><p>تسجيل مصروف مرتبط برقم العقد مع منع السداد الزائد عن قيمة العقد.</p></div></div>
+    <div class="form-grid compact">
+        <label>مبلغ السداد<input type="number" step="0.01" @bind="contractPaymentAmount" placeholder="اتركه 0 لسداد كامل العقد" /></label>
+        <label>تاريخ السداد<input type="date" @bind="contractPaymentPaidAt" /></label>
+        <label>مرجع السداد<input @bind="contractPaymentReference" /></label>
+        <label class="span-2">ملاحظات<input @bind="contractPaymentNotes" /></label>
+    </div>
+</section>
+
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-database"></i> قاعدة بيانات الموردين</span></div>
     <table>
@@ -56,8 +84,75 @@
     </table>
 </section>
 
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-file-contract"></i> عروض الموردين</span></div>
+    <table>
+        <thead><tr><th>العرض</th><th>المشروع</th><th>المورد</th><th>القيمة</th><th>الصلاحية</th><th>الحالة</th><th>العقد</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var proposal in proposals)
+            {
+                <tr>
+                    <td>@proposal.ProposalNumber<br />@proposal.Title</td>
+                    <td>@proposal.ProjectName</td>
+                    <td>@proposal.SupplierName</td>
+                    <td>@proposal.Amount</td>
+                    <td>@proposal.ValidUntil?.ToString("yyyy-MM-dd")</td>
+                    <td><span class="status">@proposal.Status</span></td>
+                    <td>@proposal.ConvertedContractNumber</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => EditProposal(proposal))">تعديل</button>
+                        @if (CanDecideProposal(proposal, ProgramSupplierProposalStatus.UnderReview))
+                        {
+                            <button class="secondary" @onclick="@(() => DecideProposalAsync(proposal.Id, ProgramSupplierProposalStatus.UnderReview))">مراجعة</button>
+                        }
+                        @if (CanDecideProposal(proposal, ProgramSupplierProposalStatus.Approved))
+                        {
+                            <button class="secondary" @onclick="@(() => DecideProposalAsync(proposal.Id, ProgramSupplierProposalStatus.Approved))">اعتماد</button>
+                        }
+                        @if (CanDecideProposal(proposal, ProgramSupplierProposalStatus.Rejected))
+                        {
+                            <button class="secondary" @onclick="@(() => DecideProposalAsync(proposal.Id, ProgramSupplierProposalStatus.Rejected))">رفض</button>
+                        }
+                        @if (CanDecideProposal(proposal, ProgramSupplierProposalStatus.Cancelled))
+                        {
+                            <button class="secondary" @onclick="@(() => DecideProposalAsync(proposal.Id, ProgramSupplierProposalStatus.Cancelled))">إلغاء</button>
+                        }
+                        @if (proposal.Status == ProgramSupplierProposalStatus.Approved.ToString())
+                        {
+                            <button class="secondary" @onclick="@(() => ConvertProposalAsync(proposal.Id))">تحويل لعقد</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="table-section" style="margin-top:14px">
+    <div class="table-title"><span><i class="fa-solid fa-file-signature"></i> عقود الموردين</span></div>
+    <table>
+        <thead><tr><th>العقد</th><th>المشروع</th><th>المورد</th><th>القيمة</th><th>التوقيع</th><th>إجراء</th></tr></thead>
+        <tbody>
+            @foreach (var contract in contracts)
+            {
+                <tr>
+                    <td>@contract.ContractNumber<br />@contract.Title</td>
+                    <td>@contract.ProjectName</td>
+                    <td>@contract.SupplierName</td>
+                    <td>@contract.Amount</td>
+                    <td>@contract.SignedAt.ToString("yyyy-MM-dd")</td>
+                    <td><button class="secondary" @onclick="@(() => PayContractAsync(contract))">تسجيل سداد</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
 @code {
     private List<ProgramSupplierResponse> suppliers = [];
+    private List<ProgramProjectResponse> projects = [];
+    private List<ProgramSupplierProposalResponse> proposals = [];
+    private List<ProgramProjectContractResponse> contracts = [];
     private int? editingId;
     private string name = string.Empty;
     private string? contactPerson;
@@ -68,15 +163,41 @@
     private string? notes;
     private string? search;
     private string statusText = string.Empty;
+    private int? editingProposalId;
+    private int proposalProjectId;
+    private int proposalSupplierId;
+    private string? proposalNumber;
+    private string proposalTitle = string.Empty;
+    private string? proposalScope;
+    private decimal proposalAmount;
+    private DateTime proposalSubmittedAt = DateTime.UtcNow.AddHours(3).Date;
+    private DateTime? proposalValidUntil;
+    private ProgramSupplierProposalStatus proposalStatus = ProgramSupplierProposalStatus.Submitted;
+    private string? proposalNotes;
+    private string? proposalDecisionNotes;
+    private decimal contractPaymentAmount;
+    private DateTime contractPaymentPaidAt = DateTime.UtcNow.AddHours(3).Date;
+    private string? contractPaymentReference;
+    private string? contractPaymentNotes;
     private bool success;
     private string? message;
 
-    protected override async Task OnInitializedAsync() => await LoadAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        projects = await ProgramsProjects.SearchProjectsAsync();
+        await LoadAsync();
+        proposalProjectId = projects.FirstOrDefault()?.Id ?? 0;
+        proposalSupplierId = suppliers.FirstOrDefault()?.Id ?? 0;
+    }
 
     private async Task LoadAsync()
     {
         var parsedStatus = Enum.TryParse<ProgramSupplierStatus>(statusText, out var value) ? value : (ProgramSupplierStatus?)null;
         suppliers = await ProgramsProjects.GetSuppliersAsync(search, parsedStatus);
+        proposals = await ProgramsProjects.GetSupplierProposalsAsync();
+        contracts = await ProgramsProjects.GetContractsAsync();
+        if (proposalSupplierId == 0)
+            proposalSupplierId = suppliers.FirstOrDefault()?.Id ?? 0;
     }
 
     private async Task SaveAsync()
@@ -97,6 +218,50 @@
         await LoadAsync();
     }
 
+    private async Task SaveProposalAsync()
+    {
+        var result = await ProgramsProjects.SaveSupplierProposalAsync(editingProposalId, new SaveProgramSupplierProposalRequest(proposalProjectId, proposalSupplierId, proposalNumber, proposalTitle, proposalScope, proposalAmount, proposalSubmittedAt, proposalValidUntil, proposalStatus, proposalNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetProposalForm();
+        await LoadAsync();
+    }
+
+    private async Task DecideProposalAsync(int id, ProgramSupplierProposalStatus newStatus)
+    {
+        var result = await ProgramsProjects.DecideSupplierProposalAsync(id, newStatus, proposalDecisionNotes);
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            proposalDecisionNotes = null;
+        await LoadAsync();
+    }
+
+    private async Task ConvertProposalAsync(int id)
+    {
+        var result = await ProgramsProjects.ConvertSupplierProposalToContractAsync(id, new ConvertProgramSupplierProposalRequest(null, DateTime.UtcNow.AddHours(3), null, "تحويل عرض مورد معتمد"));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task PayContractAsync(ProgramProjectContractResponse contract)
+    {
+        var amount = contractPaymentAmount > 0 ? contractPaymentAmount : contract.Amount;
+        var result = await ProgramsProjects.RecordContractPaymentAsync(contract.Id, new RecordProgramContractPaymentRequest(amount, contractPaymentPaidAt, contractPaymentReference, contractPaymentNotes));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+        {
+            contractPaymentAmount = 0;
+            contractPaymentReference = null;
+            contractPaymentNotes = null;
+            contractPaymentPaidAt = DateTime.UtcNow.AddHours(3).Date;
+        }
+        await LoadAsync();
+    }
+
     private void Edit(ProgramSupplierResponse supplier)
     {
         editingId = supplier.Id;
@@ -109,6 +274,22 @@
         notes = supplier.Notes;
     }
 
+    private void EditProposal(ProgramSupplierProposalResponse proposal)
+    {
+        editingProposalId = proposal.Id;
+        proposalProjectId = proposal.ProgramProjectId;
+        proposalSupplierId = proposal.ProgramSupplierId;
+        proposalNumber = proposal.ProposalNumber;
+        proposalTitle = proposal.Title;
+        proposalScope = proposal.Scope;
+        proposalAmount = proposal.Amount;
+        proposalSubmittedAt = proposal.SubmittedAt.Date;
+        proposalValidUntil = proposal.ValidUntil;
+        proposalStatus = Enum.TryParse<ProgramSupplierProposalStatus>(proposal.Status, out var value) ? value : ProgramSupplierProposalStatus.Submitted;
+        proposalNotes = proposal.Notes;
+        proposalDecisionNotes = proposal.DecisionNotes;
+    }
+
     private void ResetForm()
     {
         editingId = null;
@@ -119,5 +300,43 @@
         city = null;
         status = ProgramSupplierStatus.Active;
         notes = null;
+    }
+
+    private void ResetProposalForm()
+    {
+        editingProposalId = null;
+        proposalNumber = null;
+        proposalTitle = string.Empty;
+        proposalScope = null;
+        proposalAmount = 0;
+        proposalSubmittedAt = DateTime.UtcNow.AddHours(3).Date;
+        proposalValidUntil = null;
+        proposalStatus = ProgramSupplierProposalStatus.Submitted;
+        proposalNotes = null;
+        proposalDecisionNotes = null;
+    }
+
+    private static bool CanDecideProposal(ProgramSupplierProposalResponse proposal, ProgramSupplierProposalStatus nextStatus)
+    {
+        var status = proposal.Status;
+        return nextStatus switch
+        {
+            ProgramSupplierProposalStatus.UnderReview =>
+                status == ProgramSupplierProposalStatus.Draft.ToString() ||
+                status == ProgramSupplierProposalStatus.Submitted.ToString(),
+            ProgramSupplierProposalStatus.Approved =>
+                status == ProgramSupplierProposalStatus.Submitted.ToString() ||
+                status == ProgramSupplierProposalStatus.UnderReview.ToString(),
+            ProgramSupplierProposalStatus.Rejected =>
+                status == ProgramSupplierProposalStatus.Draft.ToString() ||
+                status == ProgramSupplierProposalStatus.Submitted.ToString() ||
+                status == ProgramSupplierProposalStatus.UnderReview.ToString(),
+            ProgramSupplierProposalStatus.Cancelled =>
+                status == ProgramSupplierProposalStatus.Draft.ToString() ||
+                status == ProgramSupplierProposalStatus.Submitted.ToString() ||
+                status == ProgramSupplierProposalStatus.UnderReview.ToString() ||
+                status == ProgramSupplierProposalStatus.Approved.ToString(),
+            _ => false
+        };
     }
 }

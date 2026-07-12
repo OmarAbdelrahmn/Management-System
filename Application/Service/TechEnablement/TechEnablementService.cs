@@ -128,6 +128,28 @@ public class TechEnablementService(ApplicationDbcontext dbcontext) : ITechEnable
         return Result.Success(MapSecurity(entity));
     }
 
+    public async Task<Result<CybersecurityReviewResponse>> UpdateCybersecurityStatusAsync(int id, UpdateCybersecurityReviewStatusRequest request, CancellationToken cancellationToken = default)
+    {
+        var entity = await dbcontext.CybersecurityReviews.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (entity is null)
+            return Result.Failure<CybersecurityReviewResponse>(TechEnablementErrors.SecurityReviewNotFound);
+
+        var mitigationPlan = TrimOrNull(request.MitigationPlan) ?? entity.MitigationPlan;
+        var owner = TrimOrNull(request.Owner) ?? entity.Owner;
+        if (request.Status == CybersecurityReviewStatus.InReview && string.IsNullOrWhiteSpace(owner))
+            return Result.Failure<CybersecurityReviewResponse>(TechEnablementErrors.InvalidRequest);
+        if (request.Status is CybersecurityReviewStatus.Mitigated or CybersecurityReviewStatus.Accepted && string.IsNullOrWhiteSpace(mitigationPlan))
+            return Result.Failure<CybersecurityReviewResponse>(TechEnablementErrors.InvalidRequest);
+
+        entity.Status = request.Status;
+        entity.Owner = owner;
+        entity.DueDate = request.DueDate ?? entity.DueDate;
+        entity.MitigationPlan = mitigationPlan;
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapSecurity(entity));
+    }
+
     public async Task<Result<IEnumerable<NcnpDataRecordResponse>>> GetNcnpDataAsync(NcnpDataStatus? status = null, CancellationToken cancellationToken = default)
     {
         var query = dbcontext.NcnpDataRecords.AsNoTracking().AsQueryable();
@@ -139,6 +161,8 @@ public class TechEnablementService(ApplicationDbcontext dbcontext) : ITechEnable
     {
         if (string.IsNullOrWhiteSpace(request.ReferenceNumber) || string.IsNullOrWhiteSpace(request.BeneficiaryName) || string.IsNullOrWhiteSpace(request.SupportType) || request.Cost < 0)
             return Result.Failure<NcnpDataRecordResponse>(TechEnablementErrors.InvalidRequest);
+        if (request.Status == NcnpDataStatus.Registered && string.IsNullOrWhiteSpace(request.PlatformReference))
+            return Result.Failure<NcnpDataRecordResponse>(TechEnablementErrors.NcnpPlatformReferenceRequired);
 
         var reference = request.ReferenceNumber.Trim();
         if (await dbcontext.NcnpDataRecords.AnyAsync(x => x.ReferenceNumber == reference && (!id.HasValue || x.Id != id.Value), cancellationToken))
@@ -163,8 +187,14 @@ public class TechEnablementService(ApplicationDbcontext dbcontext) : ITechEnable
     {
         var entity = await dbcontext.NcnpDataRecords.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (entity is null) return Result.Failure(TechEnablementErrors.NcnpRecordNotFound);
+        var platformReference = TrimOrNull(request.PlatformReference) ?? entity.PlatformReference;
+        if (!IsAllowedNcnpTransition(entity.Status, request.Status))
+            return Result.Failure(TechEnablementErrors.InvalidNcnpStatusTransition);
+        if (request.Status == NcnpDataStatus.Registered && string.IsNullOrWhiteSpace(platformReference))
+            return Result.Failure(TechEnablementErrors.NcnpPlatformReferenceRequired);
+
         entity.Status = request.Status;
-        entity.PlatformReference = TrimOrNull(request.PlatformReference) ?? entity.PlatformReference;
+        entity.PlatformReference = platformReference;
         entity.Notes = TrimOrNull(request.Notes) ?? entity.Notes;
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success();
@@ -175,5 +205,22 @@ public class TechEnablementService(ApplicationDbcontext dbcontext) : ITechEnable
     private static VisualAssetTemplateResponse MapVisualAsset(VisualAssetTemplate x) => new(x.Id, x.Name, x.AssetType.ToString(), x.FileUrl, x.DesignJson, x.IsActive, x.Notes);
     private static CybersecurityReviewResponse MapSecurity(CybersecurityReview x) => new(x.Id, x.Area, x.Finding, x.Severity, x.Status.ToString(), x.Owner, x.DueDate, x.MitigationPlan);
     private static NcnpDataRecordResponse MapNcnp(NcnpDataRecord x) => new(x.Id, x.ReferenceNumber, x.BeneficiaryName, x.SupportType, x.SupportDate, x.Cost, x.Status.ToString(), x.PlatformReference, x.Notes);
+    private static bool IsAllowedNcnpTransition(NcnpDataStatus currentStatus, NcnpDataStatus nextStatus)
+    {
+        if (currentStatus == nextStatus)
+            return true;
+        if (currentStatus == NcnpDataStatus.ArchivedExternalSupport)
+            return false;
+
+        return nextStatus switch
+        {
+            NcnpDataStatus.NeedsUpdate => currentStatus is NcnpDataStatus.ReadyToRegister or NcnpDataStatus.RemovedOrSuspended,
+            NcnpDataStatus.ReadyToRegister => currentStatus == NcnpDataStatus.NeedsUpdate,
+            NcnpDataStatus.Registered => currentStatus == NcnpDataStatus.ReadyToRegister,
+            NcnpDataStatus.RemovedOrSuspended => currentStatus is NcnpDataStatus.NeedsUpdate or NcnpDataStatus.ReadyToRegister or NcnpDataStatus.Registered,
+            NcnpDataStatus.ArchivedExternalSupport => currentStatus is not NcnpDataStatus.Registered,
+            _ => false
+        };
+    }
     private static string? TrimOrNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

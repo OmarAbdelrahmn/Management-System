@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Application.Contracts.Accounting;
 
 namespace Application.Contracts.FinancialDevelopment;
 
@@ -57,6 +58,8 @@ public record SaveFundraisingOpportunityRequest(
     string? ExternalUrl,
     string? Notes);
 
+public record CompleteFundraisingOpportunityRequest(string? Notes);
+
 public record DonationContributionResponse(
     int Id,
     int? FinancialSupporterId,
@@ -74,6 +77,16 @@ public record DonationContributionResponse(
     string Status,
     string? Notes);
 
+public record DonationContributionActivityResponse(
+    int Id,
+    int DonationContributionId,
+    string Type,
+    string? FromStatus,
+    string ToStatus,
+    decimal Amount,
+    string? Notes,
+    DateTime OccurredAt);
+
 public record SaveDonationContributionRequest(
     int? FinancialSupporterId,
     int? FundraisingOpportunityId,
@@ -85,6 +98,10 @@ public record SaveDonationContributionRequest(
     bool IsGift,
     string? GiftRecipientName,
     string? CertificateNumber,
+    DonationContributionStatus Status,
+    string? Notes);
+
+public record UpdateDonationContributionStatusRequest(
     DonationContributionStatus Status,
     string? Notes);
 
@@ -128,6 +145,21 @@ public record SaveDigitalMarketingCampaignRequest(
     decimal DonationsAmount,
     string? Notes);
 
+public record RecordDigitalCampaignDonationRequest(
+    int? FinancialSupporterId,
+    int? FundraisingOpportunityId,
+    decimal Amount,
+    DateTime? DonationDate,
+    string? PaymentMethod,
+    string? TransactionReference,
+    DonationContributionStatus Status,
+    bool CountAsLead,
+    string? Notes);
+
+public record DigitalCampaignDonationResponse(
+    DigitalMarketingCampaignResponse Campaign,
+    DonationContributionResponse Contribution);
+
 public record AbandonedDonationCartResponse(
     int Id,
     int? FundraisingOpportunityId,
@@ -147,6 +179,18 @@ public record SaveAbandonedDonationCartRequest(
     DateTime CartDate,
     AbandonedDonationCartStatus Status,
     string? FollowUpNotes);
+
+public record RecoverAbandonedDonationCartRequest(
+    int? FinancialSupporterId,
+    DateTime? DonationDate,
+    string? PaymentMethod,
+    string? TransactionReference,
+    DonationContributionStatus ContributionStatus,
+    string? Notes);
+
+public record AbandonedDonationCartRecoveryResponse(
+    AbandonedDonationCartResponse Cart,
+    DonationContributionResponse Contribution);
 
 public record EndowmentAssetResponse(
     int Id,
@@ -213,3 +257,17 @@ public record SaveEndowmentInvoiceRequest(
     decimal PaidAmount,
     EndowmentInvoiceStatus Status,
     string? Notes);
+
+public record PayEndowmentInvoiceRequest(
+    decimal Amount,
+    DateTime? PaymentDate,
+    AccountingRecordStatus ReceiptStatus,
+    string? PaymentMethod,
+    string? ReferenceNumber,
+    string? Notes);
+
+public record EndowmentInvoicePaymentResponse(
+    EndowmentInvoiceResponse Invoice,
+    ReceiptVoucherResponse Receipt,
+    decimal RemainingAmount,
+    bool IsFullyPaid);

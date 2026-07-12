@@ -34,6 +34,12 @@ public class TaskUiService(ITaskManagementService taskService, IHttpContextAcces
         return result.IsSuccess ? (true, "تم إنشاء المهمة.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> UpdateTaskAsync(int id, UpdateManagementTaskRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await taskService.UpdateTaskAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث المهمة.") : (false, result.Error.Description);
+    }
+
     public async Task<(bool Success, string Message)> CompleteTaskAsync(int id, CompleteTaskRequest request, CancellationToken cancellationToken = default)
     {
         var result = await taskService.CompleteTaskAsync(id, request, cancellationToken);

@@ -80,4 +80,26 @@ public class InstitutionalExcellenceServiceTests
         Assert.NotNull(Assert.Single(fetched.Value).LastFetchedAt);
         Assert.Equal(2, indicators.Value.Count());
     }
+
+    [Fact]
+    public async Task ApplyStrategicVariablesAsync_UpdatesMatchingIndicatorsAndStatuses()
+    {
+        await using var dbcontext = ServiceTestFactory.CreateDbContext();
+        var service = new InstitutionalExcellenceService(dbcontext);
+
+        var plan = await service.SaveStrategicPlanAsync(null, new SaveStrategicPlanRequest("خطة 2026", new DateTime(2026, 1, 1), new DateTime(2028, 12, 31), ExcellenceRecordStatus.Active, null, null, null));
+        await service.SaveStrategicIndicatorAsync(null, new SaveStrategicIndicatorRequest(plan.Value.Id, null, null, StrategicIndicatorKind.Main, "عدد البرامج", 20, 0, "برنامج", "مالك", null, null, StrategicIndicatorStatus.Active, null));
+        await service.SaveStrategicVariableAsync(null, new SaveStrategicVariableRequest(plan.Value.Id, "عدد البرامج", 12, "Programs", true));
+
+        var applied = await service.ApplyStrategicVariablesAsync(plan.Value.Id, new ApplyStrategicVariablesRequest(true, "تحديث مؤتمت"));
+        var indicators = await service.GetStrategicIndicatorsAsync(plan.Value.Id);
+        var indicator = Assert.Single(indicators.Value);
+
+        Assert.True(applied.IsSuccess);
+        Assert.Equal(1, applied.Value.UpdatedIndicatorsCount);
+        Assert.Equal(60, applied.Value.AchievementPercent);
+        Assert.Equal(12, indicator.ActualValue);
+        Assert.Equal(60, indicator.AchievementPercent);
+        Assert.Equal("AtRisk", indicator.Status);
+    }
 }

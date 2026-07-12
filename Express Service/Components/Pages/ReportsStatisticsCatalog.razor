@@ -16,19 +16,57 @@
         <label>التقرير<select @bind="selectedKey">@foreach (var definition in definitions){<option value="@definition.Key">@definition.NameAr</option>}</select></label>
         <label>الصيغة<select @bind="format"><option>Table</option><option>Excel</option><option>PDF</option></select></label>
         <label>طالب التقرير<input @bind="requestedBy" /></label>
+        <label>أرشفة قبل تاريخ<input type="date" @bind="archiveBefore" /></label>
         <label class="span-2">الفلاتر JSON<input @bind="filtersJson" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="GenerateAsync">توليد التقرير</button></div>
+    <div class="actions-row"><button class="primary" @onclick="GenerateAsync">توليد التقرير</button><button class="secondary" @onclick="ExportAsync">تصدير CSV</button><button class="secondary" @onclick="ArchiveSelectedRunsAsync">أرشفة تشغيلات التقرير</button><button class="secondary" @onclick="LoadArchivedRunsAsync">عرض المؤرشف</button></div>
 </section>
+
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-sliders"></i><div><h2>@(editingDefinitionId.HasValue ? "تعديل تعريف تقرير" : "تعريف تقرير")</h2><p>إضافة أو تعديل التقارير وتفعيلها أو إيقافها من الكتالوج.</p></div></div>
+    <div class="form-grid compact">
+        <label>المفتاح<input @bind="definitionKey" /></label>
+        <label>الاسم العربي<input @bind="definitionNameAr" /></label>
+        <label>النوع<select @bind="definitionKind"><option value="@SystemReportKind.Report">تقرير</option><option value="@SystemReportKind.Statistic">إحصائية</option></select></label>
+        <label>النطاق<input @bind="definitionSourceDomain" /></label>
+        <label class="check-row"><input type="checkbox" @bind="definitionIsActive" /> التعريف فعال</label>
+    </div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveDefinitionAsync">@(editingDefinitionId.HasValue ? "حفظ التعديل" : "حفظ التعريف")</button>
+        @if (editingDefinitionId.HasValue)
+        {
+            <button class="secondary" @onclick="ResetDefinitionForm">إلغاء التعديل</button>
+        }
+    </div>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(exportContent))
+{
+    <section class="panel" style="margin-top:14px">
+        <div class="panel-heading"><i class="fa-solid fa-file-csv"></i><div><h2>معاينة التصدير</h2><p>@exportFileName</p></div></div>
+        <textarea class="span-2" readonly rows="8" style="width:100%;direction:ltr">@exportContent</textarea>
+    </section>
+}
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-list"></i> تقارير النظام</span></div>
     <table>
-        <thead><tr><th>التقرير</th><th>النطاق</th><th>آخر توليد</th><th>إجراء</th></tr></thead>
+        <thead><tr><th>التقرير</th><th>النطاق</th><th>الحالة</th><th>آخر توليد</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var definition in definitions)
             {
-                <tr><td>@definition.NameAr<br />@definition.Key</td><td>@definition.SourceDomain</td><td>@definition.LastGeneratedAt?.ToString("yyyy-MM-dd HH:mm")</td><td><button class="secondary" @onclick="@(() => SelectAndGenerateAsync(definition.Key))">توليد</button></td></tr>
+                <tr>
+                    <td>@definition.NameAr<br />@definition.Key</td>
+                    <td>@definition.SourceDomain</td>
+                    <td><span class="status">@(definition.IsActive ? "فعال" : "موقوف")</span></td>
+                    <td>@definition.LastGeneratedAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        <button class="secondary" @onclick="@(() => EditDefinition(definition))">تعديل</button>
+                        <button class="secondary" @onclick="@(() => ToggleDefinitionAsync(definition))">@(definition.IsActive ? "إيقاف" : "تفعيل")</button>
+                        <button class="secondary" @onclick="@(() => SelectAndGenerateAsync(definition.Key))">توليد</button>
+                        <button class="secondary" @onclick="@(() => SelectAndExportAsync(definition.Key))">تصدير</button>
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
@@ -54,11 +92,61 @@
     private string format = "Table";
     private string? requestedBy;
     private string? filtersJson = "{}";
+    private string? exportContent;
+    private string? exportFileName;
+    private DateTime archiveBefore = DateTime.UtcNow.AddHours(3).Date;
+    private int? editingDefinitionId;
+    private string definitionKey = string.Empty;
+    private string definitionNameAr = string.Empty;
+    private SystemReportKind definitionKind = SystemReportKind.Report;
+    private string definitionSourceDomain = string.Empty;
+    private bool definitionIsActive = true;
     private bool success;
     private string? message;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
     private async Task LoadAsync(){ definitions = await Reports.GetDefinitionsAsync(SystemReportKind.Report); runs = await Reports.GetRunsAsync(); selectedKey = string.IsNullOrWhiteSpace(selectedKey) ? definitions.FirstOrDefault()?.Key ?? string.Empty : selectedKey; }
     private async Task GenerateAsync(){ var result = await Reports.GenerateReportAsync(new GenerateSystemReportRequest(selectedKey, format, filtersJson, requestedBy)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task ExportAsync(){ var result = await Reports.ExportReportContentAsync(new GenerateSystemReportRequest(selectedKey, "Csv", filtersJson, requestedBy)); success = result.Success; message = result.Message; exportContent = result.Export?.Content; exportFileName = result.Export?.FileName; await LoadAsync(); }
+    private async Task ArchiveSelectedRunsAsync(){ var result = await Reports.ArchiveRunsAsync(new ArchiveSystemReportRunsRequest(selectedKey, archiveBefore.AddDays(1), requestedBy)); success = result.Success; message = result.Message; await LoadAsync(); }
+    private async Task LoadArchivedRunsAsync(){ runs = await Reports.GetRunsAsync(selectedKey, true); }
     private async Task SelectAndGenerateAsync(string key){ selectedKey = key; await GenerateAsync(); }
+    private async Task SelectAndExportAsync(string key){ selectedKey = key; await ExportAsync(); }
+    private async Task SaveDefinitionAsync()
+    {
+        var result = await Reports.SaveDefinitionAsync(editingDefinitionId, new SaveSystemReportDefinitionRequest(definitionKey, definitionNameAr, definitionKind, definitionSourceDomain, definitionIsActive));
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            ResetDefinitionForm();
+        await LoadAsync();
+    }
+
+    private async Task ToggleDefinitionAsync(SystemReportDefinitionResponse definition)
+    {
+        var result = await Reports.SaveDefinitionAsync(definition.Id, new SaveSystemReportDefinitionRequest(definition.Key, definition.NameAr, SystemReportKind.Report, definition.SourceDomain, !definition.IsActive));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void EditDefinition(SystemReportDefinitionResponse definition)
+    {
+        editingDefinitionId = definition.Id;
+        definitionKey = definition.Key;
+        definitionNameAr = definition.NameAr;
+        definitionKind = Enum.TryParse<SystemReportKind>(definition.Kind, out var parsedKind) ? parsedKind : SystemReportKind.Report;
+        definitionSourceDomain = definition.SourceDomain;
+        definitionIsActive = definition.IsActive;
+    }
+
+    private void ResetDefinitionForm()
+    {
+        editingDefinitionId = null;
+        definitionKey = string.Empty;
+        definitionNameAr = string.Empty;
+        definitionKind = SystemReportKind.Report;
+        definitionSourceDomain = string.Empty;
+        definitionIsActive = true;
+    }
 }

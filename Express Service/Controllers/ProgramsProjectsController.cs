@@ -81,6 +81,13 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("tasks/{id:int}")]
+    public async Task<IActionResult> UpdateTask(int id, [FromBody] SaveProgramProjectTaskRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveTaskAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("milestones")]
     public async Task<IActionResult> Milestones([FromQuery] int? projectId, CancellationToken cancellationToken)
     {
@@ -92,6 +99,13 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
     public async Task<IActionResult> SaveMilestone([FromBody] SaveProgramProjectMilestoneRequest request, CancellationToken cancellationToken)
     {
         var result = await programsProjects.SaveMilestoneAsync(null, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("milestones/{id:int}")]
+    public async Task<IActionResult> UpdateMilestone(int id, [FromBody] SaveProgramProjectMilestoneRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveMilestoneAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -109,6 +123,20 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("contracts/{id:int}")]
+    public async Task<IActionResult> UpdateContract(int id, [FromBody] SaveProgramProjectContractRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveContractAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("contracts/{id:int}/payments")]
+    public async Task<IActionResult> RecordContractPayment(int id, [FromBody] RecordProgramContractPaymentRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.RecordContractPaymentAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("finance")]
     public async Task<IActionResult> Finance([FromQuery] int? projectId, [FromQuery] ProgramProjectFinanceEntryType? entryType, CancellationToken cancellationToken)
     {
@@ -120,6 +148,13 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
     public async Task<IActionResult> AddFinance([FromBody] AddProgramProjectFinanceEntryRequest request, CancellationToken cancellationToken)
     {
         var result = await programsProjects.AddFinanceEntryAsync(request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("finance/{id:int}")]
+    public async Task<IActionResult> UpdateFinance(int id, [FromBody] AddProgramProjectFinanceEntryRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.UpdateFinanceEntryAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -137,6 +172,13 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("assignments/{id:int}")]
+    public async Task<IActionResult> UpdateAssignment(int id, [FromBody] AddProgramProjectAssignmentRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.UpdateAssignmentAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("reports")]
     public async Task<IActionResult> Reports([FromQuery] int? projectId, [FromQuery] string? reportType, CancellationToken cancellationToken)
     {
@@ -148,6 +190,20 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
     public async Task<IActionResult> AddReport([FromBody] AddProgramProjectReportRequest request, CancellationToken cancellationToken)
     {
         var result = await programsProjects.AddReportAsync(request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("reports/{id:int}")]
+    public async Task<IActionResult> UpdateReport(int id, [FromBody] AddProgramProjectReportRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.UpdateReportAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("projects/{id:int}/close")]
+    public async Task<IActionResult> CloseProject(int id, [FromBody] CloseProgramProjectRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.CloseProjectAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -172,6 +228,52 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("suppliers/{id:int}")]
+    public async Task<IActionResult> UpdateSupplier(int id, [FromBody] SaveProgramSupplierRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveSupplierAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpGet("supplier-proposals")]
+    public async Task<IActionResult> SupplierProposals(
+        [FromQuery] int? projectId,
+        [FromQuery] int? supplierId,
+        [FromQuery] ProgramSupplierProposalStatus? status,
+        CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.GetSupplierProposalsAsync(projectId, supplierId, status, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("supplier-proposals")]
+    public async Task<IActionResult> SaveSupplierProposal([FromBody] SaveProgramSupplierProposalRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveSupplierProposalAsync(null, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("supplier-proposals/{id:int}")]
+    public async Task<IActionResult> UpdateSupplierProposal(int id, [FromBody] SaveProgramSupplierProposalRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveSupplierProposalAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("supplier-proposals/{id:int}/decision")]
+    public async Task<IActionResult> DecideSupplierProposal(int id, [FromBody] DecideProgramSupplierProposalRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.DecideSupplierProposalAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("supplier-proposals/{id:int}/convert-contract")]
+    public async Task<IActionResult> ConvertSupplierProposal(int id, [FromBody] ConvertProgramSupplierProposalRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.ConvertSupplierProposalToContractAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("ideas")]
     public async Task<IActionResult> Ideas([FromQuery] ProgramIdeaStatus? status, CancellationToken cancellationToken)
     {
@@ -186,10 +288,24 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("ideas/{id:int}")]
+    public async Task<IActionResult> UpdateIdea(int id, [FromBody] SaveProgramIdeaRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveIdeaAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpPost("ideas/{id:int}/status")]
     public async Task<IActionResult> UpdateIdeaStatus(int id, [FromBody] UpdateProgramIdeaStatusRequest request, CancellationToken cancellationToken)
     {
         var result = await programsProjects.UpdateIdeaStatusAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("ideas/{id:int}/convert-project")]
+    public async Task<IActionResult> ConvertIdeaToProject(int id, [FromBody] ConvertProgramIdeaToProjectRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.ConvertIdeaToProjectAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -204,6 +320,13 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
     public async Task<IActionResult> SaveApproval([FromBody] SaveProgramApprovalRequest request, CancellationToken cancellationToken)
     {
         var result = await programsProjects.SaveApprovalAsync(null, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("approvals/{id:int}")]
+    public async Task<IActionResult> UpdateApproval(int id, [FromBody] SaveProgramApprovalRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveApprovalAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -228,6 +351,13 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("registrations/{id:int}")]
+    public async Task<IActionResult> UpdateRegistration(int id, [FromBody] SaveProgramRegistrationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveRegistrationAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpPost("registrations/{id:int}/decision")]
     public async Task<IActionResult> DecideRegistration(int id, [FromBody] DecideProgramRegistrationRequest request, CancellationToken cancellationToken)
     {
@@ -249,6 +379,13 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("sessions/{id:int}")]
+    public async Task<IActionResult> UpdateSession(int id, [FromBody] SaveProgramSessionRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveSessionAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("attendance")]
     public async Task<IActionResult> Attendance([FromQuery] int? sessionId, [FromQuery] ProgramAttendanceStatus? status, CancellationToken cancellationToken)
     {
@@ -263,6 +400,13 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("attendance/{id:int}")]
+    public async Task<IActionResult> UpdateAttendance(int id, [FromBody] SaveProgramSessionAttendanceRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveAttendanceAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("surveys")]
     public async Task<IActionResult> Surveys([FromQuery] int? projectId, [FromQuery] ProgramSurveyStatus? status, CancellationToken cancellationToken)
     {
@@ -274,6 +418,13 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
     public async Task<IActionResult> SaveSurvey([FromBody] SaveProgramSurveyRequest request, CancellationToken cancellationToken)
     {
         var result = await programsProjects.SaveSurveyAsync(null, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("surveys/{id:int}")]
+    public async Task<IActionResult> UpdateSurvey(int id, [FromBody] SaveProgramSurveyRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveSurveyAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -305,6 +456,13 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("certificate-templates/{id:int}")]
+    public async Task<IActionResult> UpdateCertificateTemplate(int id, [FromBody] SaveProgramCertificateTemplateRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveCertificateTemplateAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("certificate-issues")]
     public async Task<IActionResult> CertificateIssues([FromQuery] int? projectId, [FromQuery] ProgramCertificateIssueStatus? status, CancellationToken cancellationToken)
     {
@@ -316,6 +474,20 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
     public async Task<IActionResult> IssueCertificate([FromBody] IssueProgramCertificateRequest request, CancellationToken cancellationToken)
     {
         var result = await programsProjects.IssueCertificateAsync(request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("registrations/{id:int}/certificate")]
+    public async Task<IActionResult> IssueCertificateFromRegistration(int id, [FromBody] IssueProgramCertificateFromRegistrationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.IssueCertificateFromRegistrationAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("certificate-issues/{id:int}/cancel")]
+    public async Task<IActionResult> CancelCertificateIssue(int id, [FromBody] CancelProgramCertificateIssueRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.CancelCertificateIssueAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -333,6 +505,13 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPut("qualification-cases/{id:int}")]
+    public async Task<IActionResult> UpdateQualificationCase(int id, [FromBody] SaveProgramQualificationCaseRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveQualificationCaseAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpPost("qualification-cases/{id:int}/status")]
     public async Task<IActionResult> UpdateQualificationCaseStatus(int id, [FromBody] UpdateProgramQualificationCaseStatusRequest request, CancellationToken cancellationToken)
     {
@@ -347,10 +526,24 @@ public class ProgramsProjectsController(IProgramsProjectsService programsProject
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPost("qualification-cases/{id:int}/installments/generate")]
+    public async Task<IActionResult> GenerateQualificationInstallments(int id, [FromBody] GenerateQualificationInstallmentsRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.GenerateQualificationInstallmentsAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpPost("qualification-installments")]
     public async Task<IActionResult> SaveQualificationInstallment([FromBody] SaveProgramQualificationInstallmentRequest request, CancellationToken cancellationToken)
     {
         var result = await programsProjects.SaveQualificationInstallmentAsync(null, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("qualification-installments/{id:int}")]
+    public async Task<IActionResult> UpdateQualificationInstallment(int id, [FromBody] SaveProgramQualificationInstallmentRequest request, CancellationToken cancellationToken)
+    {
+        var result = await programsProjects.SaveQualificationInstallmentAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 

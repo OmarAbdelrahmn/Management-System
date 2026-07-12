@@ -20,8 +20,10 @@
         <label>الدرجة العظمى<input type="number" step="0.5" @bind="maxScore" /></label>
         <label>التقدير<input @bind="rating" /></label>
         <label>المقيّم<input @bind="evaluatorName" /></label>
+        <label>الحالة<select @bind="evaluationStatus"><option value="@EmployeeEvaluationStatus.Draft">مسودة</option><option value="@EmployeeEvaluationStatus.PendingApproval">مرسل للاعتماد</option></select></label>
         <label class="span-2">نقاط القوة<textarea @bind="strengths"></textarea></label>
         <label class="span-2">مجالات التحسين<textarea @bind="improvementAreas"></textarea></label>
+        <label class="span-2">ملاحظات القرار<textarea @bind="decisionNotes"></textarea></label>
     </div>
     <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ التقييم</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
 </section>
@@ -29,11 +31,26 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-chart-simple"></i> التقييمات</span></div>
     <table>
-        <thead><tr><th>الموظف</th><th>الفترة</th><th>الدرجة</th><th>النسبة</th><th>التقدير</th><th>المقيّم</th></tr></thead>
+        <thead><tr><th>الموظف</th><th>الفترة</th><th>الدرجة</th><th>النسبة</th><th>التقدير</th><th>الحالة</th><th>المقيّم</th><th>قرار</th></tr></thead>
         <tbody>
             @foreach (var item in evaluations)
             {
-                <tr><td>@item.EmployeeName</td><td>@item.PeriodStart.ToString("yyyy-MM-dd") - @item.PeriodEnd.ToString("yyyy-MM-dd")</td><td>@item.Score / @item.MaxScore</td><td>@item.Percentage%</td><td>@item.Rating</td><td>@item.EvaluatorName</td></tr>
+                <tr>
+                    <td>@item.EmployeeName</td>
+                    <td>@item.PeriodStart.ToString("yyyy-MM-dd") - @item.PeriodEnd.ToString("yyyy-MM-dd")</td>
+                    <td>@item.Score / @item.MaxScore</td>
+                    <td>@item.Percentage%</td>
+                    <td>@item.Rating</td>
+                    <td><span class="status">@item.Status</span><br />@item.DecisionNotes</td>
+                    <td>@item.EvaluatorName</td>
+                    <td>
+                        @if (item.Status == EmployeeEvaluationStatus.PendingApproval.ToString())
+                        {
+                            <button class="secondary" @onclick="@(() => DecideAsync(item.Id, EmployeeEvaluationStatus.Approved))">اعتماد</button>
+                            <button class="secondary" @onclick="@(() => DecideAsync(item.Id, EmployeeEvaluationStatus.Rejected))">رفض</button>
+                        }
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
@@ -48,9 +65,11 @@
     private decimal score;
     private decimal maxScore = 100;
     private string rating = "جيد";
+    private EmployeeEvaluationStatus evaluationStatus = EmployeeEvaluationStatus.Draft;
     private string? evaluatorName;
     private string? strengths;
     private string? improvementAreas;
+    private string? decisionNotes;
     private bool success;
     private string? message;
 
@@ -65,9 +84,19 @@
 
     private async Task SaveAsync()
     {
-        var result = await HR.SaveEvaluationAsync(null, new SaveEmployeeEvaluationRequest(employeeId, periodStart, periodEnd, score, maxScore, rating, evaluatorName, strengths, improvementAreas, null));
+        var result = await HR.SaveEvaluationAsync(null, new SaveEmployeeEvaluationRequest(employeeId, periodStart, periodEnd, score, maxScore, rating, evaluatorName, strengths, improvementAreas, null, evaluationStatus));
         success = result.Success;
         message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task DecideAsync(int id, EmployeeEvaluationStatus status)
+    {
+        var result = await HR.DecideEvaluationAsync(id, status, decisionNotes);
+        success = result.Success;
+        message = result.Message;
+        if (success)
+            decisionNotes = null;
         await LoadAsync();
     }
 }
