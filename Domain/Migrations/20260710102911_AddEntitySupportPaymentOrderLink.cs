@@ -27,7 +27,7 @@ namespace Domain.Migrations
                 column: "EntitySupportRequestId",
                 principalTable: "EntitySupportRequests",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
         }
 
         /// <inheritdoc />

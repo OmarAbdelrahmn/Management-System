@@ -36,6 +36,18 @@ public class AdminUiService(IAdminService adminService, IConfiguration configura
         return result.IsSuccess ? (true, "تم إنشاء الدور.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> UpdateRoleAsync(string id, string name, CancellationToken cancellationToken = default)
+    {
+        var result = await adminService.UpdateRoleAsync(id, new UpdateRoleRequest(name), cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث الدور.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> DeleteRoleAsync(string id, CancellationToken cancellationToken = default)
+    {
+        var result = await adminService.DeleteRoleAsync(id, cancellationToken);
+        return result.IsSuccess ? (true, "تم حذف الدور.") : (false, result.Error.Description);
+    }
+
     public async Task<List<PermissionResponse>> GetPermissionsAsync(CancellationToken cancellationToken = default)
     {
         var result = await adminService.GetPermissionsAsync(cancellationToken);
@@ -78,10 +90,10 @@ public class AdminUiService(IAdminService adminService, IConfiguration configura
         return result.IsSuccess ? (true, "تم حفظ الإعداد.") : (false, result.Error.Description);
     }
 
-    public async Task<List<FileAssetResponse>> GetFilesAsync(CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<FileAssetResponse>> GetFilesAsync(string? search = null, string? category = null, bool? isPublic = null, int page = 1, int pageSize = 25, string? sortBy = null, bool descending = true, CancellationToken cancellationToken = default)
     {
-        var result = await adminService.GetFilesAsync(cancellationToken);
-        return result.IsSuccess ? result.Value.ToList() : [];
+        var result = await adminService.GetFilesAsync(new FileAssetSearchRequest(search, category, isPublic, page, pageSize, sortBy, descending), cancellationToken);
+        return result.IsSuccess ? result.Value : new PagedResponse<FileAssetResponse>([], 1, pageSize, 0, 0);
     }
 
     public async Task<(bool Success, string Message)> SaveFileAsync(SaveFileAssetRequest request, CancellationToken cancellationToken = default)
@@ -90,10 +102,40 @@ public class AdminUiService(IAdminService adminService, IConfiguration configura
         return result.IsSuccess ? (true, "تم حفظ بيانات الملف.") : (false, result.Error.Description);
     }
 
-    public async Task<List<AuditLogResponse>> GetAuditLogsAsync(CancellationToken cancellationToken = default)
+    public async Task<(bool Success, string Message)> UpdateFileAsync(int id, UpdateFileAssetRequest request, CancellationToken cancellationToken = default)
     {
-        var result = await adminService.GetAuditLogsAsync(cancellationToken);
+        var result = await adminService.UpdateFileAssetAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث بيانات الملف.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> DeleteFileAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var result = await adminService.DeleteFileAssetAsync(id, cancellationToken);
+        return result.IsSuccess ? (true, "تم حذف سجل الملف.") : (false, result.Error.Description);
+    }
+
+    public async Task<PagedResponse<AuditLogResponse>> GetAuditLogsAsync(string? search = null, string? actorUserId = null, string? entityName = null, string? entityId = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 25, string? sortBy = null, bool descending = true, CancellationToken cancellationToken = default)
+    {
+        var result = await adminService.GetAuditLogsAsync(new AuditLogSearchRequest(search, actorUserId, entityName, entityId, from, to, page, pageSize, sortBy, descending), cancellationToken);
+        return result.IsSuccess ? result.Value : new PagedResponse<AuditLogResponse>([], 1, pageSize, 0, 0);
+    }
+
+    public async Task<List<QueryViewResponse>> GetQueryViewsAsync(string screenKey, CancellationToken cancellationToken = default)
+    {
+        var result = await adminService.GetQueryViewsAsync(screenKey, cancellationToken);
         return result.IsSuccess ? result.Value.ToList() : [];
+    }
+
+    public async Task<(bool Success, string Message)> SaveQueryViewAsync(SaveQueryViewRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await adminService.SaveQueryViewAsync(request, cancellationToken);
+        return result.IsSuccess ? (true, "تم حفظ العرض.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> DeleteQueryViewAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var result = await adminService.DeleteQueryViewAsync(id, cancellationToken);
+        return result.IsSuccess ? (true, "تم حذف العرض.") : (false, result.Error.Description);
     }
 
     public JobDashboardStatusResponse GetJobsStatus() =>

@@ -17,6 +17,7 @@
         <label>نوع الطلب<input @bind="requestType" /></label>
         <label class="span-2">العنوان<input @bind="title" /></label>
         <label class="span-2">التفاصيل<textarea @bind="details"></textarea></label>
+        <label class="span-2">ملاحظة القرار<input @bind="decisionNotes" /></label>
     </div>
     <div class="actions-row"><button class="primary" @onclick="SaveAsync">إنشاء الطلب</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
 </section>
@@ -28,7 +29,7 @@
         <tbody>
             @foreach (var item in requests)
             {
-                <tr><td>@item.EmployeeName</td><td>@item.RequestType</td><td>@item.Title</td><td><span class="status">@item.Status</span></td><td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Rejected))">رفض</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Completed))">إكمال</button></td><td><button class="secondary" @onclick="@(() => LoadActivityAsync(item))">السجل</button></td></tr>
+                <tr><td>@item.EmployeeName</td><td>@item.RequestType</td><td>@item.Title</td><td><span class="status">@item.Status</span></td><td>@if (item.Status == "Pending"){<button class="secondary" @onclick="() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved)">اعتماد</button><button class="danger" @onclick="() => DecideAsync(item.Id, HumanResourceRequestStatus.Rejected)">رفض</button><button class="danger" @onclick="() => DecideAsync(item.Id, HumanResourceRequestStatus.Cancelled)">إلغاء</button>} else if (item.Status == "Approved"){<button class="primary" @onclick="() => DecideAsync(item.Id, HumanResourceRequestStatus.Completed)">إكمال</button><button class="danger" @onclick="() => DecideAsync(item.Id, HumanResourceRequestStatus.Cancelled)">إلغاء</button>}</td><td><button class="secondary" @onclick="() => LoadActivityAsync(item)">السجل</button></td></tr>
             }
         </tbody>
     </table>
@@ -59,6 +60,7 @@
     private string requestType = "طلب إداري";
     private string title = string.Empty;
     private string details = string.Empty;
+    private string? decisionNotes;
     private bool success;
     private string? message;
 
@@ -86,7 +88,7 @@
 
     private async Task DecideAsync(int id, HumanResourceRequestStatus status)
     {
-        var result = await HR.DecideAdministrativeRequestAsync(id, status, null);
+        var result = await HR.DecideAdministrativeRequestAsync(id, status, decisionNotes);
         success = result.Success;
         message = result.Message;
         await LoadAsync();

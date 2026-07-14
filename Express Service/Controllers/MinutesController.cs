@@ -1,5 +1,6 @@
 using Application.Contracts.Minutes;
 using Application.Service.Minutes;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -26,7 +27,7 @@ public class MinutesController(IMinuteService service) : ControllerBase
     }
 
     [HttpPost("meeting/{meetingId:int}/sign")]
-    [Authorize(Roles = "Admin,BoardChairman")]
+    [RequirePermission("system.documentation-archive.meetings_mom_approve")]
     public async Task<IActionResult> Sign(int meetingId, [FromBody] SignMinuteRequest request, CancellationToken cancellationToken)
     {
         var result = await service.SignAndPublishAsync(meetingId, request, cancellationToken);
@@ -34,7 +35,7 @@ public class MinutesController(IMinuteService service) : ControllerBase
     }
 
     [HttpPost("meeting/{meetingId:int}/approve")]
-    [Authorize(Roles = "Admin,BoardChairman")]
+    [RequirePermission("system.documentation-archive.meetings_mom_approve")]
     public async Task<IActionResult> Approve(int meetingId, CancellationToken cancellationToken)
     {
         var chairmanUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";
@@ -43,7 +44,7 @@ public class MinutesController(IMinuteService service) : ControllerBase
     }
 
     [HttpPost("meeting/{meetingId:int}/cancel-approval")]
-    [Authorize(Roles = "Admin")]
+    [RequirePermission("system.documentation-archive.meetings_approved")]
     public async Task<IActionResult> CancelApproval(int meetingId, CancellationToken cancellationToken)
     {
         var actorUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "system";

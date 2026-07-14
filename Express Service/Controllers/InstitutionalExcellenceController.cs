@@ -2,13 +2,14 @@ using Application.Contracts.InstitutionalExcellence;
 using Application.Service.InstitutionalExcellence;
 using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Express_Service.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Secretary,Chairman")]
+[RequirePermissionPrefix("system.excellence-")]
 public class InstitutionalExcellenceController(IInstitutionalExcellenceService service) : ControllerBase
 {
     [HttpGet("dashboard")]

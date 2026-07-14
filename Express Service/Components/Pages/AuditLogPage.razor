@@ -5,21 +5,54 @@
 
 <h1 class="page-title">سجل التدقيق</h1>
 
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-filter"></i><div><h2>بحث وتصفية</h2><p>فلترة السجل بالكلمة أو المستخدم أو الكيان أو الفترة الزمنية.</p></div></div>
+    <div class="form-grid compact"><label>بحث<input @bind="search" /></label><label>معرف المستخدم<input @bind="actorUserId" /></label><label>الكيان<input @bind="entityName" /></label><label>معرف السجل<input @bind="entityId" /></label><label>من<input type="date" @bind="from" /></label><label>إلى<input type="date" @bind="to" /></label></div>
+    <div class="actions-row"><button class="primary" @onclick="ResetAndLoadAsync">بحث</button><button class="secondary" @onclick="ClearAsync">مسح الفلاتر</button></div>
+</section>
+
 <section class="table-section">
-    <div class="table-title"><span><i class="fa-solid fa-clipboard-list"></i> آخر عمليات النظام</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <div class="table-title"><span><i class="fa-solid fa-clipboard-list"></i> عمليات النظام (@totalCount)</span><div class="toolbar"><label>ترتيب<select @bind="sortBy" @bind:after="ResetAndLoadAsync"><option value="created">التاريخ</option><option value="action">الإجراء</option><option value="entity">الكيان</option><option value="user">المستخدم</option></select></label><button class="secondary" @onclick="LoadAsync">تحديث</button></div></div>
     <table>
-        <thead><tr><th>المستخدم</th><th>الإجراء</th><th>الكيان</th><th>المعرف</th><th>التفاصيل</th><th>التاريخ</th></tr></thead>
+        <thead><tr><th>المستخدم</th><th>الإجراء</th><th>الكيان</th><th>المعرف</th><th>التفاصيل</th><th>التاريخ</th><th></th></tr></thead>
         <tbody>
             @foreach (var item in logs)
             {
-                <tr><td>@item.ActorUserId</td><td>@item.Action</td><td>@item.EntityName</td><td>@item.EntityId</td><td>@item.Details</td><td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td></tr>
+                <tr><td>@item.ActorUserId</td><td>@item.Action</td><td>@item.EntityName</td><td>@item.EntityId</td><td>@item.Details</td><td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td><td><button class="secondary" @onclick="() => selected = item">عرض التغيير</button></td></tr>
             }
         </tbody>
     </table>
+    <div class="table-title"><button class="secondary" disabled="@(page <= 1)" @onclick="PreviousAsync">السابق</button><span>صفحة @(page) من @(totalPages)</span><button class="secondary" disabled="@(page >= totalPages)" @onclick="NextAsync">التالي</button></div>
 </section>
+
+@if (selected is not null)
+{
+    <section class="panel">
+        <div class="panel-heading"><i class="fa-solid fa-clock-rotate-left"></i><div><h2>التسلسل الزمني للكيان</h2><p>@selected.EntityName #@selected.EntityId — @selected.Action</p></div></div>
+        <div class="actions-row"><button class="secondary" @onclick="() => selected = null">إغلاق</button></div>
+        <div class="form-grid">
+            <label>قبل التغيير<pre>@(selected.BeforeJson ?? "لا توجد لقطة سابقة لهذا السجل.")</pre></label>
+            <label>بعد التغيير<pre>@(selected.AfterJson ?? "لا توجد لقطة لاحقة لهذا السجل.")</pre></label>
+        </div>
+    </section>
+}
 
 @code {
     private List<AuditLogResponse> logs = [];
+    private string? search, actorUserId, entityName, entityId;
+    private DateTime? from, to;
+    private int page = 1, totalPages, totalCount;
+    private string sortBy = "created";
     protected override async Task OnInitializedAsync() => await LoadAsync();
-    private async Task LoadAsync() => logs = await Admin.GetAuditLogsAsync();
+    private async Task LoadAsync()
+    {
+        selected = null;
+        var result = await Admin.GetAuditLogsAsync(search, actorUserId, entityName, entityId, from, to, page, 25, sortBy);
+        logs = result.Items.ToList(); page = result.Page; totalPages = result.TotalPages; totalCount = result.TotalCount;
+    }
+    private async Task ResetAndLoadAsync(){ page = 1; await LoadAsync(); }
+    private async Task ClearAsync(){ search = actorUserId = entityName = entityId = null; from = to = null; await ResetAndLoadAsync(); }
+    private async Task PreviousAsync(){ if (page > 1) { page--; await LoadAsync(); } }
+    private async Task NextAsync(){ if (page < totalPages) { page++; await LoadAsync(); } }
+    private AuditLogResponse? selected;
 }

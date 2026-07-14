@@ -10,6 +10,8 @@ public class AuditLog : IAuditable
     public string EntityName { get; set; } = string.Empty;
     public string EntityId { get; set; } = string.Empty;
     public string Details { get; set; } = string.Empty;
+    public string? BeforeJson { get; set; }
+    public string? AfterJson { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
     public string? CreatedByUserId { get; set; }
     public DateTime? UpdatedAt { get; set; }

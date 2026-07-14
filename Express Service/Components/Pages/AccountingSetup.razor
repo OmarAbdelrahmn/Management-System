@@ -1,5 +1,5 @@
 @page "/accounting/setup"
-@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@attribute [Authorize(Policy = "permission:system.accounting.finance_ledgers")]
 @rendermode InteractiveServer
 @inject AccountingUiService Accounting
 
@@ -35,12 +35,24 @@
 </section>
 
 <section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-calendar-days"></i><div><h2>الفترات المالية</h2><p>تمنع الفترة المغلقة أي تعديل أو ترحيل محاسبي بتاريخ يقع ضمنها.</p></div></div>
+    <div class="form-grid compact">
+        <label>اسم السنة المالية<input @bind="fiscalYearName" /></label>
+        <label>من<input type="date" @bind="fiscalStartsAt" /></label>
+        <label>إلى<input type="date" @bind="fiscalEndsAt" /></label>
+        <label class="check-row"><input type="checkbox" @bind="fiscalIsClosed" /> إغلاق الفترة</label>
+    </div>
+    <div class="actions-row"><button class="primary" @onclick="SaveFiscalPeriodAsync">@(editingFiscalPeriodId.HasValue ? "حفظ الفترة" : "إضافة فترة مالية")</button><button class="secondary" @onclick="ResetFiscalPeriod">تفريغ</button></div>
+    <div class="table-section" style="margin:14px 0 0"><table><thead><tr><th>السنة</th><th>البداية</th><th>النهاية</th><th>الحالة</th><th></th></tr></thead><tbody>@foreach (var period in fiscalPeriods){<tr><td>@period.FiscalYearName</td><td>@period.StartsAt.ToString("yyyy-MM-dd")</td><td>@period.EndsAt.ToString("yyyy-MM-dd")</td><td><span class="status @(period.IsClosed ? "bad" : "ok")">@(period.IsClosed ? "مغلقة" : "مفتوحة")</span></td><td><button class="secondary small" @onclick="() => EditFiscalPeriod(period)">تعديل</button></td></tr>}</tbody></table></div>
+</section>
+
+<section class="panel" style="margin-top:14px">
     <div class="panel-heading"><i class="fa-solid fa-book"></i><div><h2>@(editingLedgerId.HasValue ? "تعديل قيد يومية" : "قيد يومية")</h2><p>إضافة أو تصحيح قيد متوازن من حسابين.</p></div></div>
     <div class="form-grid compact">
         <label>رقم القيد<input @bind="ledgerNumber" placeholder="يولد تلقائياً عند تركه فارغاً" /></label>
         <label>تاريخ القيد<input type="date" @bind="ledgerDate" /></label>
         <label>الوصف<input @bind="ledgerDescription" /></label>
-        <label>الحالة<select @bind="ledgerStatus"><option value="@AccountingRecordStatus.Draft">مسودة</option><option value="@AccountingRecordStatus.Approved">معتمد</option><option value="@AccountingRecordStatus.Posted">مرحل</option><option value="@AccountingRecordStatus.Canceled">ملغى</option></select></label>
+        <label>الحالة<input value="مسودة — يرحّل من زر الترحيل" disabled /></label>
         <label>مدين<select @bind="debitAccountId">@foreach (var account in accounts){<option value="@account.Id">@account.Code - @account.NameAr</option>}</select></label>
         <label>دائن<select @bind="creditAccountId">@foreach (var account in accounts){<option value="@account.Id">@account.Code - @account.NameAr</option>}</select></label>
         <label>مركز تكلفة<select @bind="ledgerCostCenterIdText"><option value="">بدون</option>@foreach (var center in costs){<option value="@center.Id">@center.Code - @center.NameAr</option>}</select></label>
@@ -76,7 +88,7 @@
             }
             @foreach (var ledger in ledgers)
             {
-                <tr><td>قيد</td><td>@ledger.EntryNumber</td><td>@ledger.Description</td><td><span class="status">@ledger.Status</span></td><td><button class="secondary small" @onclick="() => EditLedger(ledger)">تعديل</button><button class="secondary small" @onclick="() => SelectLedger(ledger)">تفاصيل</button></td></tr>
+                <tr><td>قيد</td><td>@ledger.EntryNumber</td><td>@ledger.Description</td><td><span class="status">@ledger.Status</span></td><td><button class="secondary small" @onclick="() => EditLedger(ledger)" disabled="@(ledger.Status is "Posted" or "Approved" or "Closed" or "Canceled" or "Archived")">تعديل</button><button class="secondary small" @onclick="() => SelectLedger(ledger)">تفاصيل</button>@if (ledger.Status == "Draft"){<button class="primary small" @onclick="() => SetLedgerPostingAsync(ledger.Id, true)">ترحيل نهائي</button>}</td></tr>
             }
         </tbody>
     </table>
@@ -102,6 +114,7 @@
             </tbody>
         </table>
     </section>
+    <AttachmentPanel EntityType="LedgerEntry" EntityId="@selectedLedger.Id" />
 }
 
 @code {
@@ -109,6 +122,7 @@
     private List<FinanceBankAccountResponse> banks = [];
     private List<FinanceCostCenterResponse> costs = [];
     private List<LedgerEntryResponse> ledgers = [];
+    private List<FiscalPeriodResponse> fiscalPeriods = [];
     private LedgerEntryResponse? selectedLedger;
     private string accountCode = string.Empty;
     private string accountName = string.Empty;
@@ -137,6 +151,11 @@
     private int? editingLedgerId;
     private bool success;
     private string? message;
+    private int? editingFiscalPeriodId;
+    private string fiscalYearName = string.Empty;
+    private DateTime fiscalStartsAt = new(DateTime.UtcNow.Year, 1, 1);
+    private DateTime fiscalEndsAt = new(DateTime.UtcNow.Year, 12, 31);
+    private bool fiscalIsClosed;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -146,6 +165,7 @@
         banks = await Accounting.GetBankAccountsAsync();
         costs = await Accounting.GetCostCentersAsync();
         ledgers = await Accounting.GetLedgerEntriesAsync();
+        fiscalPeriods = await Accounting.GetFiscalPeriodsAsync();
         if (selectedLedger is not null)
             selectedLedger = ledgers.FirstOrDefault(x => x.Id == selectedLedger.Id);
         debitAccountId = debitAccountId == 0 ? accounts.FirstOrDefault()?.Id ?? 0 : debitAccountId;
@@ -196,6 +216,41 @@
         if (success)
             ResetLedgerForm();
         await LoadAsync();
+    }
+
+    private async Task SaveFiscalPeriodAsync()
+    {
+        var result = await Accounting.SaveFiscalPeriodAsync(editingFiscalPeriodId, new SaveFiscalPeriodRequest(fiscalYearName, fiscalStartsAt, fiscalEndsAt, fiscalIsClosed));
+        success = result.Success;
+        message = result.Message;
+        if (success) ResetFiscalPeriod();
+        await LoadAsync();
+    }
+
+    private async Task SetLedgerPostingAsync(int id, bool isPosted)
+    {
+        var result = await Accounting.SetLedgerPostingAsync(id, isPosted);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void EditFiscalPeriod(FiscalPeriodResponse period)
+    {
+        editingFiscalPeriodId = period.Id;
+        fiscalYearName = period.FiscalYearName;
+        fiscalStartsAt = period.StartsAt;
+        fiscalEndsAt = period.EndsAt;
+        fiscalIsClosed = period.IsClosed;
+    }
+
+    private void ResetFiscalPeriod()
+    {
+        editingFiscalPeriodId = null;
+        fiscalYearName = string.Empty;
+        fiscalStartsAt = new(DateTime.UtcNow.Year, 1, 1);
+        fiscalEndsAt = new(DateTime.UtcNow.Year, 12, 31);
+        fiscalIsClosed = false;
     }
 
     private void EditAccount(FinanceAccountResponse account)

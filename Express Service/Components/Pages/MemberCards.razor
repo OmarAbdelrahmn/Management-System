@@ -22,11 +22,11 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-address-card"></i> البطاقات الصادرة</span></div>
     <table>
-        <thead><tr><th>رقم البطاقة</th><th>العضو</th><th>الإصدار</th><th>الانتهاء</th><th>الحالة</th></tr></thead>
+        <thead><tr><th>رقم البطاقة</th><th>العضو</th><th>الإصدار</th><th>الانتهاء</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var card in cards)
             {
-                <tr><td>@card.CardNumber</td><td>@card.MemberName</td><td>@card.IssuedAt.ToString("yyyy-MM-dd")</td><td>@card.ExpiresAt.ToString("yyyy-MM-dd")</td><td><span class="status @(card.IsActive ? "ok" : "warn")">@(card.IsActive ? "فعالة" : "موقوفة")</span></td></tr>
+                <tr><td>@card.CardNumber</td><td>@card.MemberName</td><td>@card.IssuedAt.ToString("yyyy-MM-dd")</td><td>@card.ExpiresAt.ToString("yyyy-MM-dd")</td><td><span class="status @(card.IsActive ? "ok" : "warn")">@(card.IsActive ? "فعالة" : "موقوفة")</span></td><td>@if (card.IsActive){<button class="danger" @onclick="() => DeactivateAsync(card.Id)">إيقاف</button>}</td></tr>
             }
         </tbody>
     </table>
@@ -50,6 +50,14 @@
     private async Task IssueAsync()
     {
         var result = await Members.IssueCardAsync(memberId, expiresAt);
+        success = result.Success;
+        message = result.Message;
+        cards = await Members.GetCardsAsync();
+    }
+
+    private async Task DeactivateAsync(int id)
+    {
+        var result = await Members.DeactivateCardAsync(id);
         success = result.Success;
         message = result.Message;
         cards = await Members.GetCardsAsync();

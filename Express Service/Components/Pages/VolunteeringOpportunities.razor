@@ -44,10 +44,12 @@
         <label>المسند إليه<input @bind="assignedTo" /></label>
         <label>استحقاق المهمة<input type="date" @bind="taskDueDate" /></label>
         <label>حالة المهمة<select @bind="taskStatus"><option value="@VolunteerTaskStatus.Open">مفتوحة</option><option value="@VolunteerTaskStatus.InProgress">قيد التنفيذ</option><option value="@VolunteerTaskStatus.Completed">مكتملة</option><option value="@VolunteerTaskStatus.Cancelled">ملغاة</option></select></label>
+        <label class="span-2">ملاحظات المهمة<input @bind="taskNotes" /></label>
         <label>المتطوع<select @bind="selectedVolunteerId"><option value="0">اختر متطوع</option>@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
         <label>تاريخ الحضور<input type="date" @bind="attendanceDate" /></label>
         <label>الساعات<input type="number" step="0.5" @bind="hours" /></label>
         <label>حالة الحضور<select @bind="attendanceStatus"><option value="@VolunteerAttendanceStatus.Present">حاضر</option><option value="@VolunteerAttendanceStatus.Absent">غائب</option><option value="@VolunteerAttendanceStatus.Excused">معتذر</option></select></label>
+        <label class="span-2">ملاحظات الحضور<input @bind="attendanceNotes" /></label>
     </div>
     <div class="actions-row">
         <button class="primary" @onclick="SaveTaskAsync">@(editingTaskId.HasValue ? "حفظ تعديل المهمة" : "حفظ مهمة")</button>
@@ -154,11 +156,13 @@
     private string? assignedTo;
     private DateTime? taskDueDate = DateTime.UtcNow.AddHours(3).Date.AddDays(3);
     private VolunteerTaskStatus taskStatus = VolunteerTaskStatus.Open;
+    private string? taskNotes;
     private int selectedVolunteerId;
     private int? editingAttendanceId;
     private DateTime attendanceDate = DateTime.UtcNow.AddHours(3).Date;
     private decimal hours = 1;
     private VolunteerAttendanceStatus attendanceStatus = VolunteerAttendanceStatus.Present;
+    private string? attendanceNotes;
     private bool success;
     private string? message;
 
@@ -177,8 +181,8 @@
         message = result.Message;
         await LoadAsync();
     }
-    private async Task SaveTaskAsync(){ var result = await Volunteering.SaveTaskAsync(editingTaskId, new SaveVolunteerOpportunityTaskRequest(selectedOpportunityId, taskTitle, assignedTo, taskDueDate, taskStatus, procedureNotes)); success = result.Success; message = result.Message; if (success) ResetTaskForm(); await LoadAsync(); }
-    private async Task SaveAttendanceAsync(){ var result = await Volunteering.SaveAttendanceAsync(editingAttendanceId, new SaveVolunteerAttendanceRequest(selectedOpportunityId, selectedVolunteerId, attendanceDate, hours, attendanceStatus, reportSummary)); success = result.Success; message = result.Message; if (success) ResetAttendanceForm(); await LoadAsync(); }
+    private async Task SaveTaskAsync(){ var result = await Volunteering.SaveTaskAsync(editingTaskId, new SaveVolunteerOpportunityTaskRequest(selectedOpportunityId, taskTitle, assignedTo, taskDueDate, taskStatus, taskNotes)); success = result.Success; message = result.Message; if (success) ResetTaskForm(); await LoadAsync(); }
+    private async Task SaveAttendanceAsync(){ var result = await Volunteering.SaveAttendanceAsync(editingAttendanceId, new SaveVolunteerAttendanceRequest(selectedOpportunityId, selectedVolunteerId, attendanceDate, hours, attendanceStatus, attendanceNotes)); success = result.Success; message = result.Message; if (success) ResetAttendanceForm(); await LoadAsync(); }
     private async Task ChangeOpportunityStatusAsync(VolunteerOpportunityResponse item, VolunteerOpportunityStatus newStatus)
     {
         var result = await Volunteering.SaveOpportunityAsync(item.Id, new SaveVolunteerOpportunityRequest(item.OpportunityNumber, item.Title, item.Description, item.Department, item.StartDate, item.EndDate, item.Seats, newStatus, item.ProcedureNotes, item.ReportSummary));
@@ -223,7 +227,7 @@
         assignedTo = item.AssignedTo;
         taskDueDate = item.DueDate;
         taskStatus = Enum.TryParse<VolunteerTaskStatus>(item.Status, out var parsedStatus) ? parsedStatus : VolunteerTaskStatus.Open;
-        procedureNotes = item.Notes;
+        taskNotes = item.Notes;
     }
     private void ResetTaskForm()
     {
@@ -232,7 +236,7 @@
         assignedTo = null;
         taskDueDate = DateTime.UtcNow.AddHours(3).Date.AddDays(3);
         taskStatus = VolunteerTaskStatus.Open;
-        procedureNotes = null;
+        taskNotes = null;
     }
     private void EditAttendance(VolunteerAttendanceResponse item)
     {
@@ -242,7 +246,7 @@
         attendanceDate = item.AttendanceDate;
         hours = item.Hours;
         attendanceStatus = Enum.TryParse<VolunteerAttendanceStatus>(item.Status, out var parsedStatus) ? parsedStatus : VolunteerAttendanceStatus.Present;
-        reportSummary = item.Notes;
+        attendanceNotes = item.Notes;
     }
     private void ResetAttendanceForm()
     {
@@ -251,6 +255,6 @@
         attendanceDate = DateTime.UtcNow.AddHours(3).Date;
         hours = 1;
         attendanceStatus = VolunteerAttendanceStatus.Present;
-        reportSummary = null;
+        attendanceNotes = null;
     }
 }

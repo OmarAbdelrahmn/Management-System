@@ -1,6 +1,7 @@
 using Application.Contracts.Accounting;
 using Application.Service.Accounting;
 using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace ManagementSystem.Tests;
 
@@ -46,7 +47,9 @@ public class AccountingServiceTests
         var received = await service.ReceiveDeferredReceivableAsync(deferred.Value.Id, new ReceiveDeferredReceivableRequest(1000, null));
         var expense = await service.SaveExpenseAsync(null, new SaveExpenseVoucherRequest(null, ExpenseVoucherKind.Generic, new DateTime(2026, 7, 9), 1500, "مورد", AccountingRecordStatus.Draft, null));
         var approvedExpense = await service.DecideExpenseAsync(expense.Value.Id, new DecideAccountingRecordRequest(AccountingRecordStatus.Approved, "مطابق"));
-        var budget = await service.SaveBudgetAsync(null, new SaveFinanceBudgetRequest(2026, "موازنة 2026", 10000, 4000, BudgetStatus.Approved));
+        var budget = await service.SaveBudgetAsync(null, new SaveFinanceBudgetRequest(2026, "موازنة 2026", 10000, 4000, BudgetStatus.Draft));
+        var approvedBudget = await service.DecideBudgetAsync(budget.Value.Id, new DecideBudgetRequest(BudgetStatus.Approved));
+        var editApprovedBudget = await service.SaveBudgetAsync(budget.Value.Id, new SaveFinanceBudgetRequest(2026, "موازنة 2026", 10000, 4000, BudgetStatus.Draft));
         var dashboard = await service.GetDashboardAsync();
 
         Assert.True(receipt.IsSuccess);
@@ -56,6 +59,8 @@ public class AccountingServiceTests
         Assert.True(expense.IsSuccess);
         Assert.Equal("Approved", approvedExpense.Value.Status);
         Assert.True(budget.IsSuccess);
+        Assert.Equal("Approved", approvedBudget.Value.Status);
+        Assert.True(editApprovedBudget.IsFailure);
         Assert.Equal(5000, dashboard.Value.PostedIncome);
         Assert.Equal(1500, dashboard.Value.PostedExpenses);
         Assert.Equal(1000, dashboard.Value.DeferredDue);
@@ -157,5 +162,83 @@ public class AccountingServiceTests
         Assert.Single(postedReceipts);
         Assert.Single(postedExpenses);
         Assert.Equal(2, ledgers.Count);
+    }
+
+    [Fact]
+    public async Task AccountingDecisions_RequireReasonsAndPostedLedgerCannotBeReversed()
+    {
+        await using var dbcontext = ServiceTestFactory.CreateDbContext();
+        var service = new AccountingService(dbcontext);
+        var cash = await service.SaveAccountAsync(null, new SaveFinanceAccountRequest("1000", "الصندوق", AccountingAccountType.Asset, null, true));
+        var income = await service.SaveAccountAsync(null, new SaveFinanceAccountRequest("4000", "إيراد", AccountingAccountType.Income, null, true));
+        var ledger = await service.SaveLedgerEntryAsync(null, new SaveLedgerEntryRequest("JRN-LOCK", new DateTime(2026, 7, 10), "قيد قابل للترحيل", AccountingRecordStatus.Draft,
+        [new SaveLedgerLineRequest(cash.Value.Id, null, 100, 0, null), new SaveLedgerLineRequest(income.Value.Id, null, 0, 100, null)]));
+        var posted = await service.SetLedgerPostingAsync(ledger.Value.Id, new SetLedgerPostingRequest(true, "اعتماد نهائي"));
+        var reversed = await service.SetLedgerPostingAsync(ledger.Value.Id, new SetLedgerPostingRequest(false, "محاولة عكس"));
+
+        var receipt = await service.SaveReceiptAsync(null, new SaveReceiptVoucherRequest("RCV-REJECT", ReceiptVoucherKind.Donation, new DateTime(2026, 7, 10), 50, "متبرع", null, AccountingRecordStatus.Draft, null));
+        var rejectedWithoutReason = await service.DecideReceiptAsync(receipt.Value.Id, new DecideAccountingRecordRequest(AccountingRecordStatus.Rejected, null));
+        var rejectedWithReason = await service.DecideReceiptAsync(receipt.Value.Id, new DecideAccountingRecordRequest(AccountingRecordStatus.Rejected, "بيانات الدافع غير مكتملة"));
+
+        Assert.True(posted.IsSuccess);
+        Assert.True(reversed.IsFailure);
+        Assert.True(rejectedWithoutReason.IsFailure);
+        Assert.True(rejectedWithReason.IsSuccess);
+    }
+
+    [Fact]
+    public async Task CreateOpeningBalanceAsync_PostsOnceForAnOpenFiscalPeriod()
+    {
+        await using var dbcontext = ServiceTestFactory.CreateDbContext();
+        var service = new AccountingService(dbcontext);
+        var cash = await service.SaveAccountAsync(null, new SaveFinanceAccountRequest("1000", "الصندوق", AccountingAccountType.Asset, null, true));
+        var equity = await service.SaveAccountAsync(null, new SaveFinanceAccountRequest("3000", "رأس المال", AccountingAccountType.Equity, null, true));
+        var period = await service.SaveFiscalPeriodAsync(null, new SaveFiscalPeriodRequest("2026", new DateTime(2026, 1, 1), new DateTime(2026, 12, 31), false));
+
+        var request = new CreateOpeningBalanceRequest(period.Value.Id, "ترحيل أولي",
+        [new SaveLedgerLineRequest(cash.Value.Id, null, 500, 0, null), new SaveLedgerLineRequest(equity.Value.Id, null, 0, 500, null)]);
+        var created = await service.CreateOpeningBalanceAsync(request);
+        var duplicate = await service.CreateOpeningBalanceAsync(request);
+
+        Assert.True(created.IsSuccess);
+        Assert.Equal("OPEN-" + period.Value.Id, created.Value.EntryNumber);
+        Assert.Equal("Posted", created.Value.Status);
+        Assert.True(duplicate.IsFailure);
+    }
+
+    [Fact]
+    public async Task BankReconciliation_RequiresSeparateApprovalAndBecomesImmutable()
+    {
+        await using var dbcontext = ServiceTestFactory.CreateDbContext();
+        var service = new AccountingService(dbcontext);
+        var bank = await service.SaveBankAccountAsync(null, new SaveFinanceBankAccountRequest("مصرف", "الحساب التشغيلي", "SA123", 0, true));
+        var created = await service.SaveBankReconciliationAsync(null, new SaveBankReconciliationRequest(bank.Value.Id, new DateTime(2026, 7, 31), 1500, 1450, false, "فرق تحت المراجعة"));
+        var approved = await service.ApproveBankReconciliationAsync(created.Value.Id, new ApproveBankReconciliationRequest("تمت المطابقة"));
+        var edited = await service.SaveBankReconciliationAsync(created.Value.Id, new SaveBankReconciliationRequest(bank.Value.Id, new DateTime(2026, 7, 31), 1500, 1500, false, null));
+
+        Assert.True(created.IsSuccess);
+        Assert.True(approved.IsSuccess);
+        Assert.True(approved.Value.IsApproved);
+        Assert.True(edited.IsFailure);
+    }
+
+    [Fact]
+    public async Task FiscalPeriodClosure_BlocksDraftsAndCannotBeReopened()
+    {
+        await using var dbcontext = ServiceTestFactory.CreateDbContext();
+        var service = new AccountingService(dbcontext);
+        var period = await service.SaveFiscalPeriodAsync(null, new SaveFiscalPeriodRequest("2026", new DateTime(2026, 1, 1), new DateTime(2026, 12, 31), false));
+        await service.SaveReceiptAsync(null, new SaveReceiptVoucherRequest("RCV-DRAFT", ReceiptVoucherKind.Generic, new DateTime(2026, 7, 1), 10, "دافع", null, AccountingRecordStatus.Draft, null));
+        var blocked = await service.SaveFiscalPeriodAsync(period.Value.Id, new SaveFiscalPeriodRequest("2026", period.Value.StartsAt, period.Value.EndsAt, true));
+
+        Assert.True(blocked.IsFailure);
+        var draftReceipt = await dbcontext.ReceiptVouchers.SingleAsync();
+        draftReceipt.Status = AccountingRecordStatus.Posted;
+        await dbcontext.SaveChangesAsync();
+        var closed = await service.SaveFiscalPeriodAsync(period.Value.Id, new SaveFiscalPeriodRequest("2026", period.Value.StartsAt, period.Value.EndsAt, true));
+        var reopened = await service.SaveFiscalPeriodAsync(period.Value.Id, new SaveFiscalPeriodRequest("2026", period.Value.StartsAt, period.Value.EndsAt, false));
+
+        Assert.True(closed.IsSuccess);
+        Assert.True(reopened.IsFailure);
     }
 }

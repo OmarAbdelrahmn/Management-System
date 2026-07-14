@@ -4,6 +4,7 @@ using Domain.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
+using System.Text.Json;
 
 namespace Domain;
 
@@ -31,6 +32,8 @@ public class ApplicationDbcontext(
     public DbSet<Decision> Decisions => Set<Decision>();
     public DbSet<MeetingMinute> MeetingMinutes => Set<MeetingMinute>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<FileAssetLink> FileAssetLinks => Set<FileAssetLink>();
+    public DbSet<SavedQueryView> SavedQueryViews => Set<SavedQueryView>();
     public DbSet<EmailOutbox> EmailOutbox => Set<EmailOutbox>();
     public DbSet<SystemModule> SystemModules => Set<SystemModule>();
     public DbSet<SystemPageGroup> SystemPageGroups => Set<SystemPageGroup>();
@@ -58,6 +61,7 @@ public class ApplicationDbcontext(
     public DbSet<UserLoginAudit> UserLoginAudits => Set<UserLoginAudit>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<FileAsset> FileAssets => Set<FileAsset>();
+    public DbSet<FileAssetVersion> FileAssetVersions => Set<FileAssetVersion>();
     public DbSet<EmployeeDepartment> EmployeeDepartments => Set<EmployeeDepartment>();
     public DbSet<JobTitle> JobTitles => Set<JobTitle>();
     public DbSet<EmployeeProfile> EmployeeProfiles => Set<EmployeeProfile>();
@@ -129,6 +133,7 @@ public class ApplicationDbcontext(
     public DbSet<SalaryDisbursement> SalaryDisbursements => Set<SalaryDisbursement>();
     public DbSet<FinancialReviewItem> FinancialReviewItems => Set<FinancialReviewItem>();
     public DbSet<FinanceBudget> FinanceBudgets => Set<FinanceBudget>();
+    public DbSet<BankReconciliation> BankReconciliations => Set<BankReconciliation>();
     public DbSet<MediaPartner> MediaPartners => Set<MediaPartner>();
     public DbSet<MediaEvent> MediaEvents => Set<MediaEvent>();
     public DbSet<MediaVisit> MediaVisits => Set<MediaVisit>();
@@ -210,14 +215,25 @@ public class ApplicationDbcontext(
 
     public override int SaveChanges()
     {
+        var pendingAudits = CaptureEntityAudits();
         ApplyAuditValues();
-        return base.SaveChanges();
+        var result = base.SaveChanges();
+        SaveEntityAudits(pendingAudits);
+        return result;
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        return SaveChangesWithAuditsAsync(cancellationToken);
+    }
+
+    private async Task<int> SaveChangesWithAuditsAsync(CancellationToken cancellationToken)
+    {
+        var pendingAudits = CaptureEntityAudits();
         ApplyAuditValues();
-        return base.SaveChangesAsync(cancellationToken);
+        var result = await base.SaveChangesAsync(cancellationToken);
+        await SaveEntityAuditsAsync(pendingAudits, cancellationToken);
+        return result;
     }
 
     private void ApplyAuditValues()
@@ -245,4 +261,89 @@ public class ApplicationDbcontext(
             }
         }
     }
+
+    private List<PendingEntityAudit> CaptureEntityAudits()
+    {
+        ChangeTracker.DetectChanges();
+        var pending = new List<PendingEntityAudit>();
+        foreach (var entry in ChangeTracker.Entries<IAuditable>())
+        {
+            if (entry.Entity is AuditLog or UserLoginAudit || entry.State is EntityState.Detached or EntityState.Unchanged)
+                continue;
+
+            var action = entry.State switch
+            {
+                EntityState.Added => "Created",
+                EntityState.Modified => "Updated",
+                EntityState.Deleted => "Deleted",
+                _ => null
+            };
+            if (action is null) continue;
+
+            var before = entry.State is EntityState.Modified or EntityState.Deleted
+                ? SerializeValues(entry, originalValues: true)
+                : null;
+            var after = entry.State is EntityState.Added or EntityState.Modified
+                ? SerializeValues(entry, originalValues: false)
+                : null;
+            var entityId = entry.State == EntityState.Added ? null : GetEntityId(entry);
+            pending.Add(new PendingEntityAudit(entry.Entity, entry.Metadata.ClrType.Name, action, entityId, before, after));
+        }
+        return pending;
+    }
+
+    private void SaveEntityAudits(IEnumerable<PendingEntityAudit> pendingAudits)
+    {
+        var audits = CreateAuditLogs(pendingAudits);
+        if (audits.Count == 0) return;
+        AuditLogs.AddRange(audits);
+        ApplyAuditValues();
+        base.SaveChanges();
+    }
+
+    private async Task SaveEntityAuditsAsync(IEnumerable<PendingEntityAudit> pendingAudits, CancellationToken cancellationToken)
+    {
+        var audits = CreateAuditLogs(pendingAudits);
+        if (audits.Count == 0) return;
+        await AuditLogs.AddRangeAsync(audits, cancellationToken);
+        ApplyAuditValues();
+        await base.SaveChangesAsync(cancellationToken);
+    }
+
+    private List<AuditLog> CreateAuditLogs(IEnumerable<PendingEntityAudit> pendingAudits) => pendingAudits.Select(x => new AuditLog
+    {
+        ActorUserId = currentUserContext?.UserId ?? "system",
+        Action = x.Action,
+        EntityName = x.EntityName,
+        EntityId = x.EntityId ?? GetEntityId(Entry(x.Entity)),
+        Details = $"Automatic entity change capture; ip={currentUserContext?.RemoteIpAddress ?? "unknown"}.",
+        BeforeJson = x.BeforeJson,
+        AfterJson = x.AfterJson
+    }).ToList();
+
+    private static string GetEntityId(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry)
+    {
+        var key = entry.Metadata.FindPrimaryKey();
+        if (key is null) return string.Empty;
+        return string.Join("|", key.Properties.Select(x => Convert.ToString(entry.Property(x.Name).CurrentValue) ?? string.Empty));
+    }
+
+    private static string SerializeValues(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry, bool originalValues)
+    {
+        var values = entry.Properties
+            .Where(x => !IsAuditInfrastructureProperty(x.Metadata.Name))
+            .Where(x => entry.State != EntityState.Modified || x.IsModified || x.Metadata.IsPrimaryKey())
+            .ToDictionary(
+                x => x.Metadata.Name,
+                x => originalValues ? x.OriginalValue : x.CurrentValue);
+        return JsonSerializer.Serialize(values);
+    }
+
+    private static bool IsAuditInfrastructureProperty(string propertyName) => propertyName is "CreatedAt" or "CreatedByUserId" or "UpdatedAt" or "UpdatedByUserId"
+        || propertyName.Contains("Password", StringComparison.OrdinalIgnoreCase)
+        || propertyName.Contains("SecurityStamp", StringComparison.OrdinalIgnoreCase)
+        || propertyName.Contains("Token", StringComparison.OrdinalIgnoreCase)
+        || propertyName.Contains("Secret", StringComparison.OrdinalIgnoreCase);
+
+    private sealed record PendingEntityAudit(object Entity, string EntityName, string Action, string? EntityId, string? BeforeJson, string? AfterJson);
 }

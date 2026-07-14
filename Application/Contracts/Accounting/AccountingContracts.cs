@@ -11,6 +11,9 @@ public record AccountingDashboardResponse(
     decimal DeferredDue,
     decimal BudgetDeviation);
 
+public record FiscalPeriodResponse(int Id, string FiscalYearName, DateTime StartsAt, DateTime EndsAt, bool IsClosed);
+public record SaveFiscalPeriodRequest(string FiscalYearName, DateTime StartsAt, DateTime EndsAt, bool IsClosed);
+
 public record FinanceAccountResponse(int Id, string Code, string NameAr, string AccountType, bool IsActive);
 public record SaveFinanceAccountRequest(string Code, string NameAr, AccountingAccountType AccountType, int? ParentAccountId, bool IsActive);
 
@@ -24,6 +27,8 @@ public record LedgerEntryResponse(int Id, string EntryNumber, DateTime EntryDate
 public record LedgerLineResponse(int Id, int FinanceAccountId, string AccountCode, string AccountNameAr, int? FinanceCostCenterId, string? CostCenterCode, string? CostCenterNameAr, decimal Debit, decimal Credit, string? Notes);
 public record SaveLedgerEntryRequest(string? EntryNumber, DateTime? EntryDate, string Description, AccountingRecordStatus Status, IReadOnlyList<SaveLedgerLineRequest> Lines);
 public record SaveLedgerLineRequest(int FinanceAccountId, int? FinanceCostCenterId, decimal Debit, decimal Credit, string? Notes);
+public record SetLedgerPostingRequest(bool IsPosted, string? Notes);
+public record CreateOpeningBalanceRequest(int FiscalPeriodId, string? Notes, IReadOnlyList<SaveLedgerLineRequest> Lines);
 
 public record ReceiptVoucherResponse(int Id, string ReceiptNumber, string Kind, DateTime ReceiptDate, decimal Amount, string PayerName, string? ReferenceNumber, string Status, string? Notes);
 public record SaveReceiptVoucherRequest(string? ReceiptNumber, ReceiptVoucherKind Kind, DateTime? ReceiptDate, decimal Amount, string PayerName, string? ReferenceNumber, AccountingRecordStatus Status, string? Notes);
@@ -49,3 +54,7 @@ public record DecideFinancialReviewItemRequest(AccountingRecordStatus Status, st
 
 public record FinanceBudgetResponse(int Id, int FiscalYear, string Name, decimal PlannedIncome, decimal PlannedExpenses, decimal ActualIncome, decimal ActualExpenses, decimal Deviation, string Status);
 public record SaveFinanceBudgetRequest(int FiscalYear, string Name, decimal PlannedIncome, decimal PlannedExpenses, BudgetStatus Status);
+public record DecideBudgetRequest(BudgetStatus Status);
+public record BankReconciliationResponse(int Id, int FinanceBankAccountId, string BankName, string AccountName, DateTime ReconciliationDate, decimal StatementBalance, decimal BookBalance, decimal Difference, bool IsApproved, string? Notes);
+public record SaveBankReconciliationRequest(int FinanceBankAccountId, DateTime ReconciliationDate, decimal StatementBalance, decimal BookBalance, bool IsApproved, string? Notes);
+public record ApproveBankReconciliationRequest(string? Notes);

@@ -12,5 +12,6 @@ public interface ISystemCatalogService
     Task<Result<SystemPageResponse>> GetPageAsync(int id, CancellationToken cancellationToken = default);
     Task<Result<SystemPageResponse>> GetPageByKeyAsync(string key, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<SystemNavigationModuleResponse>>> GetNavigationAsync(CancellationToken cancellationToken = default);
+    Task<Result<CatalogRouteAccessResponse>> GetRouteAccessAsync(string route, CancellationToken cancellationToken = default);
     Task<Result> UpdatePageStatusAsync(int id, UpdateSystemPageStatusRequest request, CancellationToken cancellationToken = default);
 }

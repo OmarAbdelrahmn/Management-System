@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-hand-holding-heart"></i><div><h2>إضافة موظف متطوع</h2><p>إنشاء حساب متطوع ضمن سجلات الموارد البشرية.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-hand-holding-heart"></i><div><h2>@(editingVolunteerId.HasValue ? "تعديل موظف متطوع" : "إضافة موظف متطوع")</h2><p>إنشاء وإدارة حساب متطوع ضمن سجلات الموارد البشرية.</p></div></div>
     <div class="form-grid">
         <label>الاسم الكامل<input @bind="fullName" /></label>
         <label>رقم الحساب<input @bind="employeeNumber" placeholder="يولد تلقائياً عند تركه فارغاً" /></label>
@@ -21,9 +21,10 @@
         <label>الجوال<input @bind="mobile" /></label>
         <label>البريد<input @bind="email" /></label>
         <label>تاريخ البداية<input type="date" @bind="hireDate" /></label>
+        <label>الحالة<select @bind="status"><option value="@EmployeeStatus.Active">نشط</option><option value="@EmployeeStatus.Suspended">معلق</option></select></label>
         <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ المتطوع</button><button class="secondary" @onclick="LoadAsync">تحديث القائمة</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingVolunteerId.HasValue ? "حفظ التعديل" : "حفظ المتطوع")</button>@if (editingVolunteerId.HasValue){<button class="secondary" @onclick="ResetForm">إلغاء</button>}<button class="secondary" @onclick="LoadAsync">تحديث القائمة</button></div>
 </section>
 
 <section class="table-section">
@@ -33,7 +34,7 @@
         <tbody>
             @foreach (var volunteer in volunteers)
             {
-                <tr><td>@volunteer.EmployeeNumber</td><td>@volunteer.FullName</td><td>@volunteer.DepartmentName</td><td>@volunteer.JobTitleName</td><td>@volunteer.Mobile</td><td><span class="status">@volunteer.Status</span></td><td><a class="secondary" href="@($"/hr/employees/update/{volunteer.Id}")">تحديث</a></td></tr>
+                <tr><td>@volunteer.EmployeeNumber</td><td>@volunteer.FullName</td><td>@volunteer.DepartmentName</td><td>@volunteer.JobTitleName</td><td>@volunteer.Mobile</td><td><span class="status">@volunteer.Status</span></td><td><button class="secondary" @onclick="() => Edit(volunteer)">تعديل</button> <a class="secondary" href="@($"/hr/employees/update/{volunteer.Id}")">الملف الكامل</a></td></tr>
             }
         </tbody>
     </table>
@@ -43,6 +44,7 @@
     private List<EmployeeDepartmentResponse> departments = [];
     private List<JobTitleResponse> jobTitles = [];
     private List<EmployeeResponse> volunteers = [];
+    private int? editingVolunteerId;
     private string fullName = string.Empty;
     private string? employeeNumber;
     private string? nationalId;
@@ -51,6 +53,7 @@
     private int departmentId;
     private int jobTitleId;
     private DateTime? hireDate = DateTime.UtcNow.AddHours(3).Date;
+    private EmployeeStatus status = EmployeeStatus.Active;
     private string? notes;
     private bool success;
     private string? message;
@@ -68,18 +71,43 @@
 
     private async Task SaveAsync()
     {
-        var result = await HR.CreateEmployeeAsync(new CreateEmployeeRequest(fullName, departmentId, jobTitleId, employeeNumber, nationalId, email, mobile, hireDate, 0, 0, notes, EmployeeAccountType.Volunteer));
+        var result = editingVolunteerId.HasValue
+            ? await HR.UpdateEmployeeAsync(editingVolunteerId.Value, new UpdateEmployeeRequest(fullName, departmentId, jobTitleId, nationalId, email, mobile, hireDate ?? DateTime.UtcNow.AddHours(3).Date, status, 0, 0, notes, EmployeeAccountType.Volunteer))
+            : await HR.CreateEmployeeAsync(new CreateEmployeeRequest(fullName, departmentId, jobTitleId, employeeNumber, nationalId, email, mobile, hireDate, 0, 0, notes, EmployeeAccountType.Volunteer));
         success = result.Success;
         message = result.Message;
         if (success)
         {
-            fullName = string.Empty;
-            employeeNumber = null;
-            nationalId = null;
-            email = null;
-            mobile = null;
-            notes = null;
+            ResetForm();
             await LoadAsync();
         }
+    }
+
+    private void Edit(EmployeeResponse volunteer)
+    {
+        editingVolunteerId = volunteer.Id;
+        employeeNumber = volunteer.EmployeeNumber;
+        fullName = volunteer.FullName;
+        departmentId = volunteer.DepartmentId;
+        jobTitleId = volunteer.JobTitleId;
+        nationalId = volunteer.NationalId;
+        email = volunteer.Email;
+        mobile = volunteer.Mobile;
+        hireDate = volunteer.HireDate;
+        status = Enum.TryParse<EmployeeStatus>(volunteer.Status, out var parsedStatus) ? parsedStatus : EmployeeStatus.Active;
+        notes = volunteer.Notes;
+    }
+
+    private void ResetForm()
+    {
+        editingVolunteerId = null;
+        fullName = string.Empty;
+        employeeNumber = null;
+        nationalId = null;
+        email = null;
+        mobile = null;
+        hireDate = DateTime.UtcNow.AddHours(3).Date;
+        status = EmployeeStatus.Active;
+        notes = null;
     }
 }

@@ -80,11 +80,16 @@ public record ApprovalRouteResponse(
     string NameAr,
     string EntityType,
     bool IsActive,
+    int DefaultDeadlineHours,
     IReadOnlyList<ApprovalStepResponse> Steps);
 
-public record CreateApprovalRouteRequest(string NameAr, string EntityType, bool IsActive);
+public record CreateApprovalRouteRequest(string NameAr, string EntityType, bool IsActive, int DefaultDeadlineHours = 72);
+
+public record UpdateApprovalRouteRequest(string NameAr, string EntityType, bool IsActive, int DefaultDeadlineHours = 72);
 
 public record AddApprovalStepRequest(int StepOrder, string NameAr, string ApproverUserId);
+
+public record UpdateApprovalStepRequest(int StepOrder, string NameAr, string ApproverUserId);
 
 public record ApprovalRequestResponse(
     int Id,
@@ -99,6 +104,9 @@ public record ApprovalRequestResponse(
     int CurrentStepOrder,
     string? CurrentApproverName,
     string? FinalComment,
+    DateTime? DueAt,
+    DateTime? LastEscalatedAt,
+    int EscalationCount,
     DateTime? ClosedAt,
     DateTime CreatedAt);
 
@@ -106,6 +114,11 @@ public record CreateApprovalRequestRequest(
     int ApprovalRouteId,
     string Title,
     string ReferenceType,
-    int? ReferenceId);
+    int? ReferenceId,
+    DateTime? DueAt = null);
 
 public record DecideApprovalRequestRequest(string ActionByUserId, ApprovalActionDecision Decision, string? Comment);
+
+public record DelegateApprovalRequestRequest(string ActionByUserId, string DelegateToUserId, string Reason);
+
+public record CancelApprovalRequestRequest(string RequestedByUserId, string? Comment);

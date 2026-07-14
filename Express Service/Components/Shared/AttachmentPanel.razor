@@ -1,0 +1,127 @@
+@using Application.Contracts.Attachments
+@using Application.Service.Attachments
+@using Microsoft.Extensions.Options
+@inject IAttachmentService Attachments
+@inject IOptions<AttachmentOptions> AttachmentSettings
+
+@if (EntityId > 0)
+{
+    <section class="panel" style="margin-top:14px">
+        <div class="panel-heading"><i class="fa-solid fa-paperclip"></i><div><h2>المرفقات</h2><p>ترفع الملفات إلى مخزن خاص بعد فحصها أمنياً.</p></div></div>
+        @if (access.CanManage)
+        {
+            <InputFile OnChange="UploadAsync" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.csv,.txt" />
+        }
+        else
+        {
+            <p class="muted">المرفقات للعرض فقط وفق صلاحية هذا السجل.</p>
+        }
+        @if (!string.IsNullOrWhiteSpace(message)) { <p><span class="status @(success ? "ok" : "bad")">@message</span></p> }
+        @if (attachments.Count > 0)
+        {
+            <table><thead><tr><th>الملف</th><th>النسخة</th><th>الحجم</th><th>الفحص</th><th>إجراءات</th></tr></thead><tbody>
+            @foreach (var attachment in attachments)
+            {
+                var link = attachment.Links.FirstOrDefault(x => x.EntityType == EntityType && x.EntityId == EntityId.ToString());
+                <tr><td>@attachment.OriginalFileName</td><td>@attachment.CurrentVersion</td><td>@attachment.SizeBytes</td><td>@attachment.ScanStatus</td><td><a class="secondary small" href="@($"/api/attachments/{attachment.Id}/download")">تنزيل</a> @if (IsPreviewable(attachment.ContentType)) { <a class="secondary small" href="@($"/api/attachments/{attachment.Id}/preview")" target="_blank" rel="noopener">معاينة</a> } <button class="secondary small" @onclick="() => LoadVersionsAsync(attachment.Id)">سجل النسخ</button> @if (access.CanManage) { <InputFile OnChange="@(args => AddVersionAsync(attachment.Id, args.File))" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.csv,.txt" /> @if (link is not null) { <button class="secondary small" @onclick="() => UnlinkAsync(link.Id)">إلغاء الربط</button> } <button class="danger small" @onclick="() => DeleteAsync(attachment.Id)">حذف</button> }</td></tr>
+            }
+            </tbody></table>
+        }
+        @if (versions.Count > 0)
+        {
+            <div class="table-section"><div class="table-title">سجل نسخ المرفق</div><table><thead><tr><th>النسخة</th><th>الاسم</th><th>الحجم</th><th>نتيجة الفحص</th><th>وقت الفحص</th></tr></thead><tbody>@foreach (var version in versions) { <tr><td>@version.VersionNumber</td><td>@version.FileName</td><td>@version.SizeBytes</td><td>@version.ScanStatus</td><td>@version.ScannedAt?.ToString("yyyy-MM-dd HH:mm")</td></tr> }</tbody></table></div>
+        }
+        <EntityTimeline EntityName="@EntityType" EntityId="@EntityId" />
+    </section>
+}
+
+@code {
+    [Parameter, EditorRequired] public string EntityType { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public int EntityId { get; set; }
+    private List<AttachmentResponse> attachments = [];
+    private List<AttachmentVersionResponse> versions = [];
+    private AttachmentAccessResponse access = new(false, false);
+    private bool success;
+    private string? message;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        if (EntityId <= 0) { attachments = []; versions = []; access = new(false, false); return; }
+        var accessResult = await Attachments.GetEntityAccessAsync(EntityType, EntityId.ToString());
+        access = accessResult.IsSuccess ? accessResult.Value : new(false, false);
+        if (!access.CanView) { attachments = []; versions = []; return; }
+        var result = await Attachments.GetForEntityAsync(EntityType, EntityId.ToString());
+        attachments = result.IsSuccess ? result.Value.ToList() : [];
+    }
+
+    private Task UploadAsync(InputFileChangeEventArgs args) => UploadAsync(args.File);
+
+    private async Task UploadAsync(IBrowserFile file)
+    {
+        if (!CanOpen(file)) return;
+        try
+        {
+            await using var stream = file.OpenReadStream(MaximumUploadBytes);
+            var result = await Attachments.UploadAsync(new AttachmentUploadInput(stream, file.Name, file.ContentType, file.Size, EntityType, EntityType, EntityId.ToString(), null));
+            success = result.IsSuccess; message = result.IsSuccess ? "تم رفع المرفق." : result.Error.Description; await LoadAsync();
+        }
+        catch (IOException)
+        {
+            success = false;
+            message = "تعذر قراءة الملف المرفوع.";
+        }
+    }
+
+    private async Task AddVersionAsync(int id, IBrowserFile file)
+    {
+        if (!CanOpen(file)) return;
+        try
+        {
+            await using var stream = file.OpenReadStream(MaximumUploadBytes);
+            var result = await Attachments.AddVersionAsync(id, new AttachmentUploadInput(stream, file.Name, file.ContentType, file.Size, EntityType, null, null, null));
+            success = result.IsSuccess; message = result.IsSuccess ? "تم حفظ النسخة الجديدة." : result.Error.Description; await LoadAsync();
+        }
+        catch (IOException)
+        {
+            success = false;
+            message = "تعذر قراءة الملف المرفوع.";
+        }
+    }
+
+    private async Task DeleteAsync(int id)
+    {
+        var result = await Attachments.DeleteAsync(id);
+        success = result.IsSuccess; message = result.IsSuccess ? "تم حذف المرفق وفق سياسة الاحتفاظ." : result.Error.Description; await LoadAsync();
+    }
+
+    private async Task LoadVersionsAsync(int id)
+    {
+        var result = await Attachments.GetVersionsAsync(id);
+        versions = result.IsSuccess ? result.Value.ToList() : [];
+        success = result.IsSuccess; message = result.IsSuccess ? null : result.Error.Description;
+    }
+
+    private async Task UnlinkAsync(int linkId)
+    {
+        var result = await Attachments.UnlinkAsync(linkId);
+        success = result.IsSuccess; message = result.IsSuccess ? "تم إلغاء ربط المرفق بالسجل." : result.Error.Description;
+        versions = [];
+        await LoadAsync();
+    }
+
+    private long MaximumUploadBytes => AttachmentSettings.Value.MaximumSizeBytes > 0 ? AttachmentSettings.Value.MaximumSizeBytes : AttachmentOptions.DefaultMaximumSizeBytes;
+    private bool CanOpen(IBrowserFile file)
+    {
+        if (file.Size > MaximumUploadBytes)
+        {
+            success = false;
+            message = $"حجم الملف يتجاوز الحد المسموح ({MaximumUploadBytes / 1024 / 1024} MB).";
+            return false;
+        }
+
+        return true;
+    }
+    private static bool IsPreviewable(string contentType) => contentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) || contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+}

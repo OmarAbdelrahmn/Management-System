@@ -11,21 +11,21 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-user-shield"></i><div><h2>دور جديد</h2><p>الأدوار تستخدم في حماية الصفحات والـ API.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-user-shield"></i><div><h2>@(editingRoleId is null ? "دور جديد" : "تعديل الدور")</h2><p>الأدوار تستخدم في حماية الصفحات والـ API.</p></div></div>
     <div class="form-grid">
         <label>اسم الدور<input @bind="roleName" /></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="CreateAsync">إنشاء الدور</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingRoleId is null ? "إنشاء الدور" : "حفظ التعديل")</button>@if (editingRoleId is not null){<button class="secondary" @onclick="ResetForm">إلغاء</button>}</div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-id-badge"></i> الأدوار الحالية</span></div>
     <table>
-        <thead><tr><th>المعرف</th><th>الدور</th></tr></thead>
+        <thead><tr><th>المعرف</th><th>الدور</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var role in roles)
             {
-                <tr><td>@role.Id</td><td>@role.Name</td></tr>
+                <tr><td>@role.Id</td><td>@role.Name</td><td><button class="secondary" @onclick="() => Edit(role)">تعديل</button> <button class="danger" @onclick="() => DeleteAsync(role.Id)">حذف</button></td></tr>
             }
         </tbody>
     </table>
@@ -33,19 +33,44 @@
 
 @code {
     private List<RoleResponse> roles = [];
+    private string? editingRoleId;
     private string roleName = string.Empty;
     private bool success;
     private string? message;
 
     protected override async Task OnInitializedAsync() => roles = await Admin.GetRolesAsync();
 
-    private async Task CreateAsync()
+    private async Task SaveAsync()
     {
-        var result = await Admin.CreateRoleAsync(roleName);
+        var result = editingRoleId is null
+            ? await Admin.CreateRoleAsync(roleName)
+            : await Admin.UpdateRoleAsync(editingRoleId, roleName);
         success = result.Success;
         message = result.Message;
         if (success)
-            roleName = string.Empty;
+            ResetForm();
         roles = await Admin.GetRolesAsync();
+    }
+
+    private void Edit(RoleResponse role)
+    {
+        editingRoleId = role.Id;
+        roleName = role.Name;
+    }
+
+    private async Task DeleteAsync(string id)
+    {
+        var result = await Admin.DeleteRoleAsync(id);
+        success = result.Success;
+        message = result.Message;
+        if (editingRoleId == id)
+            ResetForm();
+        roles = await Admin.GetRolesAsync();
+    }
+
+    private void ResetForm()
+    {
+        editingRoleId = null;
+        roleName = string.Empty;
     }
 }

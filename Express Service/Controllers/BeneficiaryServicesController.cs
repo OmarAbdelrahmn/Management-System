@@ -2,13 +2,14 @@ using Application.Contracts.BeneficiaryServices;
 using Application.Service.BeneficiaryServices;
 using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Express_Service.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Secretary,Chairman")]
+[RequirePermissionPrefix("system.beneficiary-services.")]
 public class BeneficiaryServicesController(IBeneficiaryServicesService service) : ControllerBase
 {
     [HttpGet("dashboard")]

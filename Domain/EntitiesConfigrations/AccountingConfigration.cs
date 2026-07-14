@@ -154,3 +154,16 @@ public class FinanceBudgetConfigration : IEntityTypeConfiguration<FinanceBudget>
         entity.HasIndex(x => new { x.FiscalYear, x.Status });
     }
 }
+
+public class BankReconciliationConfigration : IEntityTypeConfiguration<BankReconciliation>
+{
+    public void Configure(EntityTypeBuilder<BankReconciliation> entity)
+    {
+        entity.HasKey(x => x.Id);
+        entity.Property(x => x.StatementBalance).HasColumnType("decimal(18,2)");
+        entity.Property(x => x.BookBalance).HasColumnType("decimal(18,2)");
+        entity.Property(x => x.Notes).HasMaxLength(1000);
+        entity.HasIndex(x => new { x.FinanceBankAccountId, x.ReconciliationDate }).IsUnique();
+        entity.HasOne(x => x.FinanceBankAccount).WithMany().HasForeignKey(x => x.FinanceBankAccountId).OnDelete(DeleteBehavior.Restrict);
+    }
+}

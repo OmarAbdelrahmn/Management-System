@@ -8,11 +8,20 @@ namespace Express_Service.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Secretary,Chairman")]
+[Authorize(Policy = "permission:system.accounting.finance_ledgers")]
 public class AccountingController(IAccountingService service) : ControllerBase
 {
     [HttpGet("dashboard")]
     public async Task<IActionResult> Dashboard(CancellationToken cancellationToken) => ToAction(await service.GetDashboardAsync(cancellationToken));
+
+    [HttpGet("fiscal-periods")]
+    public async Task<IActionResult> FiscalPeriods(CancellationToken cancellationToken) => ToAction(await service.GetFiscalPeriodsAsync(cancellationToken));
+
+    [HttpPost("fiscal-periods")]
+    public async Task<IActionResult> SaveFiscalPeriod([FromBody] SaveFiscalPeriodRequest request, CancellationToken cancellationToken) => ToAction(await service.SaveFiscalPeriodAsync(null, request, cancellationToken));
+
+    [HttpPut("fiscal-periods/{id:int}")]
+    public async Task<IActionResult> UpdateFiscalPeriod(int id, [FromBody] SaveFiscalPeriodRequest request, CancellationToken cancellationToken) => ToAction(await service.SaveFiscalPeriodAsync(id, request, cancellationToken));
 
     [HttpGet("accounts")]
     public async Task<IActionResult> Accounts([FromQuery] AccountingAccountType? type, CancellationToken cancellationToken) => ToAction(await service.GetAccountsAsync(type, cancellationToken));
@@ -22,6 +31,9 @@ public class AccountingController(IAccountingService service) : ControllerBase
 
     [HttpPut("accounts/{id:int}")]
     public async Task<IActionResult> UpdateAccount(int id, [FromBody] SaveFinanceAccountRequest request, CancellationToken cancellationToken) => ToAction(await service.SaveAccountAsync(id, request, cancellationToken));
+
+    [HttpPost("ledger/{id:int}/posting")]
+    public async Task<IActionResult> SetLedgerPosting(int id, [FromBody] SetLedgerPostingRequest request, CancellationToken cancellationToken) => ToAction(await service.SetLedgerPostingAsync(id, request, cancellationToken));
 
     [HttpGet("bank-accounts")]
     public async Task<IActionResult> BankAccounts([FromQuery] bool? isActive, CancellationToken cancellationToken) => ToAction(await service.GetBankAccountsAsync(isActive, cancellationToken));
@@ -49,6 +61,9 @@ public class AccountingController(IAccountingService service) : ControllerBase
 
     [HttpPut("ledgers/{id:int}")]
     public async Task<IActionResult> UpdateLedger(int id, [FromBody] SaveLedgerEntryRequest request, CancellationToken cancellationToken) => ToAction(await service.SaveLedgerEntryAsync(id, request, cancellationToken));
+
+    [HttpPost("opening-balance")]
+    public async Task<IActionResult> CreateOpeningBalance([FromBody] CreateOpeningBalanceRequest request, CancellationToken cancellationToken) => ToAction(await service.CreateOpeningBalanceAsync(request, cancellationToken));
 
     [HttpGet("receipts")]
     public async Task<IActionResult> Receipts([FromQuery] ReceiptVoucherKind? kind, [FromQuery] AccountingRecordStatus? status, CancellationToken cancellationToken) => ToAction(await service.GetReceiptsAsync(kind, status, cancellationToken));
@@ -130,6 +145,21 @@ public class AccountingController(IAccountingService service) : ControllerBase
 
     [HttpPut("budgets/{id:int}")]
     public async Task<IActionResult> UpdateBudget(int id, [FromBody] SaveFinanceBudgetRequest request, CancellationToken cancellationToken) => ToAction(await service.SaveBudgetAsync(id, request, cancellationToken));
+
+    [HttpPost("budgets/{id:int}/decision")]
+    public async Task<IActionResult> DecideBudget(int id, [FromBody] DecideBudgetRequest request, CancellationToken cancellationToken) => ToAction(await service.DecideBudgetAsync(id, request, cancellationToken));
+
+    [HttpGet("reconciliations")]
+    public async Task<IActionResult> Reconciliations([FromQuery] int? bankAccountId, CancellationToken cancellationToken) => ToAction(await service.GetBankReconciliationsAsync(bankAccountId, cancellationToken));
+
+    [HttpPost("reconciliations")]
+    public async Task<IActionResult> SaveReconciliation([FromBody] SaveBankReconciliationRequest request, CancellationToken cancellationToken) => ToAction(await service.SaveBankReconciliationAsync(null, request, cancellationToken));
+
+    [HttpPut("reconciliations/{id:int}")]
+    public async Task<IActionResult> UpdateReconciliation(int id, [FromBody] SaveBankReconciliationRequest request, CancellationToken cancellationToken) => ToAction(await service.SaveBankReconciliationAsync(id, request, cancellationToken));
+
+    [HttpPost("reconciliations/{id:int}/approve")]
+    public async Task<IActionResult> ApproveReconciliation(int id, [FromBody] ApproveBankReconciliationRequest request, CancellationToken cancellationToken) => ToAction(await service.ApproveBankReconciliationAsync(id, request, cancellationToken));
 
     private IActionResult ToAction<T>(Application.Abstraction.Result<T> result) => result.IsSuccess ? Ok(result.Value) : result.ToProblem();
 }

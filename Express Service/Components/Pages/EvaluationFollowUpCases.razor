@@ -52,6 +52,11 @@
     </table>
 </section>
 
+@if (editingCaseId.HasValue)
+{
+    <AttachmentPanel EntityType="FollowUpCase" EntityId="@editingCaseId.Value" />
+}
+
 @code {
     private List<FollowUpCaseResponse> cases = [];
     private int? editingCaseId;

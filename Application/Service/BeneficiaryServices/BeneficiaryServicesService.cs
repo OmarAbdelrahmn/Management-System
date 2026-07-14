@@ -1,13 +1,14 @@
 using Application.Abstraction;
 using Application.Abstraction.Errors;
 using Application.Contracts.BeneficiaryServices;
+using Application.Service.TaskManagement;
 using Domain;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Service.BeneficiaryServices;
 
-public class BeneficiaryServicesService(ApplicationDbcontext dbcontext) : IBeneficiaryServicesService
+public class BeneficiaryServicesService(ApplicationDbcontext dbcontext, ITaskManagementService? approvalWorkflow = null) : IBeneficiaryServicesService
 {
     public async Task<Result<BeneficiaryServicesDashboardResponse>> GetDashboardAsync(CancellationToken cancellationToken = default)
     {
@@ -90,6 +91,9 @@ public class BeneficiaryServicesService(ApplicationDbcontext dbcontext) : IBenef
             aidRequest.Status = AidRequestStatus.External;
 
         await dbcontext.SaveChangesAsync(cancellationToken);
+        if (!id.HasValue && aidRequest.Status is AidRequestStatus.Draft or AidRequestStatus.External && approvalWorkflow is not null)
+            await approvalWorkflow.EnsureApprovalRequestForEntityAsync(
+                nameof(BeneficiaryAidRequest), aidRequest.Id, $"طلب إعانة {aidRequest.RequestNumber}", cancellationToken: cancellationToken);
         await LoadAidRequestReferencesAsync(aidRequest, cancellationToken);
         return Result.Success(MapAidRequest(aidRequest));
     }

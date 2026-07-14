@@ -20,8 +20,14 @@ public interface ITaskManagementService
     Task<Result<ManagementTaskActivityResponse>> AddTaskCommentAsync(int taskId, AddTaskCommentRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<ApprovalRouteResponse>>> GetApprovalRoutesAsync(CancellationToken cancellationToken = default);
     Task<Result<ApprovalRouteResponse>> CreateApprovalRouteAsync(CreateApprovalRouteRequest request, CancellationToken cancellationToken = default);
+    Task<Result<ApprovalRouteResponse>> UpdateApprovalRouteAsync(int id, UpdateApprovalRouteRequest request, CancellationToken cancellationToken = default);
     Task<Result<ApprovalRouteResponse>> AddApprovalStepAsync(int routeId, AddApprovalStepRequest request, CancellationToken cancellationToken = default);
+    Task<Result<ApprovalRouteResponse>> UpdateApprovalStepAsync(int routeId, int stepId, UpdateApprovalStepRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<ApprovalRequestResponse>>> GetPendingApprovalRequestsAsync(string? approverUserId = null, CancellationToken cancellationToken = default);
     Task<Result<ApprovalRequestResponse>> CreateApprovalRequestAsync(CreateApprovalRequestRequest request, CancellationToken cancellationToken = default);
+    Task<Result<ApprovalRequestResponse?>> EnsureApprovalRequestForEntityAsync(string referenceType, int referenceId, string title, DateTime? dueAt = null, CancellationToken cancellationToken = default);
     Task<Result> DecideApprovalRequestAsync(int id, DecideApprovalRequestRequest request, CancellationToken cancellationToken = default);
+    Task<Result> DelegateApprovalRequestAsync(int id, DelegateApprovalRequestRequest request, CancellationToken cancellationToken = default);
+    Task<Result> CancelApprovalRequestAsync(int id, CancelApprovalRequestRequest request, CancellationToken cancellationToken = default);
+    Task<Result<int>> EscalateOverdueApprovalRequestsAsync(CancellationToken cancellationToken = default);
 }

@@ -1,9 +1,16 @@
 @page "/rafed/{PageKey}"
-@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@attribute [Authorize]
 @rendermode InteractiveServer
 @inject SystemCatalogUiService Catalog
+@inject IAuthorizationService Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
-@if (systemPage is null)
+@if (accessDenied)
+{
+    <h1 class="page-title">غير مصرح بالوصول</h1>
+    <section class="panel"><div class="panel-body">لا تملك الصلاحية المطلوبة لفتح هذه الخدمة.</div></section>
+}
+else if (systemPage is null)
 {
     <h1 class="page-title">صفحة غير موجودة في كتالوج رافد</h1>
     <section class="panel"><div class="panel-body">لم يتم العثور على الصفحة المطلوبة ضمن خريطة رافد المحلية.</div></section>
@@ -38,9 +45,16 @@ else
 @code {
     [Parameter] public string PageKey { get; set; } = string.Empty;
     private SystemPageResponse? systemPage;
+    private bool accessDenied;
 
     protected override async Task OnParametersSetAsync()
     {
         systemPage = await Catalog.GetPageByKeyAsync(PageKey);
+        accessDenied = false;
+        if (systemPage is not null)
+        {
+            var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            accessDenied = !(await Authorization.AuthorizeAsync(state.User, systemPage.PermissionKey)).Succeeded;
+        }
     }
 }

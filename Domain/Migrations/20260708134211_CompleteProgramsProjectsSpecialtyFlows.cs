@@ -180,7 +180,7 @@ namespace Domain.Migrations
                         column: x => x.ProgramCertificateTemplateId,
                         principalTable: "ProgramCertificateTemplates",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_ProgramCertificateIssues_ProgramProjects_ProgramProjectId",
                         column: x => x.ProgramProjectId,

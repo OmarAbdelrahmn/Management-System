@@ -1,0 +1,82 @@
+@inject AdminUiService Admin
+
+<section class="panel saved-query-views" style="margin-top:14px">
+    <div class="panel-heading">
+        <i class="fa-solid fa-bookmark"></i>
+        <div><h2>العروض المحفوظة</h2><p>احفظ الفلاتر الحالية أو طبّق عرضاً سابقاً.</p></div>
+    </div>
+    <div class="form-grid compact">
+        <label>اسم العرض<input @bind="viewName" maxlength="120" /></label>
+        <label>العروض<select @bind="selectedId"><option value="0">اختر عرضاً</option>@foreach (var view in views){<option value="@view.Id">@view.Name</option>}</select></label>
+    </div>
+    <div class="actions-row">
+        <button class="primary" @onclick="SaveAsync" disabled="@(string.IsNullOrWhiteSpace(viewName) || string.IsNullOrWhiteSpace(CurrentFilterJson))">حفظ الفلاتر الحالية</button>
+        <button class="secondary" @onclick="ApplyAsync" disabled="@(selectedId == 0)">تطبيق</button>
+        <button class="danger" @onclick="DeleteAsync" disabled="@(selectedId == 0)">حذف</button>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(message)) { <p><span class="status @(success ? "ok" : "bad")">@message</span></p> }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public string ScreenKey { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string CurrentFilterJson { get; set; } = "{}";
+    [Parameter] public EventCallback<string> OnApply { get; set; }
+
+    private List<QueryViewResponse> views = [];
+    private int selectedId;
+    private string viewName = string.Empty;
+    private string? message;
+    private bool success;
+    private string loadedScreenKey = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.Equals(loadedScreenKey, ScreenKey, StringComparison.Ordinal))
+        {
+            loadedScreenKey = ScreenKey;
+            await LoadAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        views = string.IsNullOrWhiteSpace(ScreenKey) ? [] : await Admin.GetQueryViewsAsync(ScreenKey);
+        if (selectedId != 0 && views.All(x => x.Id != selectedId)) selectedId = 0;
+    }
+
+    private async Task SaveAsync()
+    {
+        var result = await Admin.SaveQueryViewAsync(new SaveQueryViewRequest(ScreenKey, viewName.Trim(), CurrentFilterJson));
+        success = result.Success;
+        message = result.Message;
+        if (result.Success) { viewName = string.Empty; await LoadAsync(); }
+    }
+
+    private async Task ApplyAsync()
+    {
+        var selected = views.FirstOrDefault(x => x.Id == selectedId);
+        if (selected is null) return;
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(selected.FilterJson);
+            if (document.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object)
+                throw new System.Text.Json.JsonException();
+            await OnApply.InvokeAsync(selected.FilterJson);
+            success = true;
+            message = "تم تطبيق العرض المحفوظ.";
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            success = false;
+            message = "تعذر تطبيق العرض لأن بيانات الفلاتر المحفوظة غير صالحة.";
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        var result = await Admin.DeleteQueryViewAsync(selectedId);
+        success = result.Success;
+        message = result.Message;
+        if (result.Success) { selectedId = 0; await LoadAsync(); }
+    }
+}

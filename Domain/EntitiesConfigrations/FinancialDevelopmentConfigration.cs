@@ -140,6 +140,6 @@ public class EndowmentInvoiceConfigration : IEntityTypeConfiguration<EndowmentIn
         entity.Property(x => x.Notes).HasMaxLength(1000);
         entity.HasIndex(x => new { x.Status, x.DueDate });
         entity.HasOne(x => x.EndowmentAsset).WithMany(x => x.Invoices).HasForeignKey(x => x.EndowmentAssetId).OnDelete(DeleteBehavior.Cascade);
-        entity.HasOne(x => x.EndowmentContract).WithMany(x => x.Invoices).HasForeignKey(x => x.EndowmentContractId).OnDelete(DeleteBehavior.SetNull);
+        entity.HasOne(x => x.EndowmentContract).WithMany(x => x.Invoices).HasForeignKey(x => x.EndowmentContractId).OnDelete(DeleteBehavior.Restrict);
     }
 }

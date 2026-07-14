@@ -180,13 +180,13 @@ namespace Domain.Migrations
                         column: x => x.BeneficiaryAidRequestId,
                         principalTable: "BeneficiaryAidRequests",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_BeneficiaryPaymentOrders_BeneficiaryProfiles_BeneficiaryProfileId",
                         column: x => x.BeneficiaryProfileId,
                         principalTable: "BeneficiaryProfiles",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateTable(

@@ -87,6 +87,8 @@ public record CreateNotificationRequest(
 
 public record CancelNotificationRequest(string Reason);
 
+public record UpdateScheduledNotificationRequest(string Title, string Body, MessageChannel Channel, DateTime? ScheduledAt);
+
 public record UpdateNotificationDeliveryRequest(
     ChannelDeliveryStatus Status,
     string? ProviderReference,

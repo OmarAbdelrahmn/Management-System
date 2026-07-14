@@ -10,6 +10,39 @@ namespace Application.Service.Accounting;
 
 public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingService
 {
+    public async Task<Result<IEnumerable<FiscalPeriodResponse>>> GetFiscalPeriodsAsync(CancellationToken cancellationToken = default)
+    {
+        var periods = await dbcontext.AccountingSettings.AsNoTracking().OrderByDescending(x => x.StartsAt)
+            .Select(x => new FiscalPeriodResponse(x.Id, x.FiscalYearName, x.StartsAt, x.EndsAt, x.IsClosed)).ToListAsync(cancellationToken);
+        return Result.Success<IEnumerable<FiscalPeriodResponse>>(periods);
+    }
+
+    public async Task<Result<FiscalPeriodResponse>> SaveFiscalPeriodAsync(int? id, SaveFiscalPeriodRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.FiscalYearName) || request.StartsAt.Date > request.EndsAt.Date)
+            return Result.Failure<FiscalPeriodResponse>(AccountingErrors.InvalidRequest);
+        var overlaps = await dbcontext.AccountingSettings.AnyAsync(x => x.StartsAt.Date <= request.EndsAt.Date && request.StartsAt.Date <= x.EndsAt.Date && (!id.HasValue || x.Id != id.Value), cancellationToken);
+        if (overlaps) return Result.Failure<FiscalPeriodResponse>(AccountingErrors.InvalidRequest);
+        AccountingSetting period;
+        if (id.HasValue)
+        {
+            period = await dbcontext.AccountingSettings.FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken) ?? null!;
+            if (period is null) return Result.Failure<FiscalPeriodResponse>(AccountingErrors.InvalidRequest);
+            if (period.IsClosed && !request.IsClosed)
+                return Result.Failure<FiscalPeriodResponse>(AccountingErrors.FiscalPeriodLocked);
+        }
+        else { period = new AccountingSetting(); dbcontext.AccountingSettings.Add(period); }
+
+        if (request.IsClosed && await HasDraftRecordsInPeriodAsync(request.StartsAt.Date, request.EndsAt.Date, cancellationToken))
+            return Result.Failure<FiscalPeriodResponse>(AccountingErrors.InvalidRequest);
+        period.FiscalYearName = request.FiscalYearName.Trim();
+        period.StartsAt = request.StartsAt.Date;
+        period.EndsAt = request.EndsAt.Date;
+        period.IsClosed = request.IsClosed;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(new FiscalPeriodResponse(period.Id, period.FiscalYearName, period.StartsAt, period.EndsAt, period.IsClosed));
+    }
+
     public async Task<Result<AccountingDashboardResponse>> GetDashboardAsync(CancellationToken cancellationToken = default)
     {
         var accountsCount = await dbcontext.FinanceAccounts.CountAsync(cancellationToken);
@@ -161,6 +194,8 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
         var accountIds = request.Lines.Select(x => x.FinanceAccountId).Distinct().ToList();
         if (await dbcontext.FinanceAccounts.CountAsync(x => accountIds.Contains(x.Id), cancellationToken) != accountIds.Count)
             return Result.Failure<LedgerEntryResponse>(AccountingErrors.AccountNotFound);
+        if (await IsDateLockedAsync(request.EntryDate ?? DateTime.UtcNow.AddHours(3), cancellationToken))
+            return Result.Failure<LedgerEntryResponse>(AccountingErrors.FiscalPeriodLocked);
 
         var entryNumber = string.IsNullOrWhiteSpace(request.EntryNumber) ? await GenerateNumberAsync("JRN", dbcontext.LedgerEntries, cancellationToken) : request.EntryNumber.Trim();
         if (await dbcontext.LedgerEntries.AnyAsync(x => x.EntryNumber == entryNumber && (!id.HasValue || x.Id != id.Value), cancellationToken))
@@ -172,6 +207,7 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
             entry = await dbcontext.LedgerEntries.Include(x => x.Lines).FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken) ?? null!;
             if (entry is null)
                 return Result.Failure<LedgerEntryResponse>(AccountingErrors.LedgerEntryNotFound);
+            if (IsImmutable(entry.Status)) return Result.Failure<LedgerEntryResponse>(AccountingErrors.PostedRecordImmutable);
             dbcontext.LedgerLines.RemoveRange(entry.Lines);
         }
         else
@@ -190,6 +226,41 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
         return Result.Success(MapLedgerEntry(entry));
     }
 
+    public async Task<Result<LedgerEntryResponse>> SetLedgerPostingAsync(int id, SetLedgerPostingRequest request, CancellationToken cancellationToken = default)
+    {
+        var entry = await dbcontext.LedgerEntries.Include(x => x.Lines).ThenInclude(x => x.FinanceAccount).Include(x => x.Lines).ThenInclude(x => x.FinanceCostCenter)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (entry is null) return Result.Failure<LedgerEntryResponse>(AccountingErrors.LedgerEntryNotFound);
+        if (await IsDateLockedAsync(entry.EntryDate, cancellationToken)) return Result.Failure<LedgerEntryResponse>(AccountingErrors.FiscalPeriodLocked);
+        if (!request.IsPosted || entry.Status != AccountingRecordStatus.Draft)
+            return Result.Failure<LedgerEntryResponse>(AccountingErrors.PostedRecordImmutable);
+        if (entry.Lines.Count < 2 || entry.Lines.Sum(x => x.Debit) <= 0 || entry.Lines.Sum(x => x.Debit) != entry.Lines.Sum(x => x.Credit))
+            return Result.Failure<LedgerEntryResponse>(AccountingErrors.InvalidRequest);
+
+        entry.Status = AccountingRecordStatus.Posted;
+        if (!string.IsNullOrWhiteSpace(request.Notes)) entry.Description = $"{entry.Description} — {request.Notes.Trim()}";
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapLedgerEntry(entry));
+    }
+
+    public async Task<Result<LedgerEntryResponse>> CreateOpeningBalanceAsync(CreateOpeningBalanceRequest request, CancellationToken cancellationToken = default)
+    {
+        var period = await dbcontext.AccountingSettings.FirstOrDefaultAsync(x => x.Id == request.FiscalPeriodId, cancellationToken);
+        if (period is null || period.IsClosed || request.Lines.Count < 2)
+            return Result.Failure<LedgerEntryResponse>(AccountingErrors.InvalidRequest);
+
+        var entryNumber = $"OPEN-{period.Id}";
+        if (await dbcontext.LedgerEntries.AnyAsync(x => x.EntryNumber == entryNumber, cancellationToken))
+            return Result.Failure<LedgerEntryResponse>(AccountingErrors.DuplicateNumber);
+
+        return await SaveLedgerEntryAsync(null, new SaveLedgerEntryRequest(
+            entryNumber,
+            period.StartsAt,
+            $"الرصيد الافتتاحي للفترة {period.FiscalYearName}" + (string.IsNullOrWhiteSpace(request.Notes) ? string.Empty : $" — {request.Notes.Trim()}"),
+            AccountingRecordStatus.Posted,
+            request.Lines), cancellationToken);
+    }
+
     public async Task<Result<IEnumerable<ReceiptVoucherResponse>>> GetReceiptsAsync(ReceiptVoucherKind? kind, AccountingRecordStatus? status, CancellationToken cancellationToken = default)
     {
         var query = dbcontext.ReceiptVouchers.AsNoTracking().AsQueryable();
@@ -204,6 +275,8 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
     {
         if (request.Amount <= 0 || string.IsNullOrWhiteSpace(request.PayerName))
             return Result.Failure<ReceiptVoucherResponse>(AccountingErrors.InvalidRequest);
+        if (await IsDateLockedAsync(request.ReceiptDate ?? DateTime.UtcNow.AddHours(3), cancellationToken))
+            return Result.Failure<ReceiptVoucherResponse>(AccountingErrors.FiscalPeriodLocked);
         var receiptNumber = string.IsNullOrWhiteSpace(request.ReceiptNumber) ? await GenerateNumberAsync("RCV", dbcontext.ReceiptVouchers, cancellationToken) : request.ReceiptNumber.Trim();
         if (await dbcontext.ReceiptVouchers.AnyAsync(x => x.ReceiptNumber == receiptNumber && (!id.HasValue || x.Id != id.Value), cancellationToken))
             return Result.Failure<ReceiptVoucherResponse>(AccountingErrors.DuplicateNumber);
@@ -214,6 +287,7 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
             receipt = await dbcontext.ReceiptVouchers.FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken) ?? null!;
             if (receipt is null)
                 return Result.Failure<ReceiptVoucherResponse>(AccountingErrors.ReceiptNotFound);
+            if (IsImmutable(receipt.Status)) return Result.Failure<ReceiptVoucherResponse>(AccountingErrors.PostedRecordImmutable);
         }
         else
         {
@@ -238,6 +312,9 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
         var receipt = await dbcontext.ReceiptVouchers.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (receipt is null)
             return Result.Failure<ReceiptVoucherResponse>(AccountingErrors.ReceiptNotFound);
+        if (await IsDateLockedAsync(receipt.ReceiptDate, cancellationToken)) return Result.Failure<ReceiptVoucherResponse>(AccountingErrors.FiscalPeriodLocked);
+        if (!IsValidRecordTransition(receipt.Status, request.Status) || RequiresDecisionReason(request.Status) && string.IsNullOrWhiteSpace(request.Notes))
+            return Result.Failure<ReceiptVoucherResponse>(AccountingErrors.InvalidRequest);
 
         receipt.Status = request.Status;
         receipt.Notes = request.Notes?.Trim() ?? receipt.Notes;
@@ -373,6 +450,7 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
     {
         if (request.Amount <= 0 || string.IsNullOrWhiteSpace(request.PayeeName))
             return Result.Failure<ExpenseVoucherResponse>(AccountingErrors.InvalidRequest);
+        if (await IsDateLockedAsync(request.ExpenseDate ?? DateTime.UtcNow.AddHours(3), cancellationToken)) return Result.Failure<ExpenseVoucherResponse>(AccountingErrors.FiscalPeriodLocked);
         var number = string.IsNullOrWhiteSpace(request.ExpenseNumber) ? await GenerateNumberAsync("EXP", dbcontext.ExpenseVouchers, cancellationToken) : request.ExpenseNumber.Trim();
         if (await dbcontext.ExpenseVouchers.AnyAsync(x => x.ExpenseNumber == number && (!id.HasValue || x.Id != id.Value), cancellationToken))
             return Result.Failure<ExpenseVoucherResponse>(AccountingErrors.DuplicateNumber);
@@ -383,6 +461,7 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
             expense = await dbcontext.ExpenseVouchers.FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken) ?? null!;
             if (expense is null)
                 return Result.Failure<ExpenseVoucherResponse>(AccountingErrors.ExpenseNotFound);
+            if (IsImmutable(expense.Status)) return Result.Failure<ExpenseVoucherResponse>(AccountingErrors.PostedRecordImmutable);
         }
         else
         {
@@ -406,6 +485,9 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
         var expense = await dbcontext.ExpenseVouchers.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (expense is null)
             return Result.Failure<ExpenseVoucherResponse>(AccountingErrors.ExpenseNotFound);
+        if (await IsDateLockedAsync(expense.ExpenseDate, cancellationToken)) return Result.Failure<ExpenseVoucherResponse>(AccountingErrors.FiscalPeriodLocked);
+        if (!IsValidRecordTransition(expense.Status, request.Status) || RequiresDecisionReason(request.Status) && string.IsNullOrWhiteSpace(request.Notes))
+            return Result.Failure<ExpenseVoucherResponse>(AccountingErrors.InvalidRequest);
 
         expense.Status = request.Status;
         expense.Notes = request.Notes?.Trim() ?? expense.Notes;
@@ -452,6 +534,7 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
     {
         if (request.TotalAmount <= 0 || string.IsNullOrWhiteSpace(request.ExportFormat))
             return Result.Failure<SalaryDisbursementResponse>(AccountingErrors.InvalidRequest);
+        if (await IsDateLockedAsync(request.PayrollMonth, cancellationToken)) return Result.Failure<SalaryDisbursementResponse>(AccountingErrors.FiscalPeriodLocked);
 
         SalaryDisbursement salary;
         if (id.HasValue)
@@ -459,6 +542,7 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
             salary = await dbcontext.SalaryDisbursements.FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken) ?? null!;
             if (salary is null)
                 return Result.Failure<SalaryDisbursementResponse>(AccountingErrors.ExpenseNotFound);
+            if (IsImmutable(salary.Status)) return Result.Failure<SalaryDisbursementResponse>(AccountingErrors.PostedRecordImmutable);
         }
         else
         {
@@ -479,7 +563,9 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
     {
         var salary = await dbcontext.SalaryDisbursements.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (salary is null)
-            return Result.Failure<SalaryDisbursementResponse>(AccountingErrors.ExpenseNotFound);
+            return Result.Failure<SalaryDisbursementResponse>(AccountingErrors.SalaryDisbursementNotFound);
+        if (!IsValidRecordTransition(salary.Status, request.Status) || RequiresDecisionReason(request.Status) && string.IsNullOrWhiteSpace(request.Notes))
+            return Result.Failure<SalaryDisbursementResponse>(AccountingErrors.InvalidRequest);
 
         salary.Status = request.Status;
         salary.Notes = request.Notes?.Trim() ?? salary.Notes;
@@ -559,6 +645,8 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
         var item = await dbcontext.FinancialReviewItems.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (item is null)
             return Result.Failure<FinancialReviewItemResponse>(AccountingErrors.ReviewItemNotFound);
+        if (!IsValidRecordTransition(item.Status, request.Status) || RequiresDecisionReason(request.Status) && string.IsNullOrWhiteSpace(request.DecisionNotes))
+            return Result.Failure<FinancialReviewItemResponse>(AccountingErrors.InvalidRequest);
         item.Status = request.Status;
         item.DecisionNotes = request.DecisionNotes?.Trim();
         await dbcontext.SaveChangesAsync(cancellationToken);
@@ -578,7 +666,7 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
 
     public async Task<Result<FinanceBudgetResponse>> SaveBudgetAsync(int? id, SaveFinanceBudgetRequest request, CancellationToken cancellationToken = default)
     {
-        if (request.FiscalYear < 2000 || string.IsNullOrWhiteSpace(request.Name) || request.PlannedIncome < 0 || request.PlannedExpenses < 0)
+        if (request.FiscalYear < 2000 || string.IsNullOrWhiteSpace(request.Name) || request.PlannedIncome < 0 || request.PlannedExpenses < 0 || request.Status != BudgetStatus.Draft)
             return Result.Failure<FinanceBudgetResponse>(AccountingErrors.InvalidRequest);
 
         FinanceBudget budget;
@@ -587,6 +675,8 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
             budget = await dbcontext.FinanceBudgets.FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken) ?? null!;
             if (budget is null)
                 return Result.Failure<FinanceBudgetResponse>(AccountingErrors.BudgetNotFound);
+            if (budget.Status != BudgetStatus.Draft)
+                return Result.Failure<FinanceBudgetResponse>(AccountingErrors.PostedRecordImmutable);
         }
         else
         {
@@ -600,7 +690,63 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
         budget.PlannedExpenses = request.PlannedExpenses;
         budget.Status = request.Status;
         await dbcontext.SaveChangesAsync(cancellationToken);
-        return Result.Success(MapBudget(budget, 0, 0));
+        var actualIncome = await dbcontext.ReceiptVouchers.Where(x => x.ReceiptDate.Year == budget.FiscalYear && (x.Status == AccountingRecordStatus.Posted || x.Status == AccountingRecordStatus.Approved)).SumAsync(x => x.Amount, cancellationToken);
+        var actualExpenses = await dbcontext.ExpenseVouchers.Where(x => x.ExpenseDate.Year == budget.FiscalYear && (x.Status == AccountingRecordStatus.Posted || x.Status == AccountingRecordStatus.Approved || x.Status == AccountingRecordStatus.Closed)).SumAsync(x => x.Amount, cancellationToken);
+        return Result.Success(MapBudget(budget, actualIncome, actualExpenses));
+    }
+
+    public async Task<Result<FinanceBudgetResponse>> DecideBudgetAsync(int id, DecideBudgetRequest request, CancellationToken cancellationToken = default)
+    {
+        var budget = await dbcontext.FinanceBudgets.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (budget is null)
+            return Result.Failure<FinanceBudgetResponse>(AccountingErrors.BudgetNotFound);
+        if (budget.Status != BudgetStatus.Draft || request.Status is BudgetStatus.Draft || budget.Status == request.Status)
+            return Result.Failure<FinanceBudgetResponse>(AccountingErrors.InvalidRequest);
+
+        budget.Status = request.Status;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        var actualIncome = await dbcontext.ReceiptVouchers.Where(x => x.ReceiptDate.Year == budget.FiscalYear && (x.Status == AccountingRecordStatus.Posted || x.Status == AccountingRecordStatus.Approved)).SumAsync(x => x.Amount, cancellationToken);
+        var actualExpenses = await dbcontext.ExpenseVouchers.Where(x => x.ExpenseDate.Year == budget.FiscalYear && (x.Status == AccountingRecordStatus.Posted || x.Status == AccountingRecordStatus.Approved || x.Status == AccountingRecordStatus.Closed)).SumAsync(x => x.Amount, cancellationToken);
+        return Result.Success(MapBudget(budget, actualIncome, actualExpenses));
+    }
+
+    public async Task<Result<IEnumerable<BankReconciliationResponse>>> GetBankReconciliationsAsync(int? bankAccountId, CancellationToken cancellationToken = default)
+    {
+        var query = dbcontext.BankReconciliations.AsNoTracking().Include(x => x.FinanceBankAccount).AsQueryable();
+        if (bankAccountId.HasValue) query = query.Where(x => x.FinanceBankAccountId == bankAccountId.Value);
+        var items = await query.OrderByDescending(x => x.ReconciliationDate).Select(x => MapReconciliation(x)).ToListAsync(cancellationToken);
+        return Result.Success<IEnumerable<BankReconciliationResponse>>(items);
+    }
+
+    public async Task<Result<BankReconciliationResponse>> SaveBankReconciliationAsync(int? id, SaveBankReconciliationRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.IsApproved) return Result.Failure<BankReconciliationResponse>(AccountingErrors.InvalidRequest);
+        if (request.FinanceBankAccountId <= 0 || !await dbcontext.FinanceBankAccounts.AnyAsync(x => x.Id == request.FinanceBankAccountId, cancellationToken)) return Result.Failure<BankReconciliationResponse>(AccountingErrors.BankAccountNotFound);
+        BankReconciliation item;
+        if (id.HasValue) item = await dbcontext.BankReconciliations.Include(x => x.FinanceBankAccount).FirstOrDefaultAsync(x => x.Id == id.Value, cancellationToken) ?? null!;
+        else { item = new BankReconciliation(); dbcontext.BankReconciliations.Add(item); }
+        if (item is null) return Result.Failure<BankReconciliationResponse>(AccountingErrors.InvalidRequest);
+        if (item.IsApproved) return Result.Failure<BankReconciliationResponse>(AccountingErrors.PostedRecordImmutable);
+        item.FinanceBankAccountId = request.FinanceBankAccountId;
+        item.ReconciliationDate = request.ReconciliationDate.Date;
+        item.StatementBalance = request.StatementBalance;
+        item.BookBalance = request.BookBalance;
+        item.IsApproved = request.IsApproved;
+        item.Notes = request.Notes?.Trim();
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        await dbcontext.Entry(item).Reference(x => x.FinanceBankAccount).LoadAsync(cancellationToken);
+        return Result.Success(MapReconciliation(item));
+    }
+
+    public async Task<Result<BankReconciliationResponse>> ApproveBankReconciliationAsync(int id, ApproveBankReconciliationRequest request, CancellationToken cancellationToken = default)
+    {
+        var item = await dbcontext.BankReconciliations.Include(x => x.FinanceBankAccount).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (item is null) return Result.Failure<BankReconciliationResponse>(AccountingErrors.InvalidRequest);
+        if (item.IsApproved) return Result.Failure<BankReconciliationResponse>(AccountingErrors.PostedRecordImmutable);
+        item.IsApproved = true;
+        item.Notes = string.IsNullOrWhiteSpace(request.Notes) ? item.Notes : request.Notes.Trim();
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapReconciliation(item));
     }
 
     private async Task<string> GenerateNumberAsync<T>(string prefix, DbSet<T> set, CancellationToken cancellationToken) where T : class, IAuditable
@@ -619,6 +765,28 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
             .Include(x => x.FinanceCostCenter)
             .LoadAsync(cancellationToken);
     }
+
+    private Task<bool> IsDateLockedAsync(DateTime date, CancellationToken cancellationToken) =>
+        dbcontext.AccountingSettings.AnyAsync(x => x.IsClosed && x.StartsAt <= date && x.EndsAt >= date, cancellationToken);
+
+    private async Task<bool> HasDraftRecordsInPeriodAsync(DateTime startsAt, DateTime endsAt, CancellationToken cancellationToken) =>
+        await dbcontext.LedgerEntries.AnyAsync(x => x.Status == AccountingRecordStatus.Draft && x.EntryDate >= startsAt && x.EntryDate <= endsAt, cancellationToken) ||
+        await dbcontext.ReceiptVouchers.AnyAsync(x => x.Status == AccountingRecordStatus.Draft && x.ReceiptDate >= startsAt && x.ReceiptDate <= endsAt, cancellationToken) ||
+        await dbcontext.ExpenseVouchers.AnyAsync(x => x.Status == AccountingRecordStatus.Draft && x.ExpenseDate >= startsAt && x.ExpenseDate <= endsAt, cancellationToken);
+
+    private static bool IsImmutable(AccountingRecordStatus status) => status is AccountingRecordStatus.Posted or AccountingRecordStatus.Approved or AccountingRecordStatus.Closed or AccountingRecordStatus.Canceled or AccountingRecordStatus.Archived;
+
+    private static bool RequiresDecisionReason(AccountingRecordStatus status) => status is AccountingRecordStatus.Rejected or AccountingRecordStatus.Canceled;
+
+    private static bool IsValidRecordTransition(AccountingRecordStatus from, AccountingRecordStatus to) =>
+        from switch
+        {
+            AccountingRecordStatus.Draft => to is AccountingRecordStatus.Approved or AccountingRecordStatus.Posted or AccountingRecordStatus.Rejected or AccountingRecordStatus.Canceled,
+            AccountingRecordStatus.Approved => to is AccountingRecordStatus.Posted or AccountingRecordStatus.Canceled,
+            AccountingRecordStatus.Rejected => to is AccountingRecordStatus.Draft or AccountingRecordStatus.Canceled,
+            AccountingRecordStatus.Posted => to == AccountingRecordStatus.Closed,
+            _ => false
+        };
 
     private static FinanceAccountResponse MapAccount(FinanceAccount account) => new(account.Id, account.Code, account.NameAr, account.AccountType.ToString(), account.IsActive);
     private static FinanceBankAccountResponse MapBankAccount(FinanceBankAccount account) => new(account.Id, account.BankName, account.AccountName, account.Iban, account.OpeningBalance, account.IsActive);
@@ -652,4 +820,5 @@ public class AccountingService(ApplicationDbcontext dbcontext) : IAccountingServ
     private static SalaryDisbursementResponse MapSalary(SalaryDisbursement salary) => new(salary.Id, salary.PayrollMonth, salary.TotalAmount, salary.ExportFormat, salary.Status.ToString(), salary.Notes);
     private static FinancialReviewItemResponse MapReview(FinancialReviewItem item) => new(item.Id, item.Kind.ToString(), item.ReferenceNumber, item.Amount, item.Status.ToString(), item.DecisionNotes);
     private static FinanceBudgetResponse MapBudget(FinanceBudget budget, decimal actualIncome, decimal actualExpenses) => new(budget.Id, budget.FiscalYear, budget.Name, budget.PlannedIncome, budget.PlannedExpenses, actualIncome, actualExpenses, (budget.PlannedIncome - actualIncome) - (budget.PlannedExpenses - actualExpenses), budget.Status.ToString());
+    private static BankReconciliationResponse MapReconciliation(BankReconciliation item) => new(item.Id, item.FinanceBankAccountId, item.FinanceBankAccount?.BankName ?? string.Empty, item.FinanceBankAccount?.AccountName ?? string.Empty, item.ReconciliationDate, item.StatementBalance, item.BookBalance, item.StatementBalance - item.BookBalance, item.IsApproved, item.Notes);
 }

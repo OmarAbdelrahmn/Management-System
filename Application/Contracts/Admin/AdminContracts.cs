@@ -19,6 +19,8 @@ public record RoleResponse(string Id, string Name);
 
 public record CreateRoleRequest(string Name);
 
+public record UpdateRoleRequest(string Name);
+
 public record PermissionResponse(int Id, string Key, string NameAr, string Category, string? Description);
 
 public record RolePermissionResponse(string RoleId, string RoleName, int PermissionId, string PermissionKey, string PermissionNameAr, bool IsGranted);
@@ -63,6 +65,28 @@ public record FileAssetResponse(
 
 public record SaveFileAssetRequest(string OriginalFileName, string ContentType, long SizeBytes, string StoragePath, string Category, bool IsPublic);
 
-public record AuditLogResponse(int Id, string ActorUserId, string Action, string EntityName, string EntityId, string Details, DateTime CreatedAt);
+public record UpdateFileAssetRequest(string OriginalFileName, string ContentType, long SizeBytes, string StoragePath, string Category, bool IsPublic);
+
+public record PagedResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount, int TotalPages);
+
+public record FileAssetSearchRequest(string? Search, string? Category, bool? IsPublic, int Page = 1, int PageSize = 25, string? SortBy = null, bool Descending = true);
+public record LinkFileAssetRequest(int FileAssetId, string EntityType, string EntityId, string? Label);
+public record FileAssetLinkResponse(int Id, int FileAssetId, string FileName, string OriginalFileName, string EntityType, string EntityId, string? Label, DateTime CreatedAt);
+
+public record AuditLogResponse(
+    int Id,
+    string ActorUserId,
+    string Action,
+    string EntityName,
+    string EntityId,
+    string Details,
+    string? BeforeJson,
+    string? AfterJson,
+    DateTime CreatedAt);
+
+public record AuditLogSearchRequest(string? Search, string? ActorUserId, string? EntityName, string? EntityId, DateTime? From, DateTime? To, int Page = 1, int PageSize = 25, string? SortBy = null, bool Descending = true);
+
+public record QueryViewResponse(int Id, string ScreenKey, string Name, string FilterJson, DateTime CreatedAt);
+public record SaveQueryViewRequest(string ScreenKey, string Name, string FilterJson);
 
 public record JobDashboardStatusResponse(bool HangfireEnabled, string DashboardPath, string EmailRecurringCron);

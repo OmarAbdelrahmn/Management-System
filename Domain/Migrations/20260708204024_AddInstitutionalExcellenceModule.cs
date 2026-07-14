@@ -282,7 +282,7 @@ namespace Domain.Migrations
                         column: x => x.StrategicGoalId,
                         principalTable: "StrategicGoals",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_StrategicIndicators_StrategicIndicators_ParentIndicatorId",
                         column: x => x.ParentIndicatorId,

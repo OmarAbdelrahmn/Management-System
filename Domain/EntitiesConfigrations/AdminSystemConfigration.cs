@@ -82,10 +82,54 @@ public class FileAssetConfigration : IEntityTypeConfiguration<FileAsset>
         entity.Property(x => x.Category).IsRequired().HasMaxLength(100);
         entity.Property(x => x.UploadedByUserId).IsRequired().HasMaxLength(450);
         entity.HasIndex(x => x.Category);
+        entity.HasIndex(x => x.DeletedAt);
 
         entity.HasOne(x => x.UploadedByUser)
             .WithMany()
             .HasForeignKey(x => x.UploadedByUserId)
             .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class FileAssetVersionConfigration : IEntityTypeConfiguration<FileAssetVersion>
+{
+    public void Configure(EntityTypeBuilder<FileAssetVersion> entity)
+    {
+        entity.HasKey(x => x.Id);
+        entity.Property(x => x.FileName).IsRequired().HasMaxLength(260);
+        entity.Property(x => x.ContentType).IsRequired().HasMaxLength(120);
+        entity.Property(x => x.StoragePath).IsRequired().HasMaxLength(600);
+        entity.Property(x => x.Sha256).IsRequired().HasMaxLength(64);
+        entity.Property(x => x.UploadedByUserId).IsRequired().HasMaxLength(450);
+        entity.HasIndex(x => new { x.FileAssetId, x.VersionNumber }).IsUnique();
+        entity.HasOne(x => x.FileAsset).WithMany(x => x.Versions).HasForeignKey(x => x.FileAssetId).OnDelete(DeleteBehavior.Cascade);
+        entity.HasOne(x => x.UploadedByUser).WithMany().HasForeignKey(x => x.UploadedByUserId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class FileAssetLinkConfigration : IEntityTypeConfiguration<FileAssetLink>
+{
+    public void Configure(EntityTypeBuilder<FileAssetLink> entity)
+    {
+        entity.HasKey(x => x.Id);
+        entity.Property(x => x.EntityType).IsRequired().HasMaxLength(120);
+        entity.Property(x => x.EntityId).IsRequired().HasMaxLength(120);
+        entity.Property(x => x.Label).HasMaxLength(260);
+        entity.HasIndex(x => new { x.EntityType, x.EntityId });
+        entity.HasIndex(x => new { x.FileAssetId, x.EntityType, x.EntityId }).IsUnique();
+        entity.HasOne(x => x.FileAsset).WithMany(x => x.Links).HasForeignKey(x => x.FileAssetId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class SavedQueryViewConfigration : IEntityTypeConfiguration<SavedQueryView>
+{
+    public void Configure(EntityTypeBuilder<SavedQueryView> entity)
+    {
+        entity.HasKey(x => x.Id);
+        entity.Property(x => x.UserId).IsRequired().HasMaxLength(450);
+        entity.Property(x => x.ScreenKey).IsRequired().HasMaxLength(100);
+        entity.Property(x => x.Name).IsRequired().HasMaxLength(120);
+        entity.Property(x => x.FilterJson).IsRequired().HasMaxLength(4000);
+        entity.HasIndex(x => new { x.UserId, x.ScreenKey, x.Name }).IsUnique();
     }
 }

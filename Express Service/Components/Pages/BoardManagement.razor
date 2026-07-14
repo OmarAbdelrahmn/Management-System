@@ -1,0 +1,91 @@
+@page "/boards"
+@using Application.Contracts.Boards
+@attribute [Authorize(Roles = "Admin,BoardSecretary")]
+@rendermode InteractiveServer
+@inject BoardUiService Boards
+
+<h1 class="page-title">إدارة مجالس الإدارة</h1>
+
+@if (!string.IsNullOrWhiteSpace(message))
+{
+    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
+}
+
+<section class="panel">
+    <div class="panel-heading"><i class="fa-solid fa-building-columns"></i><div><h2>@(selectedBoard is null ? "مجلس ودورة جديدة" : "تعديل المجلس وتجديد دورته")</h2><p>إدارة بيانات المجلس، الأعضاء والأدوار، سداد الرسوم ووزن العضو الداعم.</p></div></div>
+    <div class="form-grid">
+        <label>اسم المجلس<input @bind="name" /></label>
+        <label>الرمز<input @bind="code" /></label>
+        <label>بداية الدورة<input type="date" @bind="startsAt" /></label>
+        <label>نهاية الدورة<input type="date" @bind="endsAt" /></label>
+        <label>عدد الدورات المتتالية<input type="number" @bind="consecutiveCycles" min="1" max="4" /></label>
+        @if (selectedBoard is null)
+        {
+            <label class="span-2">الأعضاء<select multiple @bind="selectedUserIds">@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
+            <label>الرئيس<select @bind="chairmanUserId"><option value="">غير محدد</option>@foreach (var user in SelectedUsers){<option value="@user.Id">@user.FullName</option>}</select></label>
+            <label>أمين السر<select @bind="secretaryUserId"><option value="">غير محدد</option>@foreach (var user in SelectedUsers){<option value="@user.Id">@user.FullName</option>}</select></label>
+        }
+    </div>
+    <div class="actions-row">
+        @if (selectedBoard is null) { <button class="primary" @onclick="CreateAsync">إنشاء المجلس</button> }
+        else { <button class="primary" @onclick="UpdateAsync">حفظ بيانات المجلس</button><button class="secondary" @onclick="RenewAsync">تجديد الدورة</button><button class="secondary" @onclick="ResetForm">إلغاء التعديل</button> }
+        <button class="secondary" @onclick="CloseExpiredAsync">إغلاق المنتهي</button>
+    </div>
+</section>
+
+@if (selectedBoard is not null)
+{
+    <section class="panel">
+        <div class="panel-heading"><i class="fa-solid fa-users-gear"></i><div><h2>عضويات @selectedBoard.Name</h2><p>حدد الرئيس وأمين السر مرة واحدة لكل منهما. الوزن متاح للعضو الداعم فقط.</p></div></div>
+        <div class="actions-row"><label>إضافة عضو<select @bind="newMemberUserId"><option value="">اختر عضواً</option>@foreach(var user in AvailableUsers){<option value="@user.Id">@user.FullName</option>}</select></label><button class="secondary" @onclick="AddMember">إضافة</button><button class="primary" @onclick="SaveMembersAsync">حفظ العضويات</button></div>
+        <table><thead><tr><th>العضو</th><th>الرئيس</th><th>أمين السر</th><th>سدد الرسوم</th><th>عضو داعم</th><th>الوزن</th><th></th></tr></thead><tbody>
+        @foreach (var member in editableMembers)
+        { <tr><td>@UserName(member.UserId)</td><td><input type="radio" name="chairman" checked="@member.IsChairman" @onchange="() => SetChairman(member.UserId)" /></td><td><input type="radio" name="secretary" checked="@member.IsSecretary" @onchange="() => SetSecretary(member.UserId)" /></td><td><input type="checkbox" @bind="member.HasPaidFees" /></td><td><input type="checkbox" @bind="member.IsSupportingMember" /></td><td><input type="number" min="0" step="0.01" disabled="@(!member.IsSupportingMember)" @bind="member.CumulativePercentage" /></td><td><button class="secondary" @onclick="() => RemoveMember(member.UserId)">إزالة</button></td></tr> }
+        </tbody></table>
+    </section>
+}
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-users"></i> المجالس</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+    <table><thead><tr><th>المجلس</th><th>الدورة</th><th>الحالة</th><th>الأعضاء</th><th></th></tr></thead><tbody>@foreach (var board in boards){<tr><td>@board.Name<br />@board.Code</td><td>@board.CurrentCycle.StartsAt.ToString("yyyy-MM-dd") - @board.CurrentCycle.EndsAt.ToString("yyyy-MM-dd")</td><td>@board.Status</td><td>@board.Members.Count()</td><td><button class="secondary" @onclick="() => SelectBoard(board)">إدارة</button></td></tr>}</tbody></table>
+</section>
+
+@code {
+    private sealed class EditableMember { public string UserId { get; set; } = string.Empty; public bool HasPaidFees { get; set; } = true; public bool IsSupportingMember { get; set; } public decimal CumulativePercentage { get; set; } public bool IsChairman { get; set; } public bool IsSecretary { get; set; } }
+    private List<BoardResponse> boards = [];
+    private List<UserPickerResponse> users = [];
+    private BoardResponse? selectedBoard;
+    private List<EditableMember> editableMembers = [];
+    private string name = string.Empty, code = string.Empty, chairmanUserId = string.Empty, secretaryUserId = string.Empty, newMemberUserId = string.Empty;
+    private DateTime startsAt = DateTime.UtcNow.AddHours(3).Date, endsAt = DateTime.UtcNow.AddHours(3).Date.AddMonths(11);
+    private int consecutiveCycles = 1;
+    private string[] selectedUserIds = [];
+    private bool success;
+    private string? message;
+    private IEnumerable<UserPickerResponse> SelectedUsers => users.Where(x => selectedUserIds.Contains(x.Id));
+    private IEnumerable<UserPickerResponse> AvailableUsers => users.Where(x => editableMembers.All(m => m.UserId != x.Id));
+
+    protected override async Task OnInitializedAsync(){ users = await Boards.GetUsersAsync(); await LoadAsync(); }
+    private async Task LoadAsync(){ boards = await Boards.GetBoardsAsync(); if (selectedBoard is not null) selectedBoard = boards.FirstOrDefault(x => x.Id == selectedBoard.Id); }
+    private string UserName(string id) => users.FirstOrDefault(x => x.Id == id)?.FullName ?? id;
+    private void SelectBoard(BoardResponse board)
+    {
+        selectedBoard = board; name = board.Name; code = board.Code; startsAt = board.CurrentCycle.EndsAt.Date.AddDays(1); endsAt = startsAt.AddMonths(11); consecutiveCycles = Math.Min(4, board.CurrentCycle.ConsecutiveCycleCount + 1);
+        editableMembers = board.Members.Select(m => new EditableMember { UserId = m.UserId, HasPaidFees = m.HasPaidFees, IsSupportingMember = m.IsSupportingMember, CumulativePercentage = m.CumulativePercentage, IsChairman = m.IsChairman, IsSecretary = m.IsSecretary }).ToList();
+    }
+    private void ResetForm(){ selectedBoard = null; editableMembers = []; name = code = chairmanUserId = secretaryUserId = newMemberUserId = string.Empty; selectedUserIds = []; startsAt = DateTime.UtcNow.AddHours(3).Date; endsAt = startsAt.AddMonths(11); consecutiveCycles = 1; }
+    private void AddMember(){ if (!string.IsNullOrWhiteSpace(newMemberUserId) && editableMembers.All(x => x.UserId != newMemberUserId)) editableMembers.Add(new() { UserId = newMemberUserId }); newMemberUserId = string.Empty; }
+    private void RemoveMember(string id) => editableMembers.RemoveAll(x => x.UserId == id);
+    private void SetChairman(string id){ foreach(var member in editableMembers) member.IsChairman = member.UserId == id; }
+    private void SetSecretary(string id){ foreach(var member in editableMembers) member.IsSecretary = member.UserId == id; }
+    private async Task CreateAsync()
+    {
+        if (selectedUserIds.Length == 0 || string.IsNullOrWhiteSpace(chairmanUserId) || string.IsNullOrWhiteSpace(secretaryUserId) || !selectedUserIds.Contains(chairmanUserId) || !selectedUserIds.Contains(secretaryUserId)){ success = false; message = "اختر أعضاء المجلس وحدد الرئيس وأمين السر من بينهم."; return; }
+        var members = selectedUserIds.Select(id => new CreateBoardMemberRequest(id, true, false, 0, id == chairmanUserId, id == secretaryUserId));
+        var result = await Boards.CreateAsync(new CreateBoardRequest(name, code, startsAt, endsAt, consecutiveCycles, members)); success = result.Success; message = result.Message; if (success){ ResetForm(); await LoadAsync(); }
+    }
+    private async Task UpdateAsync(){ if (selectedBoard is null) return; var result = await Boards.UpdateAsync(selectedBoard.Id, new UpdateBoardRequest(name, code)); success = result.Success; message = result.Message; if(success) await LoadAsync(); }
+    private async Task SaveMembersAsync(){ if (selectedBoard is null) return; var members = editableMembers.Select(x => new CreateBoardMemberRequest(x.UserId, x.HasPaidFees, x.IsSupportingMember, x.CumulativePercentage, x.IsChairman, x.IsSecretary)); var result = await Boards.SaveMembersAsync(selectedBoard.Id, members); success = result.Success; message = result.Message; if(success) await LoadAsync(); }
+    private async Task RenewAsync(){ if (selectedBoard is null) return; var result = await Boards.RenewCycleAsync(selectedBoard.Id, new RenewBoardCycleRequest(startsAt, endsAt, consecutiveCycles)); success = result.Success; message = result.Message; if(success) await LoadAsync(); }
+    private async Task CloseExpiredAsync(){ var result = await Boards.CloseExpiredAsync(); success = result.Success; message = result.Message; await LoadAsync(); }
+}

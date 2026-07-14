@@ -93,10 +93,72 @@ public class FileAsset : IAuditable
     public string Category { get; set; } = string.Empty;
     public string UploadedByUserId { get; set; } = string.Empty;
     public bool IsPublic { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public DateTime? PurgeAfter { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
     public string? CreatedByUserId { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string? UpdatedByUserId { get; set; }
 
     public ApplicationUser? UploadedByUser { get; set; }
+    public ICollection<FileAssetLink> Links { get; set; } = new List<FileAssetLink>();
+    public ICollection<FileAssetVersion> Versions { get; set; } = new List<FileAssetVersion>();
+}
+
+public enum FileAssetScanStatus
+{
+    Clean = 0,
+    Infected = 1,
+    Unavailable = 2,
+    Failed = 3
+}
+
+public class FileAssetVersion : IAuditable
+{
+    public int Id { get; set; }
+    public int FileAssetId { get; set; }
+    public int VersionNumber { get; set; }
+    public string FileName { get; set; } = string.Empty;
+    public string ContentType { get; set; } = "application/octet-stream";
+    public long SizeBytes { get; set; }
+    public string StoragePath { get; set; } = string.Empty;
+    public string Sha256 { get; set; } = string.Empty;
+    public FileAssetScanStatus ScanStatus { get; set; }
+    public DateTime? ScannedAt { get; set; }
+    public string UploadedByUserId { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
+    public string? CreatedByUserId { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedByUserId { get; set; }
+
+    public FileAsset? FileAsset { get; set; }
+    public ApplicationUser? UploadedByUser { get; set; }
+}
+
+public class FileAssetLink : IAuditable
+{
+    public int Id { get; set; }
+    public int FileAssetId { get; set; }
+    public string EntityType { get; set; } = string.Empty;
+    public string EntityId { get; set; } = string.Empty;
+    public string? Label { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
+    public string? CreatedByUserId { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedByUserId { get; set; }
+
+    public FileAsset? FileAsset { get; set; }
+}
+
+public class SavedQueryView : IAuditable
+{
+    public int Id { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public string ScreenKey { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string FilterJson { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
+    public string? CreatedByUserId { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedByUserId { get; set; }
 }

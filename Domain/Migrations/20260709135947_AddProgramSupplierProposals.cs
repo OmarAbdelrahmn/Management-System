@@ -43,7 +43,7 @@ namespace Domain.Migrations
                         column: x => x.ConvertedContractId,
                         principalTable: "ProgramProjectContracts",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_ProgramSupplierProposals_ProgramProjects_ProgramProjectId",
                         column: x => x.ProgramProjectId,

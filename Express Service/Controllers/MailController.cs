@@ -1,5 +1,6 @@
 using Application.Contracts.Messaging;
 using Application.Service.Messaging;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -44,7 +45,7 @@ public class MailController(IMessagingService messagingService) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,Secretary,Chairman")]
+    [RequirePermission("system.electronic-office.personnel_emails_drafts")]
     public async Task<IActionResult> Create([FromBody] CreateInternalMailRequest request, CancellationToken cancellationToken)
     {
         var result = await messagingService.CreateMailAsync(request, cancellationToken);
@@ -52,7 +53,7 @@ public class MailController(IMessagingService messagingService) : ControllerBase
     }
 
     [HttpPost("{id:int}/send")]
-    [Authorize(Roles = "Admin,Secretary,Chairman")]
+    [RequirePermission("system.electronic-office.personnel_emails_drafts")]
     public async Task<IActionResult> SendDraft(int id, [FromBody] SendDraftRequest request, CancellationToken cancellationToken)
     {
         var result = await messagingService.SendDraftAsync(id, request, cancellationToken);
@@ -60,7 +61,7 @@ public class MailController(IMessagingService messagingService) : ControllerBase
     }
 
     [HttpPut("drafts/{id:int}")]
-    [Authorize(Roles = "Admin,Secretary,Chairman")]
+    [RequirePermission("system.electronic-office.personnel_emails_drafts")]
     public async Task<IActionResult> UpdateDraft(int id, [FromBody] UpdateInternalMailDraftRequest request, CancellationToken cancellationToken)
     {
         var result = await messagingService.UpdateDraftAsync(id, request, cancellationToken);
@@ -68,7 +69,7 @@ public class MailController(IMessagingService messagingService) : ControllerBase
     }
 
     [HttpDelete("drafts/{id:int}")]
-    [Authorize(Roles = "Admin,Secretary,Chairman")]
+    [RequirePermission("system.electronic-office.personnel_emails_drafts")]
     public async Task<IActionResult> CancelDraft(int id, CancellationToken cancellationToken)
     {
         var result = await messagingService.CancelDraftAsync(id, cancellationToken);
@@ -97,7 +98,7 @@ public class MailController(IMessagingService messagingService) : ControllerBase
     }
 
     [HttpGet("templates")]
-    [Authorize(Roles = "Admin,Secretary,Chairman")]
+    [RequirePermission("system.electronic-office.personnel_emails_templates")]
     public async Task<IActionResult> Templates(CancellationToken cancellationToken)
     {
         var result = await messagingService.GetTemplatesAsync(cancellationToken);
@@ -105,7 +106,7 @@ public class MailController(IMessagingService messagingService) : ControllerBase
     }
 
     [HttpPost("templates")]
-    [Authorize(Roles = "Admin,Secretary,Chairman")]
+    [RequirePermission("system.electronic-office.personnel_emails_templates")]
     public async Task<IActionResult> SaveTemplate([FromBody] UpsertMessageTemplateRequest request, CancellationToken cancellationToken)
     {
         var result = await messagingService.SaveTemplateAsync(null, request, cancellationToken);
@@ -113,7 +114,7 @@ public class MailController(IMessagingService messagingService) : ControllerBase
     }
 
     [HttpPut("templates/{id:int}")]
-    [Authorize(Roles = "Admin,Secretary,Chairman")]
+    [RequirePermission("system.electronic-office.personnel_emails_templates")]
     public async Task<IActionResult> UpdateTemplate(int id, [FromBody] UpsertMessageTemplateRequest request, CancellationToken cancellationToken)
     {
         var result = await messagingService.SaveTemplateAsync(id, request, cancellationToken);

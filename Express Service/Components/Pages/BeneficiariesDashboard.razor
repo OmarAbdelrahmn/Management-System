@@ -45,6 +45,8 @@
     <div class="actions-row"><button class="primary" @onclick="SearchAsync">بحث</button><button class="secondary" @onclick="ClearAsync">مسح الفلاتر</button></div>
 </section>
 
+<SavedQueryViews ScreenKey="beneficiaries.database" CurrentFilterJson="@CurrentFilterJson" OnApply="ApplySavedViewAsync" />
+
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-database"></i> المستفيدون</span></div>
     <table>
@@ -74,6 +76,7 @@
     private string statusText = string.Empty;
     private string? category;
     private string? city;
+    private string CurrentFilterJson => System.Text.Json.JsonSerializer.Serialize(new BeneficiaryFilters(search, statusText, category, city));
 
     protected override async Task OnInitializedAsync()
     {
@@ -96,6 +99,17 @@
         await SearchAsync();
     }
 
+    private async Task ApplySavedViewAsync(string json)
+    {
+        var filters = System.Text.Json.JsonSerializer.Deserialize<BeneficiaryFilters>(json);
+        if (filters is null) return;
+        search = filters.Search;
+        statusText = filters.Status ?? string.Empty;
+        category = filters.Category;
+        city = filters.City;
+        await SearchAsync();
+    }
+
     private static string DisplayStatus(string status) => status switch
     {
         "Active" => "نشط",
@@ -104,4 +118,6 @@
         "Deleted" => "محذوف",
         _ => status
     };
+
+    private sealed record BeneficiaryFilters(string? Search, string? Status, string? Category, string? City);
 }

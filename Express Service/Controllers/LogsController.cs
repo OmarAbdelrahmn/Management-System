@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Express_Service.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+[RequirePermission("system.tech-enablement.system_register")]
 public class LogsController(IWebHostEnvironment environment, IConfiguration configuration) : ControllerBase
 {
     [HttpGet("files")]

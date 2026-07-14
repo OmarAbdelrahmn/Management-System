@@ -167,6 +167,8 @@ public record DecideBeneficiaryUpdateRequest(
     bool Approved,
     string? Notes);
 
+public record CancelBeneficiaryUpdateRequest(string Reason);
+
 public record BeneficiaryEntityResponse(
     int Id,
     string NameAr,
@@ -250,6 +252,8 @@ public record DecideBeneficiaryGuardianOperationRequest(
     bool Approved,
     string? DecisionNotes);
 
+public record CancelBeneficiaryGuardianOperationRequest(string Reason);
+
 public record BeneficiaryUpdateBatchResponse(
     int Id,
     string BatchNumber,
@@ -264,6 +268,14 @@ public record BeneficiaryUpdateBatchResponse(
     DateTime CreatedAt);
 
 public record CreateBeneficiaryUpdateBatchRequest(
+    BeneficiaryUpdateBatchKind Kind,
+    string Title,
+    string? AssignedTo,
+    int TotalProfiles,
+    DateTime? DueDate,
+    string? Notes);
+
+public record UpdateBeneficiaryUpdateBatchRequest(
     BeneficiaryUpdateBatchKind Kind,
     string Title,
     string? AssignedTo,

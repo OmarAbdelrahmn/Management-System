@@ -4,4 +4,5 @@ public interface ICurrentUserContext
 {
     string? UserId { get; }
     IReadOnlyCollection<string> Roles { get; }
+    string? RemoteIpAddress => null;
 }

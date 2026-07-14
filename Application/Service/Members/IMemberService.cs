@@ -15,9 +15,12 @@ public interface IMemberService
     Task<Result> CancelAsync(int id, CancelMemberRequest request, CancellationToken cancellationToken = default);
     Task<Result> RestoreAsync(int id, CancellationToken cancellationToken = default);
     Task<Result<MemberPaymentResponse>> RecordPaymentAsync(int memberId, RecordMemberPaymentRequest request, CancellationToken cancellationToken = default);
+    Task<Result> SettlePaymentAsync(int id, SettleMemberPaymentRequest request, CancellationToken cancellationToken = default);
+    Task<Result> CancelPaymentAsync(int id, CancelMemberPaymentRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<MemberPaymentResponse>>> GetPaymentsAsync(int? memberId = null, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<MemberResponse>>> GetDueMembersAsync(CancellationToken cancellationToken = default);
     Task<Result<MemberCardResponse>> IssueCardAsync(int memberId, IssueMemberCardRequest request, CancellationToken cancellationToken = default);
+    Task<Result> DeactivateCardAsync(int id, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<MemberCardResponse>>> GetCardsAsync(CancellationToken cancellationToken = default);
     Task<Result<MemberReportShareResponse>> ShareReportAsync(ShareMemberReportRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<MemberReportShareResponse>>> GetReportSharesAsync(CancellationToken cancellationToken = default);

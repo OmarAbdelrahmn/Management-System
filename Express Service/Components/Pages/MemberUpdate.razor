@@ -51,6 +51,11 @@ else if (loaded)
     </section>
 }
 
+@if (Id.HasValue && Id.Value > 0)
+{
+    <AttachmentPanel EntityType="MemberProfile" EntityId="@Id.Value" />
+}
+
 @code {
     [Parameter] public int? Id { get; set; }
     private bool loaded;

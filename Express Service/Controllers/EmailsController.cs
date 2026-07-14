@@ -1,13 +1,14 @@
 using Application.Service.Emails;
 using Hangfire;
 using Microsoft.AspNetCore.Authorization;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Express_Service.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+[RequirePermission("system.tech-enablement.system_settings")]
 public class EmailsController(IEmailService service, IBackgroundJobClient backgroundJobClient) : ControllerBase
 {
     [HttpGet("smtp-status")]

@@ -18,6 +18,7 @@
         <label class="span-2">الموضوع<input @bind="subject" /></label>
         <label class="span-2">الغرض<input @bind="purpose" /></label>
         <label class="span-2">النص<textarea @bind="body"></textarea></label>
+        <label class="span-2">ملاحظة القرار<input @bind="decisionNotes" /></label>
     </div>
     <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الخطاب</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
 </section>
@@ -35,7 +36,7 @@
                     <td>@item.Subject</td>
                     <td><span class="status">@item.Status</span></td>
                     <td>@item.IssuedAt?.ToString("yyyy-MM-dd")</td>
-                    <td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved))">إصدار</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Rejected))">رفض</button></td>
+                    <td>@if (item.Status == "Pending"){<button class="secondary" @onclick="() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved)">إصدار</button><button class="danger" @onclick="() => DecideAsync(item.Id, HumanResourceRequestStatus.Rejected)">رفض</button>}</td>
                     <td><button class="secondary" @onclick="@(() => LoadActivityAsync(item))">السجل</button></td>
                 </tr>
             }
@@ -69,6 +70,7 @@
     private string subject = string.Empty;
     private string? purpose;
     private string body = string.Empty;
+    private string? decisionNotes;
     private bool success;
     private string? message;
 
@@ -98,7 +100,7 @@
 
     private async Task DecideAsync(int id, HumanResourceRequestStatus status)
     {
-        var result = await HR.DecideLetterRequestAsync(id, status, null);
+        var result = await HR.DecideLetterRequestAsync(id, status, decisionNotes);
         success = result.Success;
         message = result.Message;
         await LoadAsync();

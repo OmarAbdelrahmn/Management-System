@@ -81,6 +81,18 @@ public class MemberUiService(IMemberService memberService)
         return result.IsSuccess ? (true, "تم تسجيل السداد.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> CancelPaymentAsync(int id, string reason, CancellationToken cancellationToken = default)
+    {
+        var result = await memberService.CancelPaymentAsync(id, new CancelMemberPaymentRequest(reason), cancellationToken);
+        return result.IsSuccess ? (true, "تم إلغاء سجل السداد.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> SettlePaymentAsync(int id, DateTime? paidAt, string? receiptNumber, string? notes, CancellationToken cancellationToken = default)
+    {
+        var result = await memberService.SettlePaymentAsync(id, new SettleMemberPaymentRequest(paidAt, receiptNumber, notes), cancellationToken);
+        return result.IsSuccess ? (true, "تم تسجيل سداد المستحق.") : (false, result.Error.Description);
+    }
+
     public async Task<List<MemberCardResponse>> GetCardsAsync(CancellationToken cancellationToken = default)
     {
         var result = await memberService.GetCardsAsync(cancellationToken);
@@ -91,6 +103,12 @@ public class MemberUiService(IMemberService memberService)
     {
         var result = await memberService.IssueCardAsync(memberId, new IssueMemberCardRequest(expiresAt), cancellationToken);
         return result.IsSuccess ? (true, "تم إصدار بطاقة العضو.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> DeactivateCardAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var result = await memberService.DeactivateCardAsync(id, cancellationToken);
+        return result.IsSuccess ? (true, "تم إيقاف البطاقة.") : (false, result.Error.Description);
     }
 
     public async Task<List<MemberReportShareResponse>> GetReportSharesAsync(CancellationToken cancellationToken = default)

@@ -236,12 +236,56 @@ public class MemberService(ApplicationDbcontext dbcontext) : IMemberService
             Notes = request.Notes?.Trim()
         };
 
-        member.FeesPaid = payment.Status == MemberPaymentStatus.Paid;
         dbcontext.MemberPayments.Add(payment);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+
+        member.FeesPaid = await dbcontext.MemberPayments.AnyAsync(x => x.MemberProfileId == memberId && x.Status == MemberPaymentStatus.Paid, cancellationToken);
         await dbcontext.SaveChangesAsync(cancellationToken);
 
         payment.MemberProfile = member;
         return Result.Success(MapPayment(payment));
+    }
+
+    public async Task<Result> CancelPaymentAsync(int id, CancelMemberPaymentRequest request, CancellationToken cancellationToken = default)
+    {
+        var payment = await dbcontext.MemberPayments.Include(x => x.MemberProfile).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (payment is null)
+            return Result.Failure(MemberErrors.PaymentNotFound);
+
+        if (payment.Status != MemberPaymentStatus.Pending || string.IsNullOrWhiteSpace(request.Reason))
+            return Result.Failure(MemberErrors.InvalidRequest);
+
+        payment.Status = MemberPaymentStatus.Cancelled;
+        payment.Notes = request.Reason.Trim();
+        await dbcontext.SaveChangesAsync(cancellationToken);
+
+        if (payment.MemberProfile is not null)
+        {
+            payment.MemberProfile.FeesPaid = await dbcontext.MemberPayments.AnyAsync(x => x.MemberProfileId == payment.MemberProfileId && x.Status == MemberPaymentStatus.Paid, cancellationToken);
+            await dbcontext.SaveChangesAsync(cancellationToken);
+        }
+
+        return Result.Success();
+    }
+
+    public async Task<Result> SettlePaymentAsync(int id, SettleMemberPaymentRequest request, CancellationToken cancellationToken = default)
+    {
+        var payment = await dbcontext.MemberPayments.Include(x => x.MemberProfile).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (payment is null)
+            return Result.Failure(MemberErrors.PaymentNotFound);
+
+        if (payment.Status != MemberPaymentStatus.Pending)
+            return Result.Failure(MemberErrors.InvalidRequest);
+
+        payment.Status = MemberPaymentStatus.Paid;
+        payment.PaidAt = request.PaidAt ?? DateTime.UtcNow.AddHours(3);
+        payment.ReceiptNumber = string.IsNullOrWhiteSpace(request.ReceiptNumber) ? payment.ReceiptNumber : request.ReceiptNumber.Trim();
+        payment.Notes = string.IsNullOrWhiteSpace(request.Notes) ? payment.Notes : request.Notes.Trim();
+        if (payment.MemberProfile is not null)
+            payment.MemberProfile.FeesPaid = true;
+
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success();
     }
 
     public async Task<Result<IEnumerable<MemberPaymentResponse>>> GetPaymentsAsync(int? memberId = null, CancellationToken cancellationToken = default)
@@ -280,6 +324,10 @@ public class MemberService(ApplicationDbcontext dbcontext) : IMemberService
             return Result.Failure<MemberCardResponse>(MemberErrors.NotFound);
 
         var now = DateTime.UtcNow.AddHours(3);
+        var activeCards = await dbcontext.MemberCards.Where(x => x.MemberProfileId == memberId && x.IsActive).ToListAsync(cancellationToken);
+        foreach (var activeCard in activeCards)
+            activeCard.IsActive = false;
+
         var card = new MemberCard
         {
             MemberProfileId = memberId,
@@ -294,6 +342,17 @@ public class MemberService(ApplicationDbcontext dbcontext) : IMemberService
 
         card.MemberProfile = member;
         return Result.Success(MapCard(card));
+    }
+
+    public async Task<Result> DeactivateCardAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var card = await dbcontext.MemberCards.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (card is null)
+            return Result.Failure(MemberErrors.CardNotFound);
+
+        card.IsActive = false;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success();
     }
 
     public async Task<Result<IEnumerable<MemberCardResponse>>> GetCardsAsync(CancellationToken cancellationToken = default)

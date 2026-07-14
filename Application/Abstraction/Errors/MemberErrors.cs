@@ -4,6 +4,8 @@ namespace Application.Abstraction.Errors;
 
 public static class MemberErrors
 {
+    public static readonly Error CardNotFound = new("Members.CardNotFound", "Member card was not found.", StatusCodes.Status404NotFound);
+    public static readonly Error PaymentNotFound = new("Members.PaymentNotFound", "Member payment was not found.", StatusCodes.Status404NotFound);
     public static readonly Error NotFound =
         new("Members.NotFound", "Member was not found.", StatusCodes.Status404NotFound);
 

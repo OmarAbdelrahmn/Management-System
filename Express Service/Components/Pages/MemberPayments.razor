@@ -19,6 +19,7 @@
         <label>رقم الإيصال<input @bind="receiptNumber" /></label>
         <label class="check-row"><input type="checkbox" @bind="markAsPaid" /> تم السداد الآن</label>
         <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
+        <label class="span-2">سبب إلغاء السجل المعلق<input @bind="cancellationReason" /></label>
     </div>
     <div class="actions-row"><button class="primary" @onclick="RecordAsync">تسجيل السداد</button><a class="secondary" href="/members/due">المتأخرون عن السداد</a></div>
 </section>
@@ -26,11 +27,11 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-receipt"></i> سجل السداد</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
     <table>
-        <thead><tr><th>العضو</th><th>المبلغ</th><th>الاستحقاق</th><th>السداد</th><th>الحالة</th><th>الإيصال</th></tr></thead>
+        <thead><tr><th>العضو</th><th>المبلغ</th><th>الاستحقاق</th><th>السداد</th><th>الحالة</th><th>الإيصال</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var payment in payments)
             {
-                <tr><td>@payment.MemberName</td><td>@payment.Amount</td><td>@payment.DueDate.ToString("yyyy-MM-dd")</td><td>@payment.PaidAt?.ToString("yyyy-MM-dd")</td><td><span class="status">@payment.Status</span></td><td>@payment.ReceiptNumber</td></tr>
+                <tr><td>@payment.MemberName</td><td>@payment.Amount</td><td>@payment.DueDate.ToString("yyyy-MM-dd")</td><td>@payment.PaidAt?.ToString("yyyy-MM-dd")</td><td><span class="status">@payment.Status</span></td><td>@payment.ReceiptNumber</td><td>@if (payment.Status == "Pending"){<button class="primary" @onclick="() => SettleAsync(payment.Id)">تسجيل السداد</button> <button class="danger" @onclick="() => CancelAsync(payment.Id)">إلغاء</button>}</td></tr>
             }
         </tbody>
     </table>
@@ -45,6 +46,7 @@
     private DateTime dueDate = DateTime.UtcNow.AddHours(3).Date;
     private string? receiptNumber;
     private string? notes;
+    private string? cancellationReason;
     private bool markAsPaid = true;
     private bool success;
     private string? message;
@@ -69,6 +71,29 @@
             receiptNumber = null;
             notes = null;
         }
+        await LoadAsync();
+    }
+
+    private async Task CancelAsync(int id)
+    {
+        if (string.IsNullOrWhiteSpace(cancellationReason))
+        {
+            success = false;
+            message = "أدخل سبب الإلغاء أولاً.";
+            return;
+        }
+
+        var result = await Members.CancelPaymentAsync(id, cancellationReason);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task SettleAsync(int id)
+    {
+        var result = await Members.SettlePaymentAsync(id, DateTime.UtcNow.AddHours(3), receiptNumber, notes);
+        success = result.Success;
+        message = result.Message;
         await LoadAsync();
     }
 }

@@ -1,5 +1,5 @@
 @page "/hr/leaves"
-@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@attribute [Authorize(Policy = "permission:system.human-resources.hr_personnel_vacations")]
 @rendermode InteractiveServer
 @inject HumanResourceUiService HR
 
@@ -18,6 +18,7 @@
         <label>من<input type="date" @bind="startsAt" /></label>
         <label>إلى<input type="date" @bind="endsAt" /></label>
         <label class="span-2">السبب<textarea @bind="reason"></textarea></label>
+        <label class="span-2">ملاحظة القرار<input @bind="decisionNotes" /></label>
     </div>
     <div class="actions-row"><button class="primary" @onclick="SaveAsync">إنشاء الطلب</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
 </section>
@@ -35,7 +36,7 @@
                     <td>@item.StartsAt.ToString("yyyy-MM-dd") - @item.EndsAt.ToString("yyyy-MM-dd")</td>
                     <td>@item.Days</td>
                     <td><span class="status">@item.Status</span></td>
-                    <td><button class="secondary" @onclick="() => DecideAsync(item.Id, true)">اعتماد</button><button class="secondary" @onclick="() => DecideAsync(item.Id, false)">رفض</button></td>
+                    <td>@if (item.Status == "Pending"){<button class="secondary" @onclick="() => DecideAsync(item.Id, true)">اعتماد</button><button class="secondary" @onclick="() => DecideAsync(item.Id, false)">رفض</button>}</td>
                     <td><button class="secondary" @onclick="() => LoadActivityAsync(item)">السجل</button></td>
                 </tr>
             }
@@ -59,16 +60,23 @@
     </section>
 }
 
+@if (selectedLeaveId.HasValue)
+{
+    <AttachmentPanel EntityType="EmployeeLeaveRequest" EntityId="@selectedLeaveId.Value" />
+}
+
 @code {
     private List<EmployeeResponse> employees = [];
     private List<EmployeeLeaveRequestResponse> leaves = [];
     private List<HumanResourceActivityResponse> activities = [];
     private string? activityTitle;
+    private int? selectedLeaveId;
     private int employeeId;
     private string leaveType = "سنوية";
     private DateTime startsAt = DateTime.UtcNow.AddHours(3).Date;
     private DateTime endsAt = DateTime.UtcNow.AddHours(3).Date;
     private string? reason;
+    private string? decisionNotes;
     private bool success;
     private string? message;
 
@@ -91,7 +99,7 @@
 
     private async Task DecideAsync(int id, bool approved)
     {
-        var result = await HR.DecideLeaveRequestAsync(id, approved, null);
+        var result = await HR.DecideLeaveRequestAsync(id, approved, decisionNotes);
         success = result.Success;
         message = result.Message;
         await LoadAsync();
@@ -100,6 +108,7 @@
     private async Task LoadActivityAsync(EmployeeLeaveRequestResponse item)
     {
         activityTitle = $"{item.EmployeeName} - {item.LeaveType}";
+        selectedLeaveId = item.Id;
         activities = await HR.GetActivitiesAsync(HumanResourceActivityEntityType.LeaveRequest, item.Id);
     }
 }

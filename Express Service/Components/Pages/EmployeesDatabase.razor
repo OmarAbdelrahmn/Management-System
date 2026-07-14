@@ -20,6 +20,8 @@
     <div class="actions-row"><button class="primary" @onclick="SearchAsync">بحث</button><button class="secondary" @onclick="ClearAsync">مسح الفلاتر</button></div>
 </section>
 
+<SavedQueryViews ScreenKey="hr.employees.database" CurrentFilterJson="@CurrentFilterJson" OnApply="ApplySavedViewAsync" />
+
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-database"></i> الموظفون</span></div>
     <table>
@@ -50,6 +52,7 @@
     private string statusText = string.Empty;
     private string departmentIdText = string.Empty;
     private string jobTitleIdText = string.Empty;
+    private string CurrentFilterJson => System.Text.Json.JsonSerializer.Serialize(new EmployeeFilters(search, statusText, departmentIdText, jobTitleIdText));
 
     protected override async Task OnInitializedAsync()
     {
@@ -74,4 +77,17 @@
         jobTitleIdText = string.Empty;
         await SearchAsync();
     }
+
+    private async Task ApplySavedViewAsync(string json)
+    {
+        var filters = System.Text.Json.JsonSerializer.Deserialize<EmployeeFilters>(json);
+        if (filters is null) return;
+        search = filters.Search;
+        statusText = filters.Status ?? string.Empty;
+        departmentIdText = filters.DepartmentId ?? string.Empty;
+        jobTitleIdText = filters.JobTitleId ?? string.Empty;
+        await SearchAsync();
+    }
+
+    private sealed record EmployeeFilters(string? Search, string? Status, string? DepartmentId, string? JobTitleId);
 }

@@ -246,6 +246,7 @@ public class HumanResourceServiceTests
         await service.DecideLeaveRequestAsync(leave.Value.Id, new DecideEmployeeLeaveRequest(true, "معتمد"));
 
         var admin = await service.CreateAdministrativeRequestAsync(new CreateEmployeeAdministrativeRequest(employee.Id, "تعريف", "طلب تعريف", "إصدار تعريف"));
+        await service.DecideAdministrativeRequestAsync(admin.Value.Id, new DecideHumanResourceItemRequest(HumanResourceRequestStatus.Approved, "معتمد"));
         await service.DecideAdministrativeRequestAsync(admin.Value.Id, new DecideHumanResourceItemRequest(HumanResourceRequestStatus.Completed, "تم الإصدار"));
 
         var recruitment = await service.SaveRecruitmentRequestAsync(null, new SaveRecruitmentRequest(employee.DepartmentId, employee.JobTitleId, "تعيين أخصائي", 1, "احتياج", null, null, null, null, null, null));

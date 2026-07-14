@@ -1,6 +1,6 @@
 @page "/beneficiaries/update"
 @page "/beneficiaries/update/{Id:int}"
-@attribute [Authorize(Roles = "Admin,Secretary,Chairman")]
+@attribute [Authorize(Policy = "permission:system.beneficiary-accounts.profiles_update")]
 @rendermode InteractiveServer
 @inject BeneficiaryUiService Beneficiaries
 
@@ -68,6 +68,10 @@
             <a class="secondary" href="/beneficiaries">رجوع</a>
         </div>
     </section>
+    @if (Id.HasValue)
+    {
+        <AttachmentPanel EntityType="BeneficiaryProfile" EntityId="@Id.Value" />
+    }
 }
 
 @code {

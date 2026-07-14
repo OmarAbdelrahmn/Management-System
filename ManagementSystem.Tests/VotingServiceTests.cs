@@ -40,7 +40,7 @@ public class VotingServiceTests
 
         Assert.True(closed.IsSuccess);
         Assert.Equal(AgendaItemStatus.Rejected, dbcontext.MeetingAgendaItems.Single(x => x.Id == item.Id).Status);
-        Assert.Contains("بند مرفوض لعدم اكتمال النصاب", dbcontext.MeetingMinutes.Single().DraftText);
+        Assert.Contains("بند مرفوض لعدم تحقق أغلبية الوزن التصويتي", dbcontext.MeetingMinutes.Single().DraftText);
     }
 
     private static async Task<MeetingAgendaItem> SeedVotingMeetingAsync(Domain.ApplicationDbcontext dbcontext, string[] acceptedMembers)

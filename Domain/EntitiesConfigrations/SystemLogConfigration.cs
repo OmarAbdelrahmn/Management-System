@@ -16,6 +16,8 @@ public class SystemLogConfigration :
         entity.Property(x => x.EntityName).IsRequired().HasMaxLength(100);
         entity.Property(x => x.EntityId).IsRequired().HasMaxLength(100);
         entity.Property(x => x.Details).HasMaxLength(2000);
+        entity.Property(x => x.BeforeJson).HasColumnType("nvarchar(max)");
+        entity.Property(x => x.AfterJson).HasColumnType("nvarchar(max)");
     }
 
     public void Configure(EntityTypeBuilder<EmailOutbox> entity)

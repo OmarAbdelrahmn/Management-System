@@ -320,7 +320,7 @@ public class MessagingService(
         if (notification is null)
             return Result.Failure(MessagingErrors.NotificationNotFound);
 
-        if (string.IsNullOrWhiteSpace(request.Reason))
+        if (notification.Status != NotificationStatus.Active || string.IsNullOrWhiteSpace(request.Reason))
             return Result.Failure(MessagingErrors.InvalidRequest);
 
         var reason = request.Reason.Trim();
@@ -335,6 +335,28 @@ public class MessagingService(
 
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success();
+    }
+
+    public async Task<Result<NotificationResponse>> UpdateScheduledNotificationAsync(int id, UpdateScheduledNotificationRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Body))
+            return Result.Failure<NotificationResponse>(MessagingErrors.InvalidRequest);
+
+        var notification = await dbcontext.SystemNotifications.Include(x => x.Recipients).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (notification is null)
+            return Result.Failure<NotificationResponse>(MessagingErrors.NotificationNotFound);
+
+        var now = DateTime.UtcNow.AddHours(3);
+        if (notification.Status != NotificationStatus.Active || !notification.ScheduledAt.HasValue || notification.ScheduledAt <= now || !request.ScheduledAt.HasValue || request.ScheduledAt <= now || notification.Recipients.Any(x => x.DeliveryStatus != ChannelDeliveryStatus.Pending))
+            return Result.Failure<NotificationResponse>(MessagingErrors.InvalidRequest);
+
+        notification.Title = request.Title.Trim();
+        notification.Body = request.Body.Trim();
+        notification.Channel = request.Channel;
+        notification.ScheduledAt = request.ScheduledAt;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        var updated = await NotificationQuery().FirstAsync(x => x.Id == id, cancellationToken);
+        return Result.Success(MapNotification(updated));
     }
 
     public async Task<Result<NotificationRecipientResponse>> MarkNotificationRecipientReadAsync(int recipientId, CancellationToken cancellationToken = default)

@@ -21,6 +21,7 @@ public interface IMessagingService
     Task<Result<MessageTemplateResponse>> SaveTemplateAsync(int? id, UpsertMessageTemplateRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<NotificationResponse>>> GetNotificationsAsync(NotificationStatus? status = null, MessageChannel? channel = null, string? keyword = null, CancellationToken cancellationToken = default);
     Task<Result<NotificationResponse>> CreateNotificationAsync(CreateNotificationRequest request, CancellationToken cancellationToken = default);
+    Task<Result<NotificationResponse>> UpdateScheduledNotificationAsync(int id, UpdateScheduledNotificationRequest request, CancellationToken cancellationToken = default);
     Task<Result> CancelNotificationAsync(int id, CancelNotificationRequest request, CancellationToken cancellationToken = default);
     Task<Result<NotificationRecipientResponse>> MarkNotificationRecipientReadAsync(int recipientId, CancellationToken cancellationToken = default);
     Task<Result<NotificationRecipientResponse>> RecordNotificationDeliveryAsync(int recipientId, UpdateNotificationDeliveryRequest request, CancellationToken cancellationToken = default);

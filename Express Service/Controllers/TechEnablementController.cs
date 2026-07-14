@@ -2,13 +2,14 @@ using Application.Contracts.TechEnablement;
 using Application.Service.TechEnablement;
 using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Express_Service.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Secretary,Chairman")]
+[RequirePermissionPrefix("system.tech-enablement.")]
 public class TechEnablementController(ITechEnablementService service) : ControllerBase
 {
     [HttpGet("dashboard")]

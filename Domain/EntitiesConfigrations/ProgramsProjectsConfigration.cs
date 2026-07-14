@@ -166,7 +166,7 @@ public class ProgramSupplierProposalConfigration : IEntityTypeConfiguration<Prog
         entity.HasOne(x => x.ConvertedContract)
             .WithMany()
             .HasForeignKey(x => x.ConvertedContractId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }
 
@@ -289,7 +289,7 @@ public class ProgramCertificateIssueConfigration : IEntityTypeConfiguration<Prog
         entity.HasIndex(x => x.CertificateNumber).IsUnique();
         entity.HasIndex(x => new { x.ProgramProjectId, x.Status });
         entity.HasOne(x => x.ProgramProject).WithMany().HasForeignKey(x => x.ProgramProjectId).OnDelete(DeleteBehavior.Cascade);
-        entity.HasOne(x => x.ProgramCertificateTemplate).WithMany(x => x.CertificateIssues).HasForeignKey(x => x.ProgramCertificateTemplateId).OnDelete(DeleteBehavior.SetNull);
+        entity.HasOne(x => x.ProgramCertificateTemplate).WithMany(x => x.CertificateIssues).HasForeignKey(x => x.ProgramCertificateTemplateId).OnDelete(DeleteBehavior.NoAction);
     }
 }
 

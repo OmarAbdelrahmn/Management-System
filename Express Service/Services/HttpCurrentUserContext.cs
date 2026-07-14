@@ -12,4 +12,6 @@ public class HttpCurrentUserContext(IHttpContextAccessor httpContextAccessor) : 
     public IReadOnlyCollection<string> Roles =>
         httpContextAccessor.HttpContext?.User.FindAll(ClaimTypes.Role).Select(x => x.Value).ToArray()
         ?? [];
+
+    public string? RemoteIpAddress => httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
 }

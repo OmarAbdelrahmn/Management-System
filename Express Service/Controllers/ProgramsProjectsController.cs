@@ -2,13 +2,14 @@ using Application.Contracts.ProgramsProjects;
 using Application.Service.ProgramsProjects;
 using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Express_Service.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Secretary,Chairman")]
+[RequirePermissionPrefix("system.programs-projects-designs.")]
 public class ProgramsProjectsController(IProgramsProjectsService programsProjects) : ControllerBase
 {
     [HttpGet("dashboard")]

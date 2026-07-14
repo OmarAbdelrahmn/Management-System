@@ -263,3 +263,19 @@ public class FinanceBudget : IAuditable
     public DateTime? UpdatedAt { get; set; }
     public string? UpdatedByUserId { get; set; }
 }
+
+public class BankReconciliation : IAuditable
+{
+    public int Id { get; set; }
+    public int FinanceBankAccountId { get; set; }
+    public DateTime ReconciliationDate { get; set; }
+    public decimal StatementBalance { get; set; }
+    public decimal BookBalance { get; set; }
+    public bool IsApproved { get; set; }
+    public string? Notes { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
+    public string? CreatedByUserId { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedByUserId { get; set; }
+    public FinanceBankAccount? FinanceBankAccount { get; set; }
+}

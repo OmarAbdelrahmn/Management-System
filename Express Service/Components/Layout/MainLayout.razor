@@ -1,21 +1,51 @@
 @inherits LayoutComponentBase
 @inject SystemCatalogUiService Catalog
+@inject MessagingUiService Messaging
+@inject NavigationManager Navigation
 
 <header id="nav-sticky" class="rafed-header">
     <div class="header-brand">
-        <strong>نظام الإدارة الإلكتروني</strong>
-        <span>إدارة المجالس والاجتماعات والخدمات</span>
+        <button class="mobile-menu-toggle" @onclick="ToggleMobileMenu" aria-label="فتح القائمة"><i class="fa-solid fa-bars"></i></button>
+        <div><strong>نظام الإدارة الإلكتروني</strong><span>منصة الخدمات الإدارية المتكاملة</span></div>
     </div>
 
     <div class="header-search">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input id="search_input" placeholder="بحث.." />
+        <input id="search_input" placeholder="بحث في خدماتك المتاحة..." @bind="searchText" @bind:event="oninput" @bind:after="SearchAsync" aria-label="بحث في الخدمات" />
+        @if (searchResults.Count > 0)
+        {
+            <div class="header-search-results">
+                @foreach (var page in searchResults)
+                {
+                    <a href="@(page.Route)" @onclick="ClearSearch">@(page.NameAr)</a>
+                }
+            </div>
+        }
     </div>
 
     <div class="header-actions">
-        <a href="/tasks/mine"><i class="fa-solid fa-list-check"></i> المهام</a>
-        <button class="has-badge"><i class="fa-solid fa-bell"></i> التنبيهات <span>3</span></button>
-        <a href="/swagger"><i class="fa-solid fa-globe"></i> API</a>
+        @if (HasRoute("/tasks/mine") || HasRoute("/tasks/database") || HasRoute("/tasks/create"))
+        {
+        <details class="header-dropdown">
+            <summary><i class="fa-solid fa-list-check"></i> المهام <i class="fa-solid fa-angle-down"></i></summary>
+            <div class="header-dropdown-menu">
+                @if (HasRoute("/tasks/mine")){<a href="/tasks/mine">مهامي</a>}
+                @if (HasRoute("/tasks/database")){<a href="/tasks/database">قاعدة المهام</a>}
+                @if (HasRoute("/tasks/create")){<a href="/tasks/create">إضافة مهمة</a>}
+            </div>
+        </details>
+        }
+        @if (HasRoute("/notifications/manage") || HasRoute("/notifications/database"))
+        {
+        <details class="header-dropdown">
+            <summary class="has-badge"><i class="fa-solid fa-bell"></i> التنبيهات @if (unreadNotificationCount > 0){<span>@unreadNotificationCount</span>}<i class="fa-solid fa-angle-down"></i></summary>
+            <div class="header-dropdown-menu">
+                @if (HasRoute("/notifications/manage")){<a href="/notifications/manage">إدارة التنبيهات</a>}
+                @if (HasRoute("/notifications/database")){<a href="/notifications/database">قاعدة التنبيهات</a>}
+            </div>
+        </details>
+        }
+        <a href="/swagger" title="واجهة API"><i class="fa-solid fa-globe-africa"></i> الموقع الإلكتروني</a>
         <div class="user-menu">
             <span class="avatar"><i class="fa-solid fa-user"></i></span>
             <AuthorizeView>
@@ -30,12 +60,17 @@
     </div>
 </header>
 
-<aside class="menu-container">
+@if (mobileMenuOpen)
+{
+    <button class="menu-overlay" @onclick="ToggleMobileMenu" aria-label="إغلاق القائمة"></button>
+}
+<aside class="menu-container @(mobileMenuOpen ? "is-open" : string.Empty)">
     <div class="logo">
         <div class="logo-card">
-            <strong>إدارة</strong>
-            <span>نظام الإدارة الموحد</span>
-            <small>مطابقة تنقل رافد</small>
+            <i class="fa-solid fa-building-columns"></i>
+            <strong>نظام رافد</strong>
+            <span>الإدارة الإلكترونية</span>
+            <small>الخدمات الإدارية المتكاملة</small>
         </div>
     </div>
 
@@ -51,7 +86,7 @@
         {
             @foreach (var module in navigation)
             {
-                <details>
+                <details open="@ModuleContainsCurrentRoute(module)">
                     <summary>
                         <i class="@SidebarIcon(module.IconCss)"></i>
                         <span>@module.NameAr</span>
@@ -62,7 +97,7 @@
                         <div class="side-separator">@group.NameAr</div>
                         @foreach (var navPage in group.Pages)
                         {
-                            <a href="@navPage.Route" title="@navPage.OriginalHref">
+                            <a class="@(IsCurrentRoute(navPage.Route) ? "active" : string.Empty)" href="@navPage.Route" title="@navPage.OriginalHref" @onclick="CloseMobileMenu">
                                 @navPage.NameAr
                                 @if (navPage.Status != "Implemented")
                                 {
@@ -78,15 +113,22 @@
 </aside>
 
 <main class="page-container-legacy">
-    @Body
+    <CatalogRouteGuard>
+        @Body
+    </CatalogRouteGuard>
 </main>
 
 @code {
     private List<SystemNavigationModuleResponse> navigation = [];
+    private List<SystemNavigationPageResponse> searchResults = [];
+    private string searchText = string.Empty;
+    private int unreadNotificationCount;
+    private bool mobileMenuOpen;
 
     protected override async Task OnInitializedAsync()
     {
         navigation = await Catalog.GetNavigationAsync();
+        unreadNotificationCount = await Messaging.GetUnreadNotificationCountAsync();
     }
 
     private static string SidebarIcon(string? iconCss)
@@ -99,4 +141,13 @@
             .Replace("fal", "fa-solid", StringComparison.OrdinalIgnoreCase)
             .Trim();
     }
+
+    private bool IsCurrentRoute(string route) => string.Equals(Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/'), route.TrimStart('/').TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+    private bool HasRoute(string route) => navigation.SelectMany(x => x.Groups).SelectMany(x => x.Pages).Any(x => string.Equals(x.Route, route, StringComparison.OrdinalIgnoreCase));
+    private bool ModuleContainsCurrentRoute(SystemNavigationModuleResponse module) => module.Groups.SelectMany(x => x.Pages).Any(x => IsCurrentRoute(x.Route));
+    private async Task SearchAsync() => searchResults = await Catalog.SearchAccessiblePagesAsync(searchText);
+    private void ClearSearch() { searchText = string.Empty; searchResults = []; }
+    private void ToggleMobileMenu() => mobileMenuOpen = !mobileMenuOpen;
+    private void CloseMobileMenu() => mobileMenuOpen = false;
+}
 }

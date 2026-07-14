@@ -101,6 +101,10 @@ public record RecordMemberPaymentRequest(
     string? Notes,
     bool MarkAsPaid = true);
 
+public record CancelMemberPaymentRequest(string Reason);
+
+public record SettleMemberPaymentRequest(DateTime? PaidAt, string? ReceiptNumber, string? Notes);
+
 public record MemberCardResponse(
     int Id,
     int MemberProfileId,

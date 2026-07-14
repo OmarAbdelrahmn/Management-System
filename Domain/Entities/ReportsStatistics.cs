@@ -44,6 +44,10 @@ public class SystemReportRun : IAuditable
     public int RowCount { get; set; }
     public SystemReportRunStatus Status { get; set; } = SystemReportRunStatus.Generated;
     public string? RequestedBy { get; set; }
+    public string? ArchiveFileName { get; set; }
+    public string? ArchiveContentType { get; set; }
+    public byte[]? ArchivedContent { get; set; }
+    public DateTime? ArchivedAt { get; set; }
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow.AddHours(3);
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
     public string? CreatedByUserId { get; set; }

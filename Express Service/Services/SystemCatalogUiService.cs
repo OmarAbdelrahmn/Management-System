@@ -56,6 +56,30 @@ public class SystemCatalogUiService(ISystemCatalogService systemCatalogService)
         return result.IsSuccess ? result.Value.ToList() : [];
     }
 
+    public async Task<List<SystemNavigationPageResponse>> SearchAccessiblePagesAsync(string? search, int take = 8, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+            return [];
+
+        var term = search.Trim();
+        var navigation = await GetNavigationAsync(cancellationToken);
+        return navigation
+            .SelectMany(x => x.Groups)
+            .SelectMany(x => x.Pages)
+            .Where(x => x.NameAr.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                        x.Key.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                        x.Route.Contains(term, StringComparison.OrdinalIgnoreCase))
+            .Take(Math.Clamp(take, 1, 20))
+            .ToList();
+    }
+
+    public async Task<CatalogRouteAccessResponse> GetRouteAccessAsync(string route, CancellationToken cancellationToken = default)
+    {
+        await EnsureSeededAsync(cancellationToken);
+        var result = await systemCatalogService.GetRouteAccessAsync(route, cancellationToken);
+        return result.IsSuccess ? result.Value : new CatalogRouteAccessResponse(false, true, []);
+    }
+
     public async Task<(bool Success, string Message)> UpdatePageStatusAsync(int id, SystemPageStatus status, CancellationToken cancellationToken = default)
     {
         var result = await systemCatalogService.UpdatePageStatusAsync(id, new UpdateSystemPageStatusRequest(status), cancellationToken);

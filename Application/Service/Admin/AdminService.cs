@@ -7,6 +7,7 @@ using Domain.Entities;
 using Domain.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Application.Service.Admin;
 
@@ -88,6 +89,45 @@ public class AdminService(
             return Result.Failure<RoleResponse>(IdentityError(result));
 
         return Result.Success(new RoleResponse(role.Id, role.Name ?? string.Empty));
+    }
+
+    public async Task<Result<RoleResponse>> UpdateRoleAsync(string id, UpdateRoleRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+            return Result.Failure<RoleResponse>(AdminErrors.InvalidRequest);
+
+        var role = await roleManager.FindByIdAsync(id);
+        if (role is null)
+            return Result.Failure<RoleResponse>(AdminErrors.RoleNotFound);
+
+        role.Name = request.Name.Trim();
+        var result = await roleManager.UpdateAsync(role);
+        if (!result.Succeeded)
+            return Result.Failure<RoleResponse>(IdentityError(result));
+
+        return Result.Success(new RoleResponse(role.Id, role.Name ?? string.Empty));
+    }
+
+    public async Task<Result> DeleteRoleAsync(string id, CancellationToken cancellationToken = default)
+    {
+        var role = await roleManager.FindByIdAsync(id);
+        if (role is null)
+            return Result.Failure(AdminErrors.RoleNotFound);
+
+        if (await dbcontext.UserRoles.AnyAsync(x => x.RoleId == id, cancellationToken))
+            return Result.Failure(AdminErrors.RoleInUse);
+
+        var grants = await dbcontext.RolePermissions.Where(x => x.RoleId == id).ToListAsync(cancellationToken);
+        if (grants.Count > 0)
+        {
+            dbcontext.RolePermissions.RemoveRange(grants);
+            await dbcontext.SaveChangesAsync(cancellationToken);
+        }
+
+        var result = await roleManager.DeleteAsync(role);
+        if (!result.Succeeded)
+            return Result.Failure(IdentityError(result));
+        return Result.Success();
     }
 
     public async Task<Result<IEnumerable<PermissionResponse>>> GetPermissionsAsync(CancellationToken cancellationToken = default)
@@ -189,48 +229,169 @@ public class AdminService(
         return Result.Success(MapSetting(setting));
     }
 
-    public async Task<Result<IEnumerable<FileAssetResponse>>> GetFilesAsync(CancellationToken cancellationToken = default)
+    public async Task<Result<PagedResponse<FileAssetResponse>>> GetFilesAsync(FileAssetSearchRequest? request = null, CancellationToken cancellationToken = default)
     {
-        var files = await dbcontext.FileAssets.AsNoTracking().Include(x => x.UploadedByUser).OrderByDescending(x => x.CreatedAt).ToListAsync(cancellationToken);
-        return Result.Success<IEnumerable<FileAssetResponse>>(files.Select(MapFile));
+        request ??= new FileAssetSearchRequest(null, null, null);
+        var query = dbcontext.FileAssets.AsNoTracking().Include(x => x.UploadedByUser).AsQueryable();
+        if (!string.IsNullOrWhiteSpace(request?.Search))
+        {
+            var search = request.Search.Trim();
+            query = query.Where(x => x.OriginalFileName.Contains(search) || x.FileName.Contains(search) || x.StoragePath.Contains(search));
+        }
+        if (!string.IsNullOrWhiteSpace(request?.Category))
+            query = query.Where(x => x.Category == request.Category.Trim());
+        if (request?.IsPublic is not null)
+            query = query.Where(x => x.IsPublic == request.IsPublic.Value);
+        var totalCount = await query.CountAsync(cancellationToken);
+        query = request!.SortBy?.ToLowerInvariant() switch
+        {
+            "name" => request.Descending ? query.OrderByDescending(x => x.OriginalFileName) : query.OrderBy(x => x.OriginalFileName),
+            "category" => request.Descending ? query.OrderByDescending(x => x.Category) : query.OrderBy(x => x.Category),
+            "size" => request.Descending ? query.OrderByDescending(x => x.SizeBytes) : query.OrderBy(x => x.SizeBytes),
+            _ => request.Descending ? query.OrderByDescending(x => x.CreatedAt) : query.OrderBy(x => x.CreatedAt)
+        };
+        var (page, pageSize) = NormalizePage(request.Page, request.PageSize);
+        var files = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        return Result.Success(new PagedResponse<FileAssetResponse>(files.Select(MapFile).ToList(), page, pageSize, totalCount, (int)Math.Ceiling(totalCount / (double)pageSize)));
     }
 
     public async Task<Result<FileAssetResponse>> SaveFileAssetAsync(SaveFileAssetRequest request, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(request.OriginalFileName) || string.IsNullOrWhiteSpace(request.StoragePath))
-            return Result.Failure<FileAssetResponse>(AdminErrors.InvalidRequest);
-
-        var userId = currentUserContext.UserId;
-        if (string.IsNullOrWhiteSpace(userId))
-            return Result.Failure<FileAssetResponse>(AdminErrors.InvalidRequest);
-
-        var file = new FileAsset
-        {
-            FileName = Path.GetFileName(request.StoragePath),
-            OriginalFileName = request.OriginalFileName.Trim(),
-            ContentType = request.ContentType.Trim(),
-            SizeBytes = request.SizeBytes,
-            StoragePath = request.StoragePath.Trim(),
-            Category = string.IsNullOrWhiteSpace(request.Category) ? "General" : request.Category.Trim(),
-            UploadedByUserId = userId,
-            IsPublic = request.IsPublic
-        };
-
-        dbcontext.FileAssets.Add(file);
-        await dbcontext.SaveChangesAsync(cancellationToken);
-        var created = await dbcontext.FileAssets.AsNoTracking().Include(x => x.UploadedByUser).FirstAsync(x => x.Id == file.Id, cancellationToken);
-        return Result.Success(MapFile(created));
+        return Result.Failure<FileAssetResponse>(AdminErrors.InvalidRequest);
     }
 
-    public async Task<Result<IEnumerable<AuditLogResponse>>> GetAuditLogsAsync(CancellationToken cancellationToken = default)
+    public async Task<Result<FileAssetResponse>> UpdateFileAssetAsync(int id, UpdateFileAssetRequest request, CancellationToken cancellationToken = default)
     {
-        var logs = await dbcontext.AuditLogs.AsNoTracking().OrderByDescending(x => x.CreatedAt).Take(300).Select(x =>
-            new AuditLogResponse(x.Id, x.ActorUserId, x.Action, x.EntityName, x.EntityId, x.Details, x.CreatedAt)).ToListAsync(cancellationToken);
-        return Result.Success<IEnumerable<AuditLogResponse>>(logs);
+        return Result.Failure<FileAssetResponse>(AdminErrors.InvalidRequest);
+    }
+
+    public async Task<Result<FileAssetResponse>> GetFileAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var file = await dbcontext.FileAssets.AsNoTracking().Include(x => x.UploadedByUser).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        return file is null ? Result.Failure<FileAssetResponse>(AdminErrors.FileNotFound) : Result.Success(MapFile(file));
+    }
+
+    public async Task<Result> DeleteFileAssetAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var file = await dbcontext.FileAssets.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (file is null)
+            return Result.Failure(AdminErrors.FileNotFound);
+
+        dbcontext.FileAssets.Remove(file);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
+    public async Task<Result<FileAssetLinkResponse>> LinkFileAsync(LinkFileAssetRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.FileAssetId <= 0 || string.IsNullOrWhiteSpace(request.EntityType) || string.IsNullOrWhiteSpace(request.EntityId))
+            return Result.Failure<FileAssetLinkResponse>(AdminErrors.InvalidRequest);
+        var file = await dbcontext.FileAssets.FirstOrDefaultAsync(x => x.Id == request.FileAssetId, cancellationToken);
+        if (file is null) return Result.Failure<FileAssetLinkResponse>(AdminErrors.FileNotFound);
+        var link = await dbcontext.FileAssetLinks.FirstOrDefaultAsync(x => x.FileAssetId == request.FileAssetId && x.EntityType == request.EntityType.Trim() && x.EntityId == request.EntityId.Trim(), cancellationToken);
+        if (link is null)
+        {
+            link = new FileAssetLink { FileAssetId = file.Id, EntityType = request.EntityType.Trim(), EntityId = request.EntityId.Trim(), Label = request.Label?.Trim() };
+            dbcontext.FileAssetLinks.Add(link);
+            dbcontext.AuditLogs.Add(new AuditLog { ActorUserId = currentUserContext.UserId ?? "system", Action = "AttachmentLinked", EntityName = link.EntityType, EntityId = link.EntityId, Details = file.OriginalFileName });
+            await dbcontext.SaveChangesAsync(cancellationToken);
+        }
+        return Result.Success(MapLink(link, file));
+    }
+
+    public async Task<Result<IEnumerable<FileAssetLinkResponse>>> GetFileLinksAsync(string entityType, string entityId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(entityType) || string.IsNullOrWhiteSpace(entityId)) return Result.Failure<IEnumerable<FileAssetLinkResponse>>(AdminErrors.InvalidRequest);
+        var links = await dbcontext.FileAssetLinks.AsNoTracking().Include(x => x.FileAsset).Where(x => x.EntityType == entityType.Trim() && x.EntityId == entityId.Trim()).OrderByDescending(x => x.CreatedAt).ToListAsync(cancellationToken);
+        return Result.Success<IEnumerable<FileAssetLinkResponse>>(links.Select(x => MapLink(x, x.FileAsset!)));
+    }
+
+    public async Task<Result> UnlinkFileAsync(int linkId, CancellationToken cancellationToken = default)
+    {
+        var link = await dbcontext.FileAssetLinks.FirstOrDefaultAsync(x => x.Id == linkId, cancellationToken);
+        if (link is null) return Result.Failure(AdminErrors.FileNotFound);
+        dbcontext.AuditLogs.Add(new AuditLog { ActorUserId = currentUserContext.UserId ?? "system", Action = "AttachmentUnlinked", EntityName = link.EntityType, EntityId = link.EntityId, Details = link.FileAssetId.ToString() });
+        dbcontext.FileAssetLinks.Remove(link);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
+    public async Task<Result<PagedResponse<AuditLogResponse>>> GetAuditLogsAsync(AuditLogSearchRequest? request = null, CancellationToken cancellationToken = default)
+    {
+        request ??= new AuditLogSearchRequest(null, null, null, null, null, null);
+        var query = dbcontext.AuditLogs.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(request?.Search))
+        {
+            var search = request.Search.Trim();
+            query = query.Where(x => x.Action.Contains(search) || x.EntityName.Contains(search) || x.EntityId.Contains(search) || x.Details.Contains(search));
+        }
+        if (!string.IsNullOrWhiteSpace(request?.ActorUserId)) query = query.Where(x => x.ActorUserId == request.ActorUserId.Trim());
+        if (!string.IsNullOrWhiteSpace(request?.EntityName)) query = query.Where(x => x.EntityName == request.EntityName.Trim());
+        if (!string.IsNullOrWhiteSpace(request?.EntityId)) query = query.Where(x => x.EntityId == request.EntityId.Trim());
+        if (request?.From is not null) query = query.Where(x => x.CreatedAt >= request.From.Value.Date);
+        if (request?.To is not null) query = query.Where(x => x.CreatedAt < request.To.Value.Date.AddDays(1));
+        var totalCount = await query.CountAsync(cancellationToken);
+        query = request!.SortBy?.ToLowerInvariant() switch
+        {
+            "action" => request.Descending ? query.OrderByDescending(x => x.Action) : query.OrderBy(x => x.Action),
+            "entity" => request.Descending ? query.OrderByDescending(x => x.EntityName) : query.OrderBy(x => x.EntityName),
+            "user" => request.Descending ? query.OrderByDescending(x => x.ActorUserId) : query.OrderBy(x => x.ActorUserId),
+            _ => request.Descending ? query.OrderByDescending(x => x.CreatedAt) : query.OrderBy(x => x.CreatedAt)
+        };
+        var (page, pageSize) = NormalizePage(request.Page, request.PageSize);
+        var logs = await query.Skip((page - 1) * pageSize).Take(pageSize).Select(x =>
+            new AuditLogResponse(x.Id, x.ActorUserId, x.Action, x.EntityName, x.EntityId, x.Details, x.BeforeJson, x.AfterJson, x.CreatedAt)).ToListAsync(cancellationToken);
+        return Result.Success(new PagedResponse<AuditLogResponse>(logs, page, pageSize, totalCount, (int)Math.Ceiling(totalCount / (double)pageSize)));
+    }
+
+    public async Task<Result<IEnumerable<QueryViewResponse>>> GetQueryViewsAsync(string screenKey, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(currentUserContext.UserId) || string.IsNullOrWhiteSpace(screenKey)) return Result.Failure<IEnumerable<QueryViewResponse>>(AdminErrors.InvalidRequest);
+        var views = await dbcontext.SavedQueryViews.AsNoTracking().Where(x => x.UserId == currentUserContext.UserId && x.ScreenKey == screenKey.Trim()).OrderBy(x => x.Name)
+            .Select(x => new QueryViewResponse(x.Id, x.ScreenKey, x.Name, x.FilterJson, x.CreatedAt)).ToListAsync(cancellationToken);
+        return Result.Success<IEnumerable<QueryViewResponse>>(views);
+    }
+
+    public async Task<Result<QueryViewResponse>> SaveQueryViewAsync(SaveQueryViewRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(currentUserContext.UserId) || string.IsNullOrWhiteSpace(request.ScreenKey) || string.IsNullOrWhiteSpace(request.Name) || !IsValidFilterJson(request.FilterJson)) return Result.Failure<QueryViewResponse>(AdminErrors.InvalidRequest);
+        var userId = currentUserContext.UserId;
+        var screenKey = request.ScreenKey.Trim();
+        var name = request.Name.Trim();
+        var view = await dbcontext.SavedQueryViews.FirstOrDefaultAsync(x => x.UserId == userId && x.ScreenKey == screenKey && x.Name == name, cancellationToken);
+        if (view is null) { view = new SavedQueryView { UserId = userId, ScreenKey = screenKey, Name = name, FilterJson = request.FilterJson }; dbcontext.SavedQueryViews.Add(view); }
+        else view.FilterJson = request.FilterJson;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(new QueryViewResponse(view.Id, view.ScreenKey, view.Name, view.FilterJson, view.CreatedAt));
+    }
+
+    public async Task<Result> DeleteQueryViewAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var view = await dbcontext.SavedQueryViews.FirstOrDefaultAsync(x => x.Id == id && x.UserId == currentUserContext.UserId, cancellationToken);
+        if (view is null) return Result.Failure(AdminErrors.InvalidRequest);
+        dbcontext.SavedQueryViews.Remove(view);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success();
     }
 
     public Result<JobDashboardStatusResponse> GetJobDashboardStatus(bool hangfireEnabled, string cron) =>
         Result.Success(new JobDashboardStatusResponse(hangfireEnabled, "/jobs", cron));
+
+    private static FileAssetLinkResponse MapLink(FileAssetLink link, FileAsset file) => new(link.Id, file.Id, file.FileName, file.OriginalFileName, link.EntityType, link.EntityId, link.Label, link.CreatedAt);
+    private static (int Page, int PageSize) NormalizePage(int page, int pageSize) => (Math.Max(1, page), Math.Clamp(pageSize, 10, 100));
+    private static bool IsValidFilterJson(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json) || json.Length > 20_000) return false;
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.ValueKind == JsonValueKind.Object;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
 
     private async Task ReplaceRolesAsync(ApplicationUser user, IReadOnlyCollection<string> roles)
     {
@@ -258,7 +419,9 @@ public class AdminService(
             ("system.tasks.manage", "إدارة المهام", "Tasks"),
             ("system.messaging.manage", "إدارة البريد والتنبيهات", "Messaging"),
             ("system.meetings.manage", "إدارة الاجتماعات", "Meetings"),
-            ("system.admin.manage", "إدارة النظام", "Admin")
+            ("system.admin.manage", "إدارة النظام", "Admin"),
+            ("system.attachments.view", "عرض المرفقات", "Attachments"),
+            ("system.attachments.manage", "إدارة المرفقات", "Attachments")
         };
 
         foreach (var item in defaults)
@@ -300,7 +463,7 @@ public class AdminService(
         new(setting.Id, setting.Key, setting.NameAr, setting.ValueType == SystemSettingValueType.Secret && !string.IsNullOrWhiteSpace(setting.Value) ? "********" : setting.Value, setting.ValueType.ToString(), setting.Category, setting.IsEditable);
 
     private static FileAssetResponse MapFile(FileAsset file) =>
-        new(file.Id, file.FileName, file.OriginalFileName, file.ContentType, file.SizeBytes, file.StoragePath, file.Category, file.UploadedByUserId, file.UploadedByUser?.FullName ?? string.Empty, file.IsPublic, file.CreatedAt);
+        new(file.Id, file.FileName, file.OriginalFileName, file.ContentType, file.SizeBytes, string.Empty, file.Category, file.UploadedByUserId, file.UploadedByUser?.FullName ?? string.Empty, false, file.CreatedAt);
 
     private static Error IdentityError(IdentityResult result) =>
         new(AdminErrors.IdentityFailure.Code, string.Join("; ", result.Errors.Select(x => x.Description)), AdminErrors.IdentityFailure.StatuesCode);

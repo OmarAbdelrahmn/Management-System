@@ -37,6 +37,11 @@
     </section>
 }
 
+@if (Id > 0)
+{
+    <AttachmentPanel EntityType="EmployeeProfile" EntityId="@Id" />
+}
+
 @code {
     [Parameter] public int Id { get; set; }
     private List<EmployeeDepartmentResponse> departments = [];

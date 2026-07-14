@@ -1,0 +1,74 @@
+@inject AdminUiService Admin
+
+@if (EntityId > 0 && events.Count > 0)
+{
+    <section class="table-section" style="margin-top:14px">
+        <div class="table-title"><span><i class="fa-solid fa-clock-rotate-left"></i> السجل الزمني</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
+        <table>
+            <thead><tr><th>الإجراء</th><th>المنفذ</th><th>التفاصيل</th><th>التغييرات</th><th>التاريخ</th></tr></thead>
+            <tbody>
+                @foreach (var item in events)
+                {
+                    <tr><td>@item.Action</td><td>@item.ActorUserId</td><td>@item.Details</td><td>@ChangeSummary(item)</td><td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td></tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+@code {
+    [Parameter, EditorRequired] public string EntityName { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public int EntityId { get; set; }
+
+    private List<AuditLogResponse> events = [];
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        if (EntityId <= 0 || string.IsNullOrWhiteSpace(EntityName))
+        {
+            events = [];
+            return;
+        }
+
+        var result = await Admin.GetAuditLogsAsync(entityName: EntityName, entityId: EntityId.ToString(), pageSize: 20, sortBy: "created");
+        events = result.Items.ToList();
+    }
+
+    private static string ChangeSummary(AuditLogResponse item)
+    {
+        var before = ParseValues(item.BeforeJson);
+        var after = ParseValues(item.AfterJson);
+        var keys = before.Keys.Union(after.Keys, StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList();
+        if (keys.Count == 0) return "—";
+
+        return string.Join("؛ ", keys.Select(key =>
+        {
+            before.TryGetValue(key, out var oldValue);
+            after.TryGetValue(key, out var newValue);
+            if (string.Equals(oldValue, newValue, StringComparison.Ordinal)) return null;
+            return $"{key}: {Short(oldValue)} ← {Short(newValue)}";
+        }).Where(x => x is not null));
+    }
+
+    private static Dictionary<string, string> ParseValues(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return new(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(json);
+            return document.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object
+                ? new(StringComparer.OrdinalIgnoreCase)
+                : document.RootElement.EnumerateObject().ToDictionary(x => x.Name, x => x.Value.ToString(), StringComparer.OrdinalIgnoreCase);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return new(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private static string Short(string? value) => string.IsNullOrWhiteSpace(value)
+        ? "—"
+        : value.Length <= 80 ? value : value[..80] + "…";
+}

@@ -130,7 +130,7 @@ public class StrategicIndicatorConfigration : IEntityTypeConfiguration<Strategic
         entity.Property(x => x.Notes).HasMaxLength(1000);
         entity.HasIndex(x => new { x.StrategicPlanId, x.Kind, x.Status });
         entity.HasOne(x => x.StrategicPlan).WithMany(x => x.Indicators).HasForeignKey(x => x.StrategicPlanId).OnDelete(DeleteBehavior.Cascade);
-        entity.HasOne(x => x.StrategicGoal).WithMany(x => x.Indicators).HasForeignKey(x => x.StrategicGoalId).OnDelete(DeleteBehavior.SetNull);
+        entity.HasOne(x => x.StrategicGoal).WithMany(x => x.Indicators).HasForeignKey(x => x.StrategicGoalId).OnDelete(DeleteBehavior.NoAction);
         entity.HasOne(x => x.ParentIndicator).WithMany(x => x.SubIndicators).HasForeignKey(x => x.ParentIndicatorId).OnDelete(DeleteBehavior.NoAction);
     }
 }

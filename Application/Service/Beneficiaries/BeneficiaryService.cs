@@ -431,6 +431,9 @@ public class BeneficiaryService(ApplicationDbcontext dbcontext) : IBeneficiarySe
         if (updateRequest.Status != BeneficiaryUpdateRequestStatus.Pending)
             return Result.Failure<BeneficiaryUpdateRequestResponse>(BeneficiaryErrors.UpdateRequestAlreadyDecided);
 
+        if (!request.Approved && string.IsNullOrWhiteSpace(request.Notes))
+            return Result.Failure<BeneficiaryUpdateRequestResponse>(BeneficiaryErrors.InvalidRequest);
+
         if (request.Approved && updateRequest.BeneficiaryProfile is not null)
         {
             var applyResult = ApplyFieldUpdate(updateRequest.BeneficiaryProfile, updateRequest.RequestedField, updateRequest.RequestedValue);
@@ -440,6 +443,24 @@ public class BeneficiaryService(ApplicationDbcontext dbcontext) : IBeneficiarySe
 
         updateRequest.Status = request.Approved ? BeneficiaryUpdateRequestStatus.Approved : BeneficiaryUpdateRequestStatus.Rejected;
         updateRequest.DecisionNotes = request.Notes?.Trim();
+        updateRequest.DecidedAt = DateTime.UtcNow.AddHours(3);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapUpdateRequest(updateRequest));
+    }
+
+    public async Task<Result<BeneficiaryUpdateRequestResponse>> CancelUpdateRequestAsync(int id, CancelBeneficiaryUpdateRequest request, CancellationToken cancellationToken = default)
+    {
+        var updateRequest = await dbcontext.BeneficiaryUpdateRequests
+            .Include(x => x.BeneficiaryProfile)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (updateRequest is null)
+            return Result.Failure<BeneficiaryUpdateRequestResponse>(BeneficiaryErrors.UpdateRequestNotFound);
+
+        if (updateRequest.Status != BeneficiaryUpdateRequestStatus.Pending || string.IsNullOrWhiteSpace(request.Reason))
+            return Result.Failure<BeneficiaryUpdateRequestResponse>(BeneficiaryErrors.InvalidRequest);
+
+        updateRequest.Status = BeneficiaryUpdateRequestStatus.Cancelled;
+        updateRequest.DecisionNotes = request.Reason.Trim();
         updateRequest.DecidedAt = DateTime.UtcNow.AddHours(3);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapUpdateRequest(updateRequest));
@@ -745,6 +766,9 @@ public class BeneficiaryService(ApplicationDbcontext dbcontext) : IBeneficiarySe
         if (operation.Status != BeneficiaryOperationStatus.Pending)
             return Result.Failure<BeneficiaryGuardianOperationResponse>(BeneficiaryErrors.OperationAlreadyDecided);
 
+        if (!request.Approved && string.IsNullOrWhiteSpace(request.DecisionNotes))
+            return Result.Failure<BeneficiaryGuardianOperationResponse>(BeneficiaryErrors.InvalidRequest);
+
         if (!request.Approved)
         {
             operation.Status = BeneficiaryOperationStatus.Rejected;
@@ -760,6 +784,28 @@ public class BeneficiaryService(ApplicationDbcontext dbcontext) : IBeneficiarySe
             return Result.Failure<BeneficiaryGuardianOperationResponse>(applyResult.Error);
 
         operation.Status = BeneficiaryOperationStatus.Completed;
+        operation.DecidedAt = DateTime.UtcNow.AddHours(3);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapGuardianOperation(operation));
+    }
+
+    public async Task<Result<BeneficiaryGuardianOperationResponse>> CancelGuardianOperationAsync(
+        int id,
+        CancelBeneficiaryGuardianOperationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var operation = await dbcontext.BeneficiaryGuardianOperations
+            .Include(x => x.BeneficiaryProfile)
+            .Include(x => x.BeneficiaryGuardian)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (operation is null)
+            return Result.Failure<BeneficiaryGuardianOperationResponse>(BeneficiaryErrors.GuardianOperationNotFound);
+
+        if (operation.Status != BeneficiaryOperationStatus.Pending || string.IsNullOrWhiteSpace(request.Reason))
+            return Result.Failure<BeneficiaryGuardianOperationResponse>(BeneficiaryErrors.InvalidRequest);
+
+        operation.Status = BeneficiaryOperationStatus.Cancelled;
+        operation.DecisionNotes = request.Reason.Trim();
         operation.DecidedAt = DateTime.UtcNow.AddHours(3);
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapGuardianOperation(operation));
@@ -805,6 +851,28 @@ public class BeneficiaryService(ApplicationDbcontext dbcontext) : IBeneficiarySe
         };
 
         dbcontext.BeneficiaryUpdateBatches.Add(batch);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapUpdateBatch(batch));
+    }
+
+    public async Task<Result<BeneficiaryUpdateBatchResponse>> UpdateUpdateBatchAsync(
+        int id,
+        UpdateBeneficiaryUpdateBatchRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var batch = await dbcontext.BeneficiaryUpdateBatches.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (batch is null)
+            return Result.Failure<BeneficiaryUpdateBatchResponse>(BeneficiaryErrors.UpdateBatchNotFound);
+
+        if (batch.Status != BeneficiaryOperationStatus.Pending || string.IsNullOrWhiteSpace(request.Title) || request.TotalProfiles < batch.CompletedProfiles)
+            return Result.Failure<BeneficiaryUpdateBatchResponse>(BeneficiaryErrors.InvalidRequest);
+
+        batch.Kind = request.Kind;
+        batch.Title = request.Title.Trim();
+        batch.AssignedTo = request.AssignedTo?.Trim();
+        batch.TotalProfiles = request.TotalProfiles;
+        batch.DueDate = request.DueDate?.Date;
+        batch.Notes = request.Notes?.Trim();
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapUpdateBatch(batch));
     }

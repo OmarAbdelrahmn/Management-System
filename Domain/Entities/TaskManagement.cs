@@ -44,7 +44,8 @@ public enum ApprovalActionDecision
 {
     Approved = 0,
     Rejected = 1,
-    Returned = 2
+    Returned = 2,
+    Delegated = 3
 }
 
 public class ManagementTask : IAuditable
@@ -105,6 +106,7 @@ public class ApprovalRoute : IAuditable
     public string NameAr { get; set; } = string.Empty;
     public string EntityType { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
+    public int DefaultDeadlineHours { get; set; } = 72;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
     public string? CreatedByUserId { get; set; }
     public DateTime? UpdatedAt { get; set; }
@@ -137,9 +139,13 @@ public class ApprovalRequest : IAuditable
     public string ReferenceType { get; set; } = string.Empty;
     public int? ReferenceId { get; set; }
     public string RequestedByUserId { get; set; } = string.Empty;
+    public string CurrentApproverUserId { get; set; } = string.Empty;
     public ApprovalRequestStatus Status { get; set; } = ApprovalRequestStatus.Pending;
     public int CurrentStepOrder { get; set; } = 1;
     public string? FinalComment { get; set; }
+    public DateTime? DueAt { get; set; }
+    public DateTime? LastEscalatedAt { get; set; }
+    public int EscalationCount { get; set; }
     public DateTime? ClosedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(3);
     public string? CreatedByUserId { get; set; }
@@ -148,6 +154,7 @@ public class ApprovalRequest : IAuditable
 
     public ApprovalRoute? ApprovalRoute { get; set; }
     public ApplicationUser? RequestedByUser { get; set; }
+    public ApplicationUser? CurrentApproverUser { get; set; }
     public ICollection<ApprovalAction> Actions { get; set; } = new List<ApprovalAction>();
 }
 
@@ -157,6 +164,7 @@ public class ApprovalAction : IAuditable
     public int ApprovalRequestId { get; set; }
     public int StepOrder { get; set; }
     public string ActionByUserId { get; set; } = string.Empty;
+    public string? DelegatedToUserId { get; set; }
     public ApprovalActionDecision Decision { get; set; }
     public string? Comment { get; set; }
     public DateTime ActionAt { get; set; } = DateTime.UtcNow.AddHours(3);
@@ -167,4 +175,5 @@ public class ApprovalAction : IAuditable
 
     public ApprovalRequest? ApprovalRequest { get; set; }
     public ApplicationUser? ActionByUser { get; set; }
+    public ApplicationUser? DelegatedToUser { get; set; }
 }

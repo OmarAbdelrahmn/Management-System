@@ -42,6 +42,13 @@
     </div>
 </section>
 
+<section class="panel" style="margin-top:14px">
+    <div class="panel-heading"><i class="fa-solid fa-building-columns"></i><div><h2>المطابقة البنكية</h2><p>سجل رصيد كشف البنك مقابل الرصيد الدفتري واعتماد المطابقة.</p></div></div>
+    <div class="form-grid compact"><label>الحساب البنكي<select @bind="reconciliationBankId">@foreach(var bank in banks){<option value="@bank.Id">@bank.BankName - @bank.AccountName</option>}</select></label><label>التاريخ<input type="date" @bind="reconciliationDate" /></label><label>رصيد الكشف<input type="number" step="0.01" @bind="statementBalance" /></label><label>الرصيد الدفتري<input type="number" step="0.01" @bind="bookBalance" /></label><label>الحالة<input value="قيد المراجعة" disabled /></label></div>
+    <label style="margin-top:10px">ملاحظات<input @bind="reconciliationNotes" /></label><div class="actions-row"><button class="primary" @onclick="SaveReconciliationAsync">حفظ المطابقة</button></div>
+    <div class="table-section" style="margin:14px 0 0"><table><thead><tr><th>البنك</th><th>التاريخ</th><th>الكشف</th><th>الدفتري</th><th>الفرق</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>@foreach(var item in reconciliations){<tr><td>@item.BankName - @item.AccountName</td><td>@item.ReconciliationDate.ToString("yyyy-MM-dd")</td><td>@item.StatementBalance</td><td>@item.BookBalance</td><td>@item.Difference</td><td><span class="status @(item.IsApproved ? "ok" : "warn")">@(item.IsApproved ? "معتمدة" : "قيد المراجعة")</span></td><td>@if (!item.IsApproved){<button class="primary small" @onclick="() => ApproveReconciliationAsync(item.Id)">اعتماد</button>}</td></tr>}</tbody></table></div>
+</section>
+
 <section class="circle-tiles" style="margin-top:14px">
     <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-receipt"></i></span><span>الإيرادات</span><strong class="tile-number">@(dashboard?.PostedIncome ?? 0)</strong><span class="tile-footer">فعلي</span></article>
     <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-money-bill"></i></span><span>المصروفات</span><strong class="tile-number">@(dashboard?.PostedExpenses ?? 0)</strong><span class="tile-footer">فعلي</span></article>
@@ -86,6 +93,8 @@
 @code {
     private AccountingDashboardResponse? dashboard;
     private List<FinanceBudgetResponse> budgets = [];
+    private List<FinanceBankAccountResponse> banks = [];
+    private List<BankReconciliationResponse> reconciliations = [];
     private int? editingBudgetId;
     private int fiscalYear = DateTime.UtcNow.AddHours(3).Year;
     private string budgetName = "الموازنة السنوية";
@@ -94,6 +103,10 @@
     private BudgetStatus budgetStatus = BudgetStatus.Draft;
     private bool success;
     private string? message;
+    private int reconciliationBankId;
+    private DateTime reconciliationDate = DateTime.UtcNow.AddHours(3).Date;
+    private decimal statementBalance, bookBalance;
+    private string? reconciliationNotes;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -101,6 +114,9 @@
     {
         dashboard = await Accounting.GetDashboardAsync();
         budgets = await Accounting.GetBudgetsAsync();
+        banks = await Accounting.GetBankAccountsAsync();
+        reconciliations = await Accounting.GetBankReconciliationsAsync();
+        if (reconciliationBankId == 0) reconciliationBankId = banks.FirstOrDefault()?.Id ?? 0;
     }
 
     private async Task SaveBudgetAsync()
@@ -150,5 +166,20 @@
         plannedIncome = 0;
         plannedExpenses = 0;
         budgetStatus = BudgetStatus.Draft;
+    }
+
+    private async Task SaveReconciliationAsync()
+    {
+        var result = await Accounting.SaveBankReconciliationAsync(null, new SaveBankReconciliationRequest(reconciliationBankId, reconciliationDate, statementBalance, bookBalance, false, reconciliationNotes));
+        success = result.Success; message = result.Message;
+        if (success) { statementBalance = bookBalance = 0; reconciliationNotes = null; }
+        await LoadAsync();
+    }
+
+    private async Task ApproveReconciliationAsync(int id)
+    {
+        var result = await Accounting.ApproveBankReconciliationAsync(id, reconciliationNotes);
+        success = result.Success; message = result.Message;
+        await LoadAsync();
     }
 }

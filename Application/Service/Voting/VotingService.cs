@@ -14,7 +14,7 @@ public class VotingService(
     IBoardAccessService? boardAccessService = null,
     IMeetingRealtimeNotifier? realtimeNotifier = null) : IVotingService
 {
-    private const string RejectedForQuorumText = "بند مرفوض لعدم اكتمال النصاب";
+    private const string RejectedForQuorumText = "بند مرفوض لعدم تحقق أغلبية الوزن التصويتي للحضور";
 
     public async Task<Result<VoteSessionResponse>> OpenAsync(int agendaItemId, CancellationToken cancellationToken = default)
     {
@@ -72,6 +72,9 @@ public class VotingService(
         if (invitation is null)
             return Result.Failure<VoteSessionResponse>(VotingErrors.MemberNotPresent);
 
+        if (request.Choice == VoteChoice.Reject && string.IsNullOrWhiteSpace(request.RejectionReason))
+            return Result.Failure<VoteSessionResponse>(VotingErrors.InvalidRequest);
+
         var weight = await ResolveVoteWeightAsync(session.MeetingAgendaItem.BoardMeetingId, request.MemberUserId, cancellationToken);
         var vote = session.Votes.FirstOrDefault(x => x.MemberUserId == request.MemberUserId);
         if (vote is null)
@@ -118,18 +121,12 @@ public class VotingService(
             .Include(x => x.Minute)
             .FirstAsync(x => x.Id == item.BoardMeetingId, cancellationToken);
 
-        var presentMembers = await dbcontext.MeetingInvitations
-            .CountAsync(x =>
-                x.BoardMeetingId == item.BoardMeetingId &&
-                x.Status == InvitationStatus.Accepted &&
-                x.AgendaReadAcknowledged,
-                cancellationToken);
+        var attendance = await GetPresentAttendanceAsync(item.BoardMeetingId, cancellationToken);
 
-        var approveCount = session.Votes.Count(x => x.Choice == VoteChoice.Approve);
         session.Status = VoteSessionStatus.Closed;
         session.ClosedAt = DateTime.UtcNow.AddHours(3);
 
-        if (approveCount > presentMembers / 2m)
+        if (session.Votes.Where(x => x.Choice == VoteChoice.Approve).Sum(x => x.Weight) > attendance.PresentWeight / 2m)
         {
             item.Status = AgendaItemStatus.DecisionApproved;
             var cycle = meeting.BoardCycle!;
@@ -174,15 +171,9 @@ public class VotingService(
         if (boardAccessService is not null && !await boardAccessService.CanAccessMeetingAsync(session.MeetingAgendaItem!.BoardMeetingId, cancellationToken))
             return Result.Failure<VoteSessionResponse>(PermissionErrors.Forbidden);
 
-        var presentMembers = await dbcontext.MeetingInvitations
-            .AsNoTracking()
-            .CountAsync(x =>
-                x.BoardMeetingId == session.MeetingAgendaItem!.BoardMeetingId &&
-                x.Status == InvitationStatus.Accepted &&
-                x.AgendaReadAcknowledged,
-                cancellationToken);
+        var attendance = await GetPresentAttendanceAsync(session.MeetingAgendaItem!.BoardMeetingId, cancellationToken);
 
-        return Result.Success(MapSession(session, presentMembers));
+        return Result.Success(MapSession(session, attendance.PresentMembers, attendance.PresentWeight));
     }
 
     private IQueryable<VoteSession> LoadSessionQuery() =>
@@ -200,14 +191,35 @@ public class VotingService(
 
         var membership = await dbcontext.BoardMemberships
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.BoardId == boardId && x.UserId == memberUserId, cancellationToken);
+            .FirstOrDefaultAsync(x => x.BoardId == boardId && x.UserId == memberUserId && x.IsActive, cancellationToken);
 
         return membership?.IsSupportingMember == true
             ? membership.CumulativePercentage
             : 1;
     }
 
-    private static VoteSessionResponse MapSession(VoteSession session, int presentMembers)
+    private async Task<(int PresentMembers, decimal PresentWeight)> GetPresentAttendanceAsync(int meetingId, CancellationToken cancellationToken)
+    {
+        var presentUserIds = await dbcontext.MeetingInvitations
+            .AsNoTracking()
+            .Where(x => x.BoardMeetingId == meetingId && x.Status == InvitationStatus.Accepted && x.AgendaReadAcknowledged)
+            .Select(x => x.MemberUserId)
+            .ToListAsync(cancellationToken);
+
+        var boardId = await dbcontext.BoardMeetings.AsNoTracking()
+            .Where(x => x.Id == meetingId)
+            .Select(x => x.BoardCycle!.BoardId)
+            .FirstAsync(cancellationToken);
+
+        var memberships = await dbcontext.BoardMemberships.AsNoTracking()
+            .Where(x => x.BoardId == boardId && x.IsActive && presentUserIds.Contains(x.UserId))
+            .Select(x => new { x.UserId, x.IsSupportingMember, x.CumulativePercentage })
+            .ToListAsync(cancellationToken);
+
+        return (memberships.Count, memberships.Sum(x => x.IsSupportingMember ? x.CumulativePercentage : 1m));
+    }
+
+    private static VoteSessionResponse MapSession(VoteSession session, int presentMembers, decimal presentWeight)
     {
         var votes = session.Votes.OrderBy(x => x.MemberUserId).ToList();
 
@@ -219,6 +231,7 @@ public class VotingService(
             session.ClosedAt,
             new VoteSummaryResponse(
                 presentMembers,
+                presentWeight,
                 votes.Count(x => x.Choice == VoteChoice.Approve),
                 votes.Where(x => x.Choice == VoteChoice.Approve).Sum(x => x.Weight),
                 votes.Count(x => x.Choice == VoteChoice.Reject),

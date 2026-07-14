@@ -1,60 +1,11 @@
 @page "/admin/files"
-@attribute [Authorize(Roles = "Admin")]
-@rendermode InteractiveServer
-@inject AdminUiService Admin
+@attribute [Authorize(Policy = "permission:system.tech-enablement.system_administrators")]
 
 <h1 class="page-title">إدارة الملفات</h1>
 
-@if (!string.IsNullOrWhiteSpace(message))
-{
-    <section class="panel"><div class="panel-body"><span class="status @(success ? "ok" : "bad")">@message</span></div></section>
-}
-
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-folder"></i><div><h2>تسجيل ملف</h2><p>يحفظ بيانات الملف ومساره. رفع الملف الفعلي يمكن ربطه لاحقاً على نفس الجدول.</p></div></div>
-    <div class="form-grid">
-        <label>اسم الملف الأصلي<input @bind="originalName" /></label>
-        <label>نوع المحتوى<input @bind="contentType" /></label>
-        <label>الحجم بالبايت<input type="number" @bind="sizeBytes" /></label>
-        <label>التصنيف<input @bind="category" /></label>
-        <label class="span-2">المسار التخزيني<input @bind="storagePath" /></label>
-        <label class="check-row"><input type="checkbox" @bind="isPublic" /> عام</label>
+    <div class="panel-heading"><i class="fa-solid fa-shield-halved"></i><div><h2>تم إيقاف إدارة الملفات القديمة</h2><p>لم تعد هذه الصفحة أو واجهة الملفات القديمة تسمح بعرض المسارات أو رفع ملفات خارج سجل العمل المرتبط بها.</p></div></div>
+    <div class="panel-body">
+        <p>أضف المرفقات من السجل المرتبط بها، مثل قيد محاسبي أو ملف مستفيد أو اجتماع أو طلب إجازة. تستخدم هذه المسارات التخزين الخاص، وفحص البرمجيات الخبيثة، وسجل النسخ، وصلاحية السجل نفسه.</p>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الملف</button></div>
 </section>
-
-<section class="table-section">
-    <div class="table-title"><span><i class="fa-solid fa-file"></i> الملفات</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
-    <table>
-        <thead><tr><th>الاسم</th><th>التصنيف</th><th>الحجم</th><th>المسار</th><th>المستخدم</th><th>التاريخ</th></tr></thead>
-        <tbody>
-            @foreach (var file in files)
-            {
-                <tr><td>@file.OriginalFileName</td><td>@file.Category</td><td>@file.SizeBytes</td><td>@file.StoragePath</td><td>@file.UploadedByName</td><td>@file.CreatedAt.ToString("yyyy-MM-dd")</td></tr>
-            }
-        </tbody>
-    </table>
-</section>
-
-@code {
-    private List<FileAssetResponse> files = [];
-    private string originalName = string.Empty;
-    private string contentType = "application/octet-stream";
-    private long sizeBytes;
-    private string storagePath = string.Empty;
-    private string category = "General";
-    private bool isPublic;
-    private bool success;
-    private string? message;
-
-    protected override async Task OnInitializedAsync() => await LoadAsync();
-    private async Task LoadAsync() => files = await Admin.GetFilesAsync();
-
-    private async Task SaveAsync()
-    {
-        var result = await Admin.SaveFileAsync(new SaveFileAssetRequest(originalName, contentType, sizeBytes, storagePath, category, isPublic));
-        success = result.Success;
-        message = result.Message;
-        await LoadAsync();
-    }
-}

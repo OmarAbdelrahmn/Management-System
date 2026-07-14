@@ -4,6 +4,11 @@ using Application.Contracts.ReportsStatistics;
 using Domain;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using System.Globalization;
+using System.IO.Compression;
+using System.Security;
 using System.Text;
 using System.Text.Json;
 
@@ -38,6 +43,9 @@ public class ReportsStatisticsService(ApplicationDbcontext dbcontext) : IReports
         new("report_income", "تقارير المقبوضات", SystemReportKind.Report, "Accounting"),
         new("report_analytics", "تقارير إحصائيات جووجل", SystemReportKind.Report, "Website"),
         new("projects_finance_reports", "التقارير المالية للمشاريع", SystemReportKind.Report, "ProgramsProjects"),
+        new("report_board_governance", "تقرير مجالس الإدارة والدورات", SystemReportKind.Report, "BoardGovernance"),
+        new("report_meeting_workflow", "تقرير سير عمل الاجتماعات والقرارات", SystemReportKind.Report, "BoardGovernance"),
+        new("report_governance_tasks", "تقرير مهام الحوكمة", SystemReportKind.Report, "InstitutionalExcellence"),
         new("statistics_users", "إحصائيات المستفيدين", SystemReportKind.Statistic, "Beneficiaries"),
         new("statistics_relatives", "إحصائيات التابعين", SystemReportKind.Statistic, "Beneficiaries"),
         new("statistics_orphans", "إحصائيات الأيتام و الكفالات", SystemReportKind.Statistic, "Sponsorships"),
@@ -51,12 +59,21 @@ public class ReportsStatisticsService(ApplicationDbcontext dbcontext) : IReports
     public async Task<Result<ReportsStatisticsDashboardResponse>> GetDashboardAsync(CancellationToken cancellationToken = default)
     {
         await EnsureDefaultReportsAsync(cancellationToken);
+        var governanceTasks = dbcontext.GovernanceTasks.AsNoTracking();
+        var governanceTaskCount = await governanceTasks.CountAsync(cancellationToken);
+        var completedGovernanceTasks = await governanceTasks.CountAsync(x => x.Status == GovernanceTaskStatus.Completed, cancellationToken);
         return Result.Success(new ReportsStatisticsDashboardResponse(
             await dbcontext.SystemReportDefinitions.CountAsync(cancellationToken),
             await dbcontext.SystemReportDefinitions.CountAsync(x => x.Kind == SystemReportKind.Report, cancellationToken),
             await dbcontext.SystemReportDefinitions.CountAsync(x => x.Kind == SystemReportKind.Statistic, cancellationToken),
             await dbcontext.SystemReportRuns.CountAsync(x => x.Status != SystemReportRunStatus.Archived, cancellationToken),
-            await dbcontext.SystemReportRuns.Where(x => x.Status != SystemReportRunStatus.Archived).OrderByDescending(x => x.GeneratedAt).Select(x => (DateTime?)x.GeneratedAt).FirstOrDefaultAsync(cancellationToken)));
+            await dbcontext.SystemReportRuns.Where(x => x.Status != SystemReportRunStatus.Archived).OrderByDescending(x => x.GeneratedAt).Select(x => (DateTime?)x.GeneratedAt).FirstOrDefaultAsync(cancellationToken),
+            await dbcontext.Boards.CountAsync(x => x.Status == BoardStatus.Active, cancellationToken),
+            await dbcontext.BoardMeetings.CountAsync(x => x.Status == MeetingStatus.InProgress || x.Status == MeetingStatus.WaitingChairmanApproval || x.Status == MeetingStatus.PendingApproval, cancellationToken),
+            await dbcontext.VoteSessions.CountAsync(x => x.Status == VoteSessionStatus.Open, cancellationToken),
+            await governanceTasks.CountAsync(x => x.Status == GovernanceTaskStatus.Pending || x.Status == GovernanceTaskStatus.InProgress, cancellationToken),
+            await governanceTasks.CountAsync(x => x.Status == GovernanceTaskStatus.Overdue, cancellationToken),
+            governanceTaskCount == 0 ? 0 : Math.Round(completedGovernanceTasks * 100m / governanceTaskCount, 1)));
     }
 
     public async Task<Result<IEnumerable<SystemReportDefinitionResponse>>> GetDefinitionsAsync(SystemReportKind? kind = null, CancellationToken cancellationToken = default)
@@ -133,6 +150,9 @@ public class ReportsStatisticsService(ApplicationDbcontext dbcontext) : IReports
         var definition = await dbcontext.SystemReportDefinitions.FirstOrDefaultAsync(x => x.Key == key && x.IsActive, cancellationToken);
         if (definition is null)
             return Result.Failure<SystemReportExportResponse>(ReportsStatisticsErrors.DefinitionNotFound);
+        var exportFormat = NormalizeExportFormat(request.Format);
+        if (exportFormat is null)
+            return Result.Failure<SystemReportExportResponse>(ReportsStatisticsErrors.InvalidRequest);
 
         var filters = ReportFilters.FromJson(request.FiltersJson);
         var rows = await BuildReportRowsAsync(definition.Key, definition.NameAr, filters, cancellationToken);
@@ -144,7 +164,7 @@ public class ReportsStatisticsService(ApplicationDbcontext dbcontext) : IReports
             SystemReportDefinitionId = definition.Id,
             ReportKey = definition.Key,
             ReportName = definition.NameAr,
-            Format = string.IsNullOrWhiteSpace(request.Format) ? "Csv" : request.Format.Trim(),
+            Format = exportFormat,
             FiltersJson = request.FiltersJson?.Trim(),
             RequestedBy = request.RequestedBy?.Trim(),
             RowCount = rowCount,
@@ -155,11 +175,46 @@ public class ReportsStatisticsService(ApplicationDbcontext dbcontext) : IReports
         definition.LastGeneratedAt = run.GeneratedAt;
         await dbcontext.SaveChangesAsync(cancellationToken);
 
+        var (extension, contentType, content) = exportFormat switch
+        {
+            "Csv" => ("csv", "text/csv; charset=utf-8", ToCsv(rows)),
+            "Tsv" => ("tsv", "text/tab-separated-values; charset=utf-8", ToDelimited(rows, "\t")),
+            "Json" => ("json", "application/json; charset=utf-8", JsonSerializer.Serialize(rows, new JsonSerializerOptions { WriteIndented = true })),
+            "Xlsx" => ("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", string.Empty),
+            "Pdf" => ("pdf", "application/pdf", string.Empty),
+            _ => throw new InvalidOperationException("Unsupported export format.")
+        };
+
+        var pdf = exportFormat == "Pdf" ? GeneratePdf(definition.NameAr, rows, generatedAt) : null;
+        if (pdf is not null) { extension = "pdf"; contentType = "application/pdf"; content = string.Empty; }
+        var xlsx = exportFormat == "Xlsx" ? GenerateXlsx(definition.NameAr, rows) : null;
+
+        var binaryContent = pdf ?? xlsx;
+        run.ArchiveFileName = $"{definition.Key}-{generatedAt:yyyyMMddHHmmss}.{extension}";
+        run.ArchiveContentType = contentType;
+        run.ArchivedContent = binaryContent ?? Encoding.UTF8.GetBytes(content);
+        run.ArchivedAt = generatedAt;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+
         return Result.Success(new SystemReportExportResponse(
             MapRun(run),
-            $"{definition.Key}-{generatedAt:yyyyMMddHHmmss}.csv",
-            "text/csv; charset=utf-8",
-            ToCsv(rows)));
+            run.ArchiveFileName,
+            contentType,
+            content,
+            binaryContent));
+    }
+
+    public async Task<Result<SystemReportExportResponse>> GetArchivedExportAsync(int runId, CancellationToken cancellationToken = default)
+    {
+        var run = await dbcontext.SystemReportRuns.AsNoTracking().FirstOrDefaultAsync(x => x.Id == runId, cancellationToken);
+        if (run is null || run.ArchivedContent is null || string.IsNullOrWhiteSpace(run.ArchiveFileName) || string.IsNullOrWhiteSpace(run.ArchiveContentType))
+            return Result.Failure<SystemReportExportResponse>(ReportsStatisticsErrors.DefinitionNotFound);
+
+        var textContent = run.ArchiveContentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase) ||
+            run.ArchiveContentType.StartsWith("application/json", StringComparison.OrdinalIgnoreCase)
+            ? Encoding.UTF8.GetString(run.ArchivedContent)
+            : string.Empty;
+        return Result.Success(new SystemReportExportResponse(MapRun(run), run.ArchiveFileName, run.ArchiveContentType, textContent, run.ArchivedContent));
     }
 
     public async Task<Result<IEnumerable<SystemReportRunResponse>>> GetRunsAsync(string? reportKey = null, bool includeArchived = false, CancellationToken cancellationToken = default)
@@ -246,6 +301,9 @@ public class ReportsStatisticsService(ApplicationDbcontext dbcontext) : IReports
             "report_income" => await CountReceiptsAsync(filters, cancellationToken),
             "report_analytics" => await dbcontext.WebsiteContactRequests.CountAsync(cancellationToken),
             "projects_finance_reports" => await dbcontext.ProgramProjectFinanceEntries.CountAsync(cancellationToken),
+            "report_board_governance" => await dbcontext.Boards.CountAsync(cancellationToken),
+            "report_meeting_workflow" => await dbcontext.BoardMeetings.CountAsync(cancellationToken),
+            "report_governance_tasks" => await dbcontext.GovernanceTasks.CountAsync(cancellationToken),
             "statistics_finance" => await CountReceiptsAsync(filters, cancellationToken) + await CountExpensesAsync(filters, cancellationToken),
             _ => 0
         };
@@ -333,14 +391,105 @@ public class ReportsStatisticsService(ApplicationDbcontext dbcontext) : IReports
         return key switch
         {
             "report_users" or "report_users_income" or "statistics_users" or "statistics_areas" => await BuildBeneficiaryRowsAsync(filters, cancellationToken),
+            "report_relatives" or "statistics_relatives" => await BuildSimpleRowsAsync(dbcontext.BeneficiaryDependents.AsNoTracking(), filters, cancellationToken,
+                "Id", "BeneficiaryProfileId", "FullName", "NationalId", "Relationship", "BirthDate", "Category", "Grade", "IsActive", "CreatedAt"),
+            "report_personnel" => await BuildSimpleRowsAsync(dbcontext.EmployeeProfiles.AsNoTracking(), filters, cancellationToken,
+                "Id", "EmployeeNumber", "FullName", "NationalId", "Email", "Mobile", "DepartmentId", "JobTitleId", "AccountType", "HireDate", "Status", "BasicSalary", "Allowances", "CreatedAt"),
             "report_requests" or "statistics_requests" => await BuildAidRequestRowsAsync(filters, cancellationToken),
+            "report_tasks" or "statistics_tasks" => await BuildSimpleRowsAsync(dbcontext.ManagementTasks.AsNoTracking(), filters, cancellationToken,
+                "Id", "Title", "AssigneeUserId", "DueAt", "Priority", "Status", "ProgressPercentage", "RelatedEntityType", "RelatedEntityId", "CompletedAt", "CreatedAt"),
+            "report_kafeel" => await BuildSimpleRowsAsync(dbcontext.Sponsors.AsNoTracking(), filters, cancellationToken,
+                "Id", "FullName", "Mobile", "Email", "Status", "Notes", "CreatedAt"),
+            "report_kafeel_matrix" or "statistics_orphans" => await BuildSimpleRowsAsync(dbcontext.SponsorshipRecords.AsNoTracking(), filters, cancellationToken,
+                "Id", "SponsorId", "BeneficiaryProfileId", "SponsorshipRequirementId", "StartsAt", "EndsAt", "Amount", "Status", "Notes", "CreatedAt"),
+            "report_supporters" => await BuildSimpleRowsAsync(dbcontext.FinancialSupporters.AsNoTracking(), filters, cancellationToken,
+                "Id", "Name", "SupporterType", "Category", "Mobile", "Email", "NationalIdOrRegistrationNo", "PreferredContactChannel", "Status", "CreatedAt"),
+            "report_board" => await BuildSimpleRowsAsync(dbcontext.MemberProfiles.AsNoTracking(), filters, cancellationToken,
+                "Id", "MemberNumber", "FullName", "NationalId", "Email", "Mobile", "City", "MembershipTypeId", "JoinedAt", "Status", "FeesPaid", "IsSupporter", "CumulativePercentage", "CreatedAt"),
             "report_projects" or "report_programs" or "statistics_projects" => await BuildProjectRowsAsync(filters, cancellationToken),
+            "report_media_events" => await BuildSimpleRowsAsync(dbcontext.MediaEvents.AsNoTracking(), filters, cancellationToken,
+                "Id", "Title", "EventDate", "Location", "Description", "Status", "CreatedAt"),
+            "report_media_partners" => await BuildSimpleRowsAsync(dbcontext.MediaPartners.AsNoTracking(), filters, cancellationToken,
+                "Id", "Name", "ContactPerson", "Mobile", "Email", "Status", "Notes", "CreatedAt"),
+            "report_media_visits" => await BuildSimpleRowsAsync(dbcontext.MediaVisits.AsNoTracking(), filters, cancellationToken,
+                "Id", "VisitorName", "Organization", "VisitDate", "Purpose", "Status", "CreatedAt"),
+            "report_marketing" => await BuildMarketingRowsAsync(filters, cancellationToken),
+            "report_mail" => await BuildSimpleRowsAsync(dbcontext.InternalMailMessages.AsNoTracking(), filters, cancellationToken,
+                "Id", "SenderUserId", "Subject", "Status", "SentAt", "CreatedAt"),
+            "report_website_users" => await BuildSimpleRowsAsync(dbcontext.WebsiteUserAccounts.AsNoTracking(), filters, cancellationToken,
+                "Id", "FullName", "Username", "Email", "RoleName", "Status", "LastLoginAt", "CreatedAt"),
+            "report_orders" => await BuildSimpleRowsAsync(dbcontext.BeneficiaryPaymentOrders.AsNoTracking(), filters, cancellationToken,
+                "Id", "OrderNumber", "OrderType", "BeneficiaryAidRequestId", "EntitySupportRequestId", "BeneficiaryProfileId", "Amount", "ItemDescription", "Status", "DueDate", "ClosedAt", "CreatedAt"),
+            "report_followup" => await BuildSimpleRowsAsync(dbcontext.FollowUpCases.AsNoTracking(), filters, cancellationToken,
+                "Id", "CaseNumber", "SubjectType", "SubjectName", "ReferenceNumber", "RequestedBy", "RequestDate", "DueDate", "Priority", "Status", "RejectionNote", "CompletionSummary", "CompletedAt", "CreatedAt"),
+            "report_qual" => await BuildSimpleRowsAsync(dbcontext.ProgramQualificationCases.AsNoTracking(), filters, cancellationToken,
+                "Id", "ProgramProjectId", "BeneficiaryName", "NeedSummary", "ManagementOpinion", "Status", "ApprovedAmount", "InstallmentCount", "CreatedAt"),
             "report_expenses" => await BuildExpenseRowsAsync(filters, cancellationToken),
             "report_income" => await BuildReceiptRowsAsync(filters, cancellationToken),
+            "report_analytics" => await BuildSimpleRowsAsync(dbcontext.WebsiteContactRequests.AsNoTracking(), filters, cancellationToken,
+                "Id", "FullName", "Email", "Mobile", "Subject", "Status", "CreatedAt"),
+            "projects_finance_reports" => await BuildSimpleRowsAsync(dbcontext.ProgramProjectFinanceEntries.AsNoTracking(), filters, cancellationToken,
+                "Id", "ProgramProjectId", "EntryType", "EntryDate", "Amount", "SourceOrPayee", "ReferenceNumber", "Notes", "CreatedAt"),
             "statistics_finance" => await BuildFinanceRowsAsync(filters, cancellationToken),
-            _ => [new Dictionary<string, string> { ["ReportKey"] = key, ["ReportName"] = reportName, ["Message"] = "Detailed row export is planned for this report." }]
+            "report_board_governance" => await BuildBoardGovernanceRowsAsync(cancellationToken),
+            "report_meeting_workflow" => await BuildMeetingWorkflowRowsAsync(cancellationToken),
+            "report_governance_tasks" => await BuildGovernanceTaskRowsAsync(cancellationToken),
+            _ => [new Dictionary<string, string> { ["ReportKey"] = key, ["ReportName"] = reportName, ["Message"] = "No report dataset is registered for this definition." }]
         };
     }
+
+    private async Task<List<Dictionary<string, string>>> BuildMarketingRowsAsync(ReportFilters filters, CancellationToken cancellationToken)
+    {
+        var opportunities = await BuildSimpleRowsAsync(dbcontext.FundraisingOpportunities.AsNoTracking(), filters, cancellationToken,
+            "Id", "Title", "OpportunityType", "ReferenceNumber", "TargetAmount", "CurrentAmount", "StartDate", "EndDate", "Status", "ExternalUrl", "CreatedAt");
+        foreach (var row in opportunities) row["Source"] = "FundraisingOpportunity";
+
+        var campaigns = await BuildSimpleRowsAsync(dbcontext.DigitalMarketingCampaigns.AsNoTracking(), filters, cancellationToken,
+            "Id", "Title", "Channel", "Budget", "TargetAudience", "LandingPageUrl", "StartDate", "EndDate", "Status", "LeadsCount", "DonationsCount", "DonationsAmount", "CreatedAt");
+        foreach (var row in campaigns) row["Source"] = "DigitalMarketingCampaign";
+
+        opportunities.AddRange(campaigns);
+        return opportunities;
+    }
+
+    private static async Task<List<Dictionary<string, string>>> BuildSimpleRowsAsync<T>(
+        IQueryable<T> query,
+        ReportFilters filters,
+        CancellationToken cancellationToken,
+        params string[] propertyNames)
+        where T : class
+    {
+        var items = await query.Take(10_000).ToListAsync(cancellationToken);
+        var properties = propertyNames
+            .Select(name => typeof(T).GetProperty(name))
+            .Where(property => property is not null)
+            .ToList();
+        var rows = items.Select(item => properties.ToDictionary(
+            property => property!.Name,
+            property => FormatReportValue(property!.GetValue(item)),
+            StringComparer.Ordinal)).ToList();
+        return ApplyCommonRowFilters(rows, filters);
+    }
+
+    private static List<Dictionary<string, string>> ApplyCommonRowFilters(List<Dictionary<string, string>> rows, ReportFilters filters)
+    {
+        IEnumerable<Dictionary<string, string>> filtered = rows;
+        if (filters.TryString("status", out var status))
+            filtered = filtered.Where(row => row.TryGetValue("Status", out var value) && value.Equals(status, StringComparison.OrdinalIgnoreCase));
+        if (filters.TryString("search", out var search))
+            filtered = filtered.Where(row => row.Values.Any(value => value.Contains(search, StringComparison.OrdinalIgnoreCase)));
+        return filtered.ToList();
+    }
+
+    private static string FormatReportValue(object? value) => value switch
+    {
+        null => string.Empty,
+        DateTime dateTime => dateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
+        DateTimeOffset dateTimeOffset => dateTimeOffset.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
+        bool flag => flag ? "Yes" : "No",
+        IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture) ?? string.Empty,
+        _ => value.ToString() ?? string.Empty
+    };
 
     private async Task<List<Dictionary<string, string>>> BuildBeneficiaryRowsAsync(ReportFilters filters, CancellationToken cancellationToken)
     {
@@ -430,6 +579,40 @@ public class ReportsStatisticsService(ApplicationDbcontext dbcontext) : IReports
         return rows;
     }
 
+    private async Task<List<Dictionary<string, string>>> BuildBoardGovernanceRowsAsync(CancellationToken cancellationToken)
+    {
+        var boards = await dbcontext.Boards.AsNoTracking().Include(x => x.Cycles).Include(x => x.Memberships).OrderBy(x => x.Name).ToListAsync(cancellationToken);
+        return boards.Select(x =>
+        {
+            var cycle = x.Cycles.OrderByDescending(c => c.CycleNumber).FirstOrDefault();
+            return new Dictionary<string, string>
+            {
+                ["Board"] = x.Name, ["Code"] = x.Code, ["Status"] = x.Status.ToString(), ["Members"] = x.Memberships.Count(m => m.IsActive).ToString(),
+                ["Cycle"] = cycle?.CycleNumber.ToString() ?? string.Empty, ["CycleStartsAt"] = FormatDate(cycle?.StartsAt), ["CycleEndsAt"] = FormatDate(cycle?.EndsAt)
+            };
+        }).ToList();
+    }
+
+    private async Task<List<Dictionary<string, string>>> BuildMeetingWorkflowRowsAsync(CancellationToken cancellationToken)
+    {
+        var meetings = await dbcontext.BoardMeetings.AsNoTracking().Include(x => x.BoardCycle).ThenInclude(x => x!.Board).Include(x => x.AgendaItems).OrderByDescending(x => x.ScheduledAt).ToListAsync(cancellationToken);
+        return meetings.Select(x => new Dictionary<string, string>
+        {
+            ["Board"] = x.BoardCycle?.Board?.Name ?? string.Empty, ["Meeting"] = x.Title, ["ScheduledAt"] = FormatDate(x.ScheduledAt), ["Type"] = x.Type.ToString(), ["Status"] = x.Status.ToString(),
+            ["VotingEnabled"] = x.HasVoting.ToString(), ["AgendaItems"] = x.AgendaItems.Count.ToString(), ["ApprovedDecisions"] = x.AgendaItems.Count(a => a.Status == AgendaItemStatus.DecisionApproved).ToString()
+        }).ToList();
+    }
+
+    private async Task<List<Dictionary<string, string>>> BuildGovernanceTaskRowsAsync(CancellationToken cancellationToken)
+    {
+        var tasks = await dbcontext.GovernanceTasks.AsNoTracking().Include(x => x.GovernanceCycle).OrderBy(x => x.DueDate).ToListAsync(cancellationToken);
+        return tasks.Select(x => new Dictionary<string, string>
+        {
+            ["Cycle"] = x.GovernanceCycle?.Title ?? string.Empty, ["Task"] = x.Title, ["Owner"] = x.OwnerName ?? string.Empty, ["DueDate"] = FormatDate(x.DueDate),
+            ["Status"] = x.Status.ToString(), ["ProgressPercent"] = x.ProgressPercent.ToString(), ["Notes"] = x.Notes ?? string.Empty
+        }).ToList();
+    }
+
     private static string ToCsv(IReadOnlyCollection<Dictionary<string, string>> rows)
     {
         if (rows.Count == 0)
@@ -446,12 +629,135 @@ public class ReportsStatisticsService(ApplicationDbcontext dbcontext) : IReports
         return builder.ToString();
     }
 
+    private static string ToDelimited(IReadOnlyCollection<Dictionary<string, string>> rows, string delimiter)
+    {
+        if (rows.Count == 0)
+            return "Message\r\nNo rows matched the report filters.\r\n";
+
+        var headers = rows.SelectMany(x => x.Keys).Distinct(StringComparer.Ordinal).ToList();
+        var builder = new StringBuilder();
+        builder.AppendLine(string.Join(delimiter, headers));
+        foreach (var row in rows)
+            builder.AppendLine(string.Join(delimiter, headers.Select(header => (row.TryGetValue(header, out var value) ? value : string.Empty).Replace("\t", " ").Replace("\r", " ").Replace("\n", " "))));
+        return builder.ToString();
+    }
+
+    private static string? NormalizeExportFormat(string? format) => format?.Trim().ToLowerInvariant() switch
+    {
+        "csv" or null or "" => "Csv",
+        "tsv" => "Tsv",
+        "json" => "Json",
+        "pdf" => "Pdf",
+        "xlsx" => "Xlsx",
+        _ => null
+    };
+
     private static string EscapeCsv(string? value)
     {
         value ??= string.Empty;
         return value.Contains('"') || value.Contains(',') || value.Contains('\r') || value.Contains('\n')
             ? $"\"{value.Replace("\"", "\"\"")}\""
             : value;
+    }
+
+    private static byte[] GeneratePdf(string reportName, IReadOnlyCollection<Dictionary<string, string>> rows, DateTime generatedAt) =>
+        Document.Create(document => document.Page(page =>
+        {
+            page.Size(PageSizes.A4);
+            page.Margin(28);
+            page.DefaultTextStyle(x => x.FontSize(10));
+            page.Header().AlignRight().Text($"{reportName}\nتقرير صادر من نظام الإدارة الإلكتروني — {generatedAt:yyyy-MM-dd HH:mm}").SemiBold().FontSize(14).FontColor(Colors.Blue.Darken2);
+            page.Content().Column(column =>
+            {
+                if (rows.Count == 0) { column.Item().AlignRight().Text("لا توجد بيانات مطابقة للفلاتر المحددة."); return; }
+                var headers = rows.SelectMany(x => x.Keys).Distinct(StringComparer.Ordinal).ToList();
+                column.Item().Table(table =>
+                {
+                    table.ColumnsDefinition(columns => { foreach (var _ in headers) columns.RelativeColumn(); });
+                    table.Header(header => { foreach (var item in headers) header.Cell().Background(Colors.Grey.Lighten3).Padding(4).AlignRight().Text(item).SemiBold(); });
+                    foreach (var row in rows)
+                        foreach (var header in headers)
+                            table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).AlignRight().Text(row.TryGetValue(header, out var value) ? value : string.Empty);
+                });
+            });
+            page.Footer().AlignCenter().Text("وثيقة قابلة للطباعة — لا تعد بديلاً عن الاعتماد النظامي عند الحاجة.");
+        })).GeneratePdf();
+
+    private static byte[] GenerateXlsx(string reportName, IReadOnlyCollection<Dictionary<string, string>> rows)
+    {
+        var headers = rows.SelectMany(x => x.Keys).Distinct(StringComparer.Ordinal).ToList();
+        if (headers.Count == 0) headers.Add("Message");
+        var sheetRows = rows.Count == 0
+            ? [new Dictionary<string, string> { ["Message"] = "لا توجد بيانات مطابقة للفلاتر المحددة." }]
+            : rows.ToList();
+
+        using var stream = new MemoryStream();
+        using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            WriteZipEntry(archive, "[Content_Types].xml", """
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+                  <Default Extension="xml" ContentType="application/xml"/>
+                  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+                  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+                </Types>
+                """);
+            WriteZipEntry(archive, "_rels/.rels", """
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+                </Relationships>
+                """);
+            WriteZipEntry(archive, "xl/workbook.xml", $"""
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+                  <sheets><sheet name="{EscapeXml(reportName)[..Math.Min(EscapeXml(reportName).Length, 31)]}" sheetId="1" r:id="rId1"/></sheets>
+                </workbook>
+                """);
+            WriteZipEntry(archive, "xl/_rels/workbook.xml.rels", """
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+                </Relationships>
+                """);
+            WriteZipEntry(archive, "xl/worksheets/sheet1.xml", GenerateWorksheetXml(headers, sheetRows));
+        }
+
+        return stream.ToArray();
+    }
+
+    private static string GenerateWorksheetXml(IReadOnlyList<string> headers, IReadOnlyList<Dictionary<string, string>> rows)
+    {
+        var builder = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetViews><sheetView workbookViewId=\"0\" rightToLeft=\"1\"/></sheetViews><sheetData>");
+        AppendWorksheetRow(builder, 1, headers.Select(x => x).ToList());
+        for (var index = 0; index < rows.Count; index++)
+            AppendWorksheetRow(builder, index + 2, headers.Select(header => rows[index].TryGetValue(header, out var value) ? value : string.Empty).ToList());
+        return builder.Append("</sheetData></worksheet>").ToString();
+    }
+
+    private static void AppendWorksheetRow(StringBuilder builder, int rowNumber, IReadOnlyList<string> cells)
+    {
+        builder.Append($"<row r=\"{rowNumber}\">");
+        for (var index = 0; index < cells.Count; index++)
+            builder.Append($"<c r=\"{ExcelColumn(index)}{rowNumber}\" t=\"inlineStr\"><is><t xml:space=\"preserve\">{EscapeXml(cells[index])}</t></is></c>");
+        builder.Append("</row>");
+    }
+
+    private static string ExcelColumn(int index)
+    {
+        var value = index + 1;
+        var column = string.Empty;
+        while (value > 0) { value--; column = (char)('A' + value % 26) + column; value /= 26; }
+        return column;
+    }
+
+    private static string EscapeXml(string value) => SecurityElement.Escape(value) ?? string.Empty;
+    private static void WriteZipEntry(ZipArchive archive, string name, string content)
+    {
+        var entry = archive.CreateEntry(name, CompressionLevel.Fastest);
+        using var writer = new StreamWriter(entry.Open(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        writer.Write(content.Trim());
     }
 
     private static string FormatDate(DateTime value) => value.ToString("yyyy-MM-dd");
@@ -461,7 +767,7 @@ public class ReportsStatisticsService(ApplicationDbcontext dbcontext) : IReports
         new(x.Id, x.Key, x.NameAr, x.Kind.ToString(), x.SourceDomain, x.IsActive, x.LastGeneratedAt);
 
     private static SystemReportRunResponse MapRun(SystemReportRun x) =>
-        new(x.Id, x.SystemReportDefinitionId, x.ReportKey, x.ReportName, x.Format, x.FiltersJson, x.RowCount, x.Status.ToString(), x.RequestedBy, x.GeneratedAt);
+        new(x.Id, x.SystemReportDefinitionId, x.ReportKey, x.ReportName, x.Format, x.FiltersJson, x.RowCount, x.Status.ToString(), x.RequestedBy, x.ArchivedContent is { Length: > 0 }, x.GeneratedAt);
 
     private sealed record ReportSeed(string Key, string NameAr, SystemReportKind Kind, string SourceDomain);
 

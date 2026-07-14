@@ -1,13 +1,14 @@
 using Application.Abstraction;
 using Application.Abstraction.Errors;
 using Application.Contracts.HumanResources;
+using Application.Service.TaskManagement;
 using Domain;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Service.HumanResources;
 
-public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResourceService
+public class HumanResourceService(ApplicationDbcontext dbcontext, ITaskManagementService? approvalWorkflow = null) : IHumanResourceService
 {
     public async Task<Result<HumanResourceDashboardResponse>> GetDashboardAsync(CancellationToken cancellationToken = default)
     {
@@ -252,7 +253,7 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         if (employee is null)
             return Result.Failure<EmployeeResponse>(HumanResourceErrors.EmployeeNotFound);
 
-        if (string.IsNullOrWhiteSpace(request.FullName) || request.BasicSalary < 0 || request.Allowances < 0)
+        if (string.IsNullOrWhiteSpace(request.FullName) || request.BasicSalary < 0 || request.Allowances < 0 || request.Status == EmployeeStatus.Terminated)
             return Result.Failure<EmployeeResponse>(HumanResourceErrors.InvalidRequest);
 
         var lookupResult = await ValidateLookupsAsync(request.DepartmentId, request.JobTitleId, cancellationToken);
@@ -467,6 +468,9 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
 
         dbcontext.EmployeeLeaveRequests.Add(leave);
         await dbcontext.SaveChangesAsync(cancellationToken);
+        if (approvalWorkflow is not null)
+            await approvalWorkflow.EnsureApprovalRequestForEntityAsync(
+                nameof(EmployeeLeaveRequest), leave.Id, $"طلب إجازة - {employee.FullName}", cancellationToken: cancellationToken);
         QueueHumanResourceActivity(
             HumanResourceActivityEntityType.LeaveRequest,
             leave.Id,
@@ -490,6 +494,9 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
             return Result.Failure<EmployeeLeaveRequestResponse>(HumanResourceErrors.LeaveRequestNotFound);
         if (leave.Status != LeaveRequestStatus.Pending)
             return Result.Failure<EmployeeLeaveRequestResponse>(HumanResourceErrors.LeaveAlreadyDecided);
+
+        if (!request.Approved && string.IsNullOrWhiteSpace(request.Notes))
+            return Result.Failure<EmployeeLeaveRequestResponse>(HumanResourceErrors.InvalidRequest);
 
         if (request.Approved)
         {
@@ -697,6 +704,9 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
 
         if (record is null)
             return Result.Failure<EmployeeDisciplinaryRecordResponse>(HumanResourceErrors.DisciplinaryRecordNotFound);
+
+        if (record.Status != HumanResourceRequestStatus.Pending)
+            return Result.Failure<EmployeeDisciplinaryRecordResponse>(HumanResourceErrors.InvalidRequest);
 
         var oldStatus = record.Status.ToString();
         record.Status = request.Status;
@@ -1081,6 +1091,9 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
         if (letter is null)
             return Result.Failure<EmployeeLetterRequestResponse>(HumanResourceErrors.LetterRequestNotFound);
 
+        if (letter.Status != HumanResourceRequestStatus.Pending)
+            return Result.Failure<EmployeeLetterRequestResponse>(HumanResourceErrors.InvalidRequest);
+
         var oldStatus = letter.Status.ToString();
         letter.Status = request.Status;
         letter.DecisionNotes = request.Notes?.Trim();
@@ -1418,6 +1431,9 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
 
         if (excuse is null)
             return Result.Failure<AttendanceExcuseResponse>(HumanResourceErrors.AttendanceExcuseNotFound);
+
+        if (excuse.Status != HumanResourceRequestStatus.Pending)
+            return Result.Failure<AttendanceExcuseResponse>(HumanResourceErrors.InvalidRequest);
 
         var oldStatus = excuse.Status.ToString();
         excuse.Status = request.Status;
@@ -1898,6 +1914,15 @@ public class HumanResourceService(ApplicationDbcontext dbcontext) : IHumanResour
 
         if (entity is null)
             return Result.Failure<EmployeeAdministrativeRequestResponse>(HumanResourceErrors.AdministrativeRequestNotFound);
+
+        var validTransition = entity.Status switch
+        {
+            HumanResourceRequestStatus.Pending => request.Status is HumanResourceRequestStatus.Approved or HumanResourceRequestStatus.Rejected or HumanResourceRequestStatus.Cancelled,
+            HumanResourceRequestStatus.Approved => request.Status is HumanResourceRequestStatus.Completed or HumanResourceRequestStatus.Cancelled,
+            _ => false
+        };
+        if (!validTransition)
+            return Result.Failure<EmployeeAdministrativeRequestResponse>(HumanResourceErrors.InvalidRequest);
 
         var oldStatus = entity.Status.ToString();
         entity.Status = request.Status;

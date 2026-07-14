@@ -47,6 +47,7 @@ else
                 </div>
                 <button class="danger" @onclick="() => CloseVoteAsync(session.Id)" disabled="@busy">إغلاق التصويت</button>
             </div>
+            <div class="panel-body"><div class="actions-row"><button class="primary" @onclick="() => CastVoteAsync(session.Id, Domain.Entities.VoteChoice.Approve)">موافقة</button><button class="secondary" @onclick="() => CastVoteAsync(session.Id, Domain.Entities.VoteChoice.Abstain)">امتناع</button><input @bind="rejectionReason" placeholder="سبب الاعتراض" /><button class="danger" @onclick="() => CastVoteAsync(session.Id, Domain.Entities.VoteChoice.Reject)">اعتراض</button></div></div>
         </section>
 
         <section class="vote-board" style="margin-top:12px">
@@ -82,6 +83,7 @@ else
     private bool success;
     private string? message;
     private int agendaItemIdToOpen;
+    private string? rejectionReason;
     private List<VoteSessionUiModel> sessions = [];
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
@@ -104,6 +106,17 @@ else
         var result = await UiService.CloseVoteAsync(voteSessionId);
         success = result.Success;
         message = result.Message;
+        await LoadAsync();
+        busy = false;
+    }
+
+    private async Task CastVoteAsync(int voteSessionId, Domain.Entities.VoteChoice choice)
+    {
+        busy = true;
+        var result = await UiService.CastVoteAsync(voteSessionId, choice, rejectionReason);
+        success = result.Success;
+        message = result.Message;
+        if (success) rejectionReason = null;
         await LoadAsync();
         busy = false;
     }

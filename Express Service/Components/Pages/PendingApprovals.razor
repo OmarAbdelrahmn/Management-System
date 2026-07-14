@@ -17,6 +17,8 @@
         <label>العنوان<input @bind="title" /></label>
         <label>نوع المرجع<input @bind="referenceType" /></label>
         <label>رقم المرجع<input type="number" @bind="referenceId" /></label>
+        <label>ملاحظة القرار / سبب التفويض<input @bind="decisionComment" placeholder="سبب الإرجاع أو الرفض أو التفويض" /></label>
+        <label>تفويض إلى<select @bind="delegateToUserId"><option value="">اختر مستخدماً</option>@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
     </div>
     <div class="actions-row"><button class="primary" @onclick="CreateRequestAsync">إرسال طلب الاعتماد</button><button class="secondary" @onclick="LoadMineAsync">اعتماداتي فقط</button><button class="secondary" @onclick="LoadAllAsync">كل المعلّق</button></div>
 </section>
@@ -24,7 +26,7 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-inbox"></i> الطلبات المعلقة</span></div>
     <table>
-        <thead><tr><th>العنوان</th><th>المسار</th><th>مقدم الطلب</th><th>الخطوة</th><th>الموافق الحالي</th><th>إجراء</th></tr></thead>
+        <thead><tr><th>العنوان</th><th>المسار</th><th>مقدم الطلب</th><th>الخطوة</th><th>الموافق الحالي</th><th>المهلة / التصعيد</th><th>إجراء</th></tr></thead>
         <tbody>
             @foreach (var request in requests)
             {
@@ -34,7 +36,14 @@
                     <td>@request.RequestedByName</td>
                     <td>@request.CurrentStepOrder</td>
                     <td>@request.CurrentApproverName</td>
-                    <td><button class="primary" @onclick="() => DecideAsync(request.Id, ApprovalActionDecision.Approved)">اعتماد</button> <button class="danger" @onclick="() => DecideAsync(request.Id, ApprovalActionDecision.Rejected)">رفض</button></td>
+                    <td>@(request.DueAt?.ToString("yyyy/MM/dd HH:mm") ?? "—") @(request.EscalationCount > 0 ? $"(تصعيد {request.EscalationCount})" : string.Empty)</td>
+                    <td>
+                        <button class="primary" @onclick="() => DecideAsync(request.Id, ApprovalActionDecision.Approved)">اعتماد</button>
+                        <button class="secondary" @onclick="() => DecideAsync(request.Id, ApprovalActionDecision.Returned)">إرجاع</button>
+                        <button class="danger" @onclick="() => DecideAsync(request.Id, ApprovalActionDecision.Rejected)">رفض</button>
+                        <button class="secondary" @onclick="() => DelegateAsync(request.Id)">تفويض</button>
+                        @if (request.RequestedByUserId == Tasks.CurrentUserId){<button class="danger" @onclick="() => CancelAsync(request.Id)">إلغاء</button>}
+                    </td>
                 </tr>
             }
         </tbody>
@@ -43,17 +52,21 @@
 
 @code {
     private List<ApprovalRouteResponse> routes = [];
+    private List<UserPickerResponse> users = [];
     private List<ApprovalRequestResponse> requests = [];
     private int routeId;
     private string title = string.Empty;
     private string referenceType = "Task";
     private int? referenceId;
+    private string? decisionComment;
+    private string delegateToUserId = string.Empty;
     private bool success;
     private string? message;
 
     protected override async Task OnInitializedAsync()
     {
         routes = await Tasks.GetApprovalRoutesAsync();
+        users = await Tasks.GetUsersAsync();
         routeId = routes.FirstOrDefault()?.Id ?? 0;
         await LoadAllAsync();
     }
@@ -73,7 +86,29 @@
 
     private async Task DecideAsync(int id, ApprovalActionDecision decision)
     {
-        var result = await Tasks.DecideApprovalAsync(id, decision, decision == ApprovalActionDecision.Approved ? "تم الاعتماد" : "تم الرفض");
+        var fallbackComment = decision switch
+        {
+            ApprovalActionDecision.Approved => "تم الاعتماد",
+            ApprovalActionDecision.Returned => "تمت إعادة الطلب للمراجعة",
+            _ => "تم الرفض"
+        };
+        var result = await Tasks.DecideApprovalAsync(id, decision, string.IsNullOrWhiteSpace(decisionComment) ? fallbackComment : decisionComment);
+        success = result.Success;
+        message = result.Message;
+        await LoadAllAsync();
+    }
+
+    private async Task CancelAsync(int id)
+    {
+        var result = await Tasks.CancelApprovalAsync(id, decisionComment);
+        success = result.Success;
+        message = result.Message;
+        await LoadAllAsync();
+    }
+
+    private async Task DelegateAsync(int id)
+    {
+        var result = await Tasks.DelegateApprovalAsync(id, delegateToUserId, decisionComment ?? string.Empty);
         success = result.Success;
         message = result.Message;
         await LoadAllAsync();

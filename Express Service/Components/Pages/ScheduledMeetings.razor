@@ -1,5 +1,5 @@
 @page "/meetings/scheduled"
-@attribute [Authorize(Roles = "Admin,BoardChairman,BoardSecretary")]
+@attribute [Authorize(Policy = "permission:system.documentation-archive.meetings_manage_schedule")]
 @rendermode InteractiveServer
 @inject MeetingUiService UiService
 
@@ -8,18 +8,24 @@
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-calendar-days"></i> الاجتماعات القادمة</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
     <table>
-        <thead><tr><th>العنوان</th><th>التاريخ</th><th>النوع</th><th>الحالة</th><th>المكان/المنصة</th></tr></thead>
+        <thead><tr><th>العنوان</th><th>التاريخ</th><th>النوع</th><th>الحالة</th><th>المكان/المنصة</th><th></th></tr></thead>
         <tbody>
             @foreach (var meeting in meetings)
             {
-                <tr><td>@meeting.Title</td><td>@meeting.ScheduledAt.ToString("yyyy-MM-dd HH:mm")</td><td>@meeting.Type</td><td><span class="status">@meeting.Status</span></td><td>@(meeting.IsOnline ? meeting.Platform : meeting.Location)</td></tr>
+                <tr><td>@meeting.Title</td><td>@meeting.ScheduledAt.ToString("yyyy-MM-dd HH:mm")</td><td>@meeting.Type</td><td><span class="status">@meeting.Status</span></td><td>@(meeting.IsOnline ? meeting.Platform : meeting.Location)</td><td><button class="secondary small" @onclick="() => selectedMeetingId = meeting.Id">مرفقات</button></td></tr>
             }
         </tbody>
     </table>
 </section>
 
+@if (selectedMeetingId.HasValue)
+{
+    <AttachmentPanel EntityType="BoardMeeting" EntityId="@selectedMeetingId.Value" />
+}
+
 @code {
     private List<MeetingListItemResponse> meetings = [];
+    private int? selectedMeetingId;
     protected override async Task OnInitializedAsync() => await LoadAsync();
     private async Task LoadAsync() => meetings = await UiService.GetScheduledMeetingsAsync();
 }

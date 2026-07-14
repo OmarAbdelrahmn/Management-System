@@ -66,10 +66,16 @@ public record SystemNavigationPageResponse(
     string Key,
     string NameAr,
     string Route,
+    string PermissionKey,
     string Status,
     string? OriginalHref,
     string? OriginalIcon,
     int SortOrder);
+
+public record CatalogRouteAccessResponse(
+    bool IsCatalogRoute,
+    bool IsAllowed,
+    IReadOnlyList<string> PermissionKeys);
 
 public record SeedSystemCatalogResponse(
     int ModulesCreated,

@@ -1,6 +1,7 @@
 using Application.Abstraction;
 using Application.Abstraction.Errors;
 using Application.Contracts.ProgramsProjects;
+using Application.Service.TaskManagement;
 using Domain;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,7 @@ using System.Text.Json;
 
 namespace Application.Service.ProgramsProjects;
 
-public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IProgramsProjectsService
+public class ProgramsProjectsService(ApplicationDbcontext dbcontext, ITaskManagementService? approvalWorkflow = null) : IProgramsProjectsService
 {
     public async Task<Result<ProgramsProjectsDashboardResponse>> GetDashboardAsync(CancellationToken cancellationToken = default)
     {
@@ -1170,6 +1171,9 @@ public class ProgramsProjectsService(ApplicationDbcontext dbcontext) : IPrograms
         approval.Title = request.Title.Trim();
 
         await dbcontext.SaveChangesAsync(cancellationToken);
+        if (!id.HasValue && approvalWorkflow is not null)
+            await approvalWorkflow.EnsureApprovalRequestForEntityAsync(
+                nameof(ProgramApproval), approval.Id, approval.Title, cancellationToken: cancellationToken);
         return Result.Success(MapApproval(approval));
     }
 

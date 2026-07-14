@@ -1,5 +1,6 @@
 using Application.Service.Admin;
 using Application.Service.Accounting;
+using Application.Service.Attachments;
 using Application.Service.Auth;
 using Application.Service.Beneficiaries;
 using Application.Service.BeneficiaryServices;
@@ -33,10 +34,13 @@ using Domain.Auditing;
 using Domain.Identity;
 using Express_Service.Realtime;
 using Express_Service.Services;
+using Express_Service.Authorization;
 using Hangfire;
 using Hangfire.SqlServer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -49,6 +53,10 @@ public static class ApplicationDependencies
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserContext, HttpCurrentUserContext>();
+        services.AddScoped<IPermissionEvaluator, PermissionEvaluator>();
+        services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        services.AddScoped<IAuthorizationHandler, PermissionPrefixAuthorizationHandler>();
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         services.AddDbContext<ApplicationDbcontext>(options =>
@@ -98,9 +106,15 @@ public static class ApplicationDependencies
             .AddEntityFrameworkStores<ApplicationDbcontext>()
             .AddDefaultTokenProviders();
 
-        var jwtKey = configuration["Jwt:Key"] ?? "development-key-change-before-production-development-key";
+        var jwtKey = configuration["Jwt:Key"];
+        if (string.IsNullOrWhiteSpace(jwtKey))
+            throw new InvalidOperationException("Jwt:Key must be supplied through user secrets or environment configuration.");
         services.Configure<AuthOptions>(configuration.GetSection("Jwt"));
         services.Configure<SmtpOptions>(configuration.GetSection("Smtp"));
+        services.Configure<AttachmentOptions>(configuration.GetSection("Attachments"));
+        var maximumAttachmentSize = configuration.GetValue<long?>("Attachments:MaximumSizeBytes")
+            ?? AttachmentOptions.DefaultMaximumSizeBytes;
+        services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = maximumAttachmentSize);
         services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = "SmartAuth";
@@ -141,6 +155,9 @@ public static class ApplicationDependencies
         services.AddAuthorization();
         services.AddCascadingAuthenticationState();
         services.AddScoped<IAccountingService, AccountingService>();
+        services.AddScoped<IAttachmentService, AttachmentService>();
+        services.AddSingleton<IAttachmentStorage, PrivateAttachmentStorage>();
+        services.AddSingleton<IAttachmentMalwareScanner, WindowsDefenderMalwareScanner>();
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailService, EmailService>();
@@ -194,6 +211,7 @@ public static class ApplicationDependencies
         services.AddScoped<MovementMaintenanceUiService>();
         services.AddScoped<TechEnablementUiService>();
         services.AddScoped<VolunteeringUiService>();
+        services.AddScoped<BoardUiService>();
         services.AddScoped<TaskUiService>();
 
         return services;

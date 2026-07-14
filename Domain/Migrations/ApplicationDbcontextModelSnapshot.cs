@@ -322,6 +322,10 @@ namespace Domain.Migrations
                     b.Property<int>("Decision")
                         .HasColumnType("int");
 
+                    b.Property<string>("DelegatedToUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<int>("StepOrder")
                         .HasColumnType("int");
 
@@ -337,6 +341,8 @@ namespace Domain.Migrations
                     b.HasIndex("ActionByUserId");
 
                     b.HasIndex("ApprovalRequestId");
+
+                    b.HasIndex("DelegatedToUserId");
 
                     b.ToTable("ApprovalActions");
                 });
@@ -362,12 +368,26 @@ namespace Domain.Migrations
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("CurrentApproverUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<int>("CurrentStepOrder")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DueAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EscalationCount")
                         .HasColumnType("int");
 
                     b.Property<string>("FinalComment")
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("LastEscalatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int?>("ReferenceId")
                         .HasColumnType("int");
@@ -401,9 +421,13 @@ namespace Domain.Migrations
 
                     b.HasIndex("ApprovalRouteId");
 
+                    b.HasIndex("CurrentApproverUserId");
+
                     b.HasIndex("RequestedByUserId");
 
                     b.HasIndex("Status");
+
+                    b.HasIndex("Status", "DueAt", "EscalationCount");
 
                     b.ToTable("ApprovalRequests");
                 });
@@ -422,6 +446,11 @@ namespace Domain.Migrations
                     b.Property<string>("CreatedByUserId")
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("DefaultDeadlineHours")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(72);
 
                     b.Property<string>("EntityType")
                         .IsRequired()
@@ -577,6 +606,12 @@ namespace Domain.Migrations
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("AfterJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BeforeJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -609,6 +644,55 @@ namespace Domain.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("AuditLogs");
+                });
+
+            modelBuilder.Entity("Domain.Entities.BankReconciliation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("BookBalance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("FinanceBankAccountId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("ReconciliationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("StatementBalance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FinanceBankAccountId", "ReconciliationDate")
+                        .IsUnique();
+
+                    b.ToTable("BankReconciliations");
                 });
 
             modelBuilder.Entity("Domain.Entities.BeneficiaryAccountArtifact", b =>
@@ -3875,6 +3959,9 @@ namespace Domain.Migrations
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(260)
@@ -3887,6 +3974,9 @@ namespace Domain.Migrations
                         .IsRequired()
                         .HasMaxLength(260)
                         .HasColumnType("nvarchar(260)");
+
+                    b.Property<DateTime?>("PurgeAfter")
+                        .HasColumnType("datetime2");
 
                     b.Property<long>("SizeBytes")
                         .HasColumnType("bigint");
@@ -3912,9 +4002,132 @@ namespace Domain.Migrations
 
                     b.HasIndex("Category");
 
+                    b.HasIndex("DeletedAt");
+
                     b.HasIndex("UploadedByUserId");
 
                     b.ToTable("FileAssets");
+                });
+
+            modelBuilder.Entity("Domain.Entities.FileAssetLink", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("FileAssetId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EntityType", "EntityId");
+
+                    b.HasIndex("FileAssetId", "EntityType", "EntityId")
+                        .IsUnique();
+
+                    b.ToTable("FileAssetLinks");
+                });
+
+            modelBuilder.Entity("Domain.Entities.FileAssetVersion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("FileAssetId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<int>("ScanStatus")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ScannedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StoragePath")
+                        .IsRequired()
+                        .HasMaxLength(600)
+                        .HasColumnType("nvarchar(600)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("UploadedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UploadedByUserId");
+
+                    b.HasIndex("FileAssetId", "VersionNumber")
+                        .IsUnique();
+
+                    b.ToTable("FileAssetVersions");
                 });
 
             modelBuilder.Entity("Domain.Entities.FinanceAccount", b =>
@@ -8512,6 +8725,56 @@ namespace Domain.Migrations
                     b.ToTable("SalaryDisbursements");
                 });
 
+            modelBuilder.Entity("Domain.Entities.SavedQueryView", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("FilterJson")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("ScreenKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "ScreenKey", "Name")
+                        .IsUnique();
+
+                    b.ToTable("SavedQueryViews");
+                });
+
             modelBuilder.Entity("Domain.Entities.Sponsor", b =>
                 {
                     b.Property<int>("Id")
@@ -9393,6 +9656,20 @@ namespace Domain.Migrations
                     b.Property<string>("CreatedByUserId")
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<byte[]>("ArchivedContent")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<DateTime?>("ArchivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ArchiveContentType")
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("ArchiveFileName")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
 
                     b.Property<string>("FiltersJson")
                         .HasMaxLength(4000)
@@ -10814,9 +11091,16 @@ namespace Domain.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Domain.Identity.ApplicationUser", "DelegatedToUser")
+                        .WithMany()
+                        .HasForeignKey("DelegatedToUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("ActionByUser");
 
                     b.Navigation("ApprovalRequest");
+
+                    b.Navigation("DelegatedToUser");
                 });
 
             modelBuilder.Entity("Domain.Entities.ApprovalRequest", b =>
@@ -10827,6 +11111,12 @@ namespace Domain.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Domain.Identity.ApplicationUser", "CurrentApproverUser")
+                        .WithMany()
+                        .HasForeignKey("CurrentApproverUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Domain.Identity.ApplicationUser", "RequestedByUser")
                         .WithMany()
                         .HasForeignKey("RequestedByUserId")
@@ -10834,6 +11124,8 @@ namespace Domain.Migrations
                         .IsRequired();
 
                     b.Navigation("ApprovalRoute");
+
+                    b.Navigation("CurrentApproverUser");
 
                     b.Navigation("RequestedByUser");
                 });
@@ -10855,6 +11147,17 @@ namespace Domain.Migrations
                     b.Navigation("ApprovalRoute");
 
                     b.Navigation("ApproverUser");
+                });
+
+            modelBuilder.Entity("Domain.Entities.BankReconciliation", b =>
+                {
+                    b.HasOne("Domain.Entities.FinanceBankAccount", "FinanceBankAccount")
+                        .WithMany()
+                        .HasForeignKey("FinanceBankAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FinanceBankAccount");
                 });
 
             modelBuilder.Entity("Domain.Entities.BeneficiaryAccountArtifact", b =>
@@ -10935,17 +11238,17 @@ namespace Domain.Migrations
                     b.HasOne("Domain.Entities.BeneficiaryAidRequest", "BeneficiaryAidRequest")
                         .WithMany()
                         .HasForeignKey("BeneficiaryAidRequestId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("Domain.Entities.BeneficiaryProfile", "BeneficiaryProfile")
                         .WithMany()
                         .HasForeignKey("BeneficiaryProfileId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("Domain.Entities.EntitySupportRequest", "EntitySupportRequest")
                         .WithMany()
                         .HasForeignKey("EntitySupportRequestId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("BeneficiaryAidRequest");
 
@@ -11246,7 +11549,7 @@ namespace Domain.Migrations
                     b.HasOne("Domain.Entities.EndowmentContract", "EndowmentContract")
                         .WithMany("Invoices")
                         .HasForeignKey("EndowmentContractId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("EndowmentAsset");
 
@@ -11270,6 +11573,36 @@ namespace Domain.Migrations
                         .HasForeignKey("UploadedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("UploadedByUser");
+                });
+
+            modelBuilder.Entity("Domain.Entities.FileAssetLink", b =>
+                {
+                    b.HasOne("Domain.Entities.FileAsset", "FileAsset")
+                        .WithMany("Links")
+                        .HasForeignKey("FileAssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FileAsset");
+                });
+
+            modelBuilder.Entity("Domain.Entities.FileAssetVersion", b =>
+                {
+                    b.HasOne("Domain.Entities.FileAsset", "FileAsset")
+                        .WithMany("Versions")
+                        .HasForeignKey("FileAssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Identity.ApplicationUser", "UploadedByUser")
+                        .WithMany()
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FileAsset");
 
                     b.Navigation("UploadedByUser");
                 });
@@ -11675,7 +12008,7 @@ namespace Domain.Migrations
                     b.HasOne("Domain.Entities.ProgramCertificateTemplate", "ProgramCertificateTemplate")
                         .WithMany("CertificateIssues")
                         .HasForeignKey("ProgramCertificateTemplateId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("Domain.Entities.ProgramProject", "ProgramProject")
                         .WithMany()
@@ -11851,7 +12184,7 @@ namespace Domain.Migrations
                     b.HasOne("Domain.Entities.ProgramProjectContract", "ConvertedContract")
                         .WithMany()
                         .HasForeignKey("ConvertedContractId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("Domain.Entities.ProgramProject", "ProgramProject")
                         .WithMany("SupplierProposals")
@@ -11996,7 +12329,7 @@ namespace Domain.Migrations
                     b.HasOne("Domain.Entities.StrategicGoal", "StrategicGoal")
                         .WithMany("Indicators")
                         .HasForeignKey("StrategicGoalId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("Domain.Entities.StrategicPlan", "StrategicPlan")
                         .WithMany("Indicators")
@@ -12384,6 +12717,13 @@ namespace Domain.Migrations
             modelBuilder.Entity("Domain.Entities.EndowmentContract", b =>
                 {
                     b.Navigation("Invoices");
+                });
+
+            modelBuilder.Entity("Domain.Entities.FileAsset", b =>
+                {
+                    b.Navigation("Links");
+
+                    b.Navigation("Versions");
                 });
 
             modelBuilder.Entity("Domain.Entities.FinancialSupporter", b =>

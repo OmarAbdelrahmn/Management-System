@@ -1,13 +1,14 @@
 using Application.Contracts.SystemCatalog;
 using Application.Service.SystemCatalog;
 using Microsoft.AspNetCore.Authorization;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Express_Service.Controllers;
 
 [Route("api/system-catalog")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+[RequirePermission("system.tech-enablement.system_settings")]
 public class SystemCatalogController(ISystemCatalogService service) : ControllerBase
 {
     [HttpPost("seed-first-pages")]

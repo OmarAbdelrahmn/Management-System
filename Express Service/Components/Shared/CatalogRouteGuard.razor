@@ -1,0 +1,46 @@
+@implements IDisposable
+@inject SystemCatalogUiService Catalog
+@inject NavigationManager Navigation
+
+@if (!checkedAccess)
+{
+    <section class="panel"><div class="panel-body">جارٍ التحقق من صلاحية الخدمة...</div></section>
+}
+else if (!isAllowed)
+{
+    <section class="panel">
+        <div class="panel-heading"><i class="fa-solid fa-lock"></i><div><h2>غير مصرح بالوصول</h2><p>لا تملك صلاحية فتح هذه الخدمة مباشرة.</p></div></div>
+    </section>
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment? ChildContent { get; set; }
+
+    private bool checkedAccess;
+    private bool isAllowed = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+        await CheckAccessAsync();
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs args) => _ = InvokeAsync(CheckAccessAsync);
+
+    private async Task CheckAccessAsync()
+    {
+        checkedAccess = false;
+        await InvokeAsync(StateHasChanged);
+        var route = "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Trim('/');
+        var access = await Catalog.GetRouteAccessAsync(route);
+        isAllowed = access.IsAllowed;
+        checkedAccess = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
+}

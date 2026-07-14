@@ -88,10 +88,22 @@ public class TaskUiService(ITaskManagementService taskService, IHttpContextAcces
         return result.IsSuccess ? (true, "تم إنشاء مسار الاعتماد.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> UpdateApprovalRouteAsync(int id, UpdateApprovalRouteRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await taskService.UpdateApprovalRouteAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث مسار الاعتماد.") : (false, result.Error.Description);
+    }
+
     public async Task<(bool Success, string Message)> AddApprovalStepAsync(int routeId, AddApprovalStepRequest request, CancellationToken cancellationToken = default)
     {
         var result = await taskService.AddApprovalStepAsync(routeId, request, cancellationToken);
         return result.IsSuccess ? (true, "تمت إضافة خطوة الاعتماد.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> UpdateApprovalStepAsync(int routeId, int stepId, UpdateApprovalStepRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await taskService.UpdateApprovalStepAsync(routeId, stepId, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث خطوة الاعتماد.") : (false, result.Error.Description);
     }
 
     public async Task<List<ApprovalRequestResponse>> GetPendingApprovalsAsync(bool mineOnly = false, CancellationToken cancellationToken = default)
@@ -111,5 +123,19 @@ public class TaskUiService(ITaskManagementService taskService, IHttpContextAcces
         var userId = CurrentUserId ?? string.Empty;
         var result = await taskService.DecideApprovalRequestAsync(id, new DecideApprovalRequestRequest(userId, decision, comment), cancellationToken);
         return result.IsSuccess ? (true, "تم تسجيل قرار الاعتماد.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> DelegateApprovalAsync(int id, string delegateToUserId, string reason, CancellationToken cancellationToken = default)
+    {
+        var userId = CurrentUserId ?? string.Empty;
+        var result = await taskService.DelegateApprovalRequestAsync(id, new DelegateApprovalRequestRequest(userId, delegateToUserId, reason), cancellationToken);
+        return result.IsSuccess ? (true, "تم تفويض طلب الاعتماد.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> CancelApprovalAsync(int id, string? comment, CancellationToken cancellationToken = default)
+    {
+        var userId = CurrentUserId ?? string.Empty;
+        var result = await taskService.CancelApprovalRequestAsync(id, new CancelApprovalRequestRequest(userId, comment), cancellationToken);
+        return result.IsSuccess ? (true, "تم إلغاء طلب الاعتماد.") : (false, result.Error.Description);
     }
 }

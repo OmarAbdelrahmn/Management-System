@@ -22,6 +22,7 @@ public interface IBeneficiaryService
     Task<Result<IEnumerable<BeneficiaryUpdateRequestResponse>>> GetUpdateRequestsAsync(int? beneficiaryProfileId = null, BeneficiaryUpdateRequestStatus? status = null, CancellationToken cancellationToken = default);
     Task<Result<BeneficiaryUpdateRequestResponse>> CreateUpdateRequestAsync(CreateBeneficiaryUpdateRequest request, CancellationToken cancellationToken = default);
     Task<Result<BeneficiaryUpdateRequestResponse>> DecideUpdateRequestAsync(int id, DecideBeneficiaryUpdateRequest request, CancellationToken cancellationToken = default);
+    Task<Result<BeneficiaryUpdateRequestResponse>> CancelUpdateRequestAsync(int id, CancelBeneficiaryUpdateRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<BeneficiaryEntityResponse>>> GetEntitiesAsync(string? search = null, BeneficiaryEntityStatus? status = null, CancellationToken cancellationToken = default);
     Task<Result<BeneficiaryEntityResponse>> SaveEntityAsync(int? id, UpsertBeneficiaryEntityRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<BeneficiaryAccountArtifactResponse>>> GetAccountArtifactsAsync(BeneficiaryAccountArtifactType? type = null, BeneficiaryAccountArtifactStatus? status = null, CancellationToken cancellationToken = default);
@@ -31,7 +32,9 @@ public interface IBeneficiaryService
     Task<Result<IEnumerable<BeneficiaryGuardianOperationResponse>>> GetGuardianOperationsAsync(BeneficiaryGuardianOperationType? type = null, BeneficiaryOperationStatus? status = null, CancellationToken cancellationToken = default);
     Task<Result<BeneficiaryGuardianOperationResponse>> CreateGuardianOperationAsync(CreateBeneficiaryGuardianOperationRequest request, CancellationToken cancellationToken = default);
     Task<Result<BeneficiaryGuardianOperationResponse>> DecideGuardianOperationAsync(int id, DecideBeneficiaryGuardianOperationRequest request, CancellationToken cancellationToken = default);
+    Task<Result<BeneficiaryGuardianOperationResponse>> CancelGuardianOperationAsync(int id, CancelBeneficiaryGuardianOperationRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<BeneficiaryUpdateBatchResponse>>> GetUpdateBatchesAsync(BeneficiaryUpdateBatchKind? kind = null, BeneficiaryOperationStatus? status = null, CancellationToken cancellationToken = default);
     Task<Result<BeneficiaryUpdateBatchResponse>> CreateUpdateBatchAsync(CreateBeneficiaryUpdateBatchRequest request, CancellationToken cancellationToken = default);
+    Task<Result<BeneficiaryUpdateBatchResponse>> UpdateUpdateBatchAsync(int id, UpdateBeneficiaryUpdateBatchRequest request, CancellationToken cancellationToken = default);
     Task<Result<BeneficiaryUpdateBatchResponse>> UpdateBatchProgressAsync(int id, UpdateBeneficiaryBatchProgressRequest request, CancellationToken cancellationToken = default);
 }

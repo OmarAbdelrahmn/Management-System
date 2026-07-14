@@ -2,13 +2,14 @@ using Application.Contracts.Members;
 using Application.Service.Members;
 using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Express_Service.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Secretary,Chairman")]
+[RequirePermissionPrefix("system.participating-members.")]
 public class MembersController(IMemberService memberService) : ControllerBase
 {
     [HttpGet("types")]
@@ -101,6 +102,20 @@ public class MembersController(IMemberService memberService) : ControllerBase
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPost("payments/{id:int}/cancel")]
+    public async Task<IActionResult> CancelPayment(int id, [FromBody] CancelMemberPaymentRequest request, CancellationToken cancellationToken)
+    {
+        var result = await memberService.CancelPaymentAsync(id, request, cancellationToken);
+        return result.IsSuccess ? NoContent() : result.ToProblem();
+    }
+
+    [HttpPost("payments/{id:int}/settle")]
+    public async Task<IActionResult> SettlePayment(int id, [FromBody] SettleMemberPaymentRequest request, CancellationToken cancellationToken)
+    {
+        var result = await memberService.SettlePaymentAsync(id, request, cancellationToken);
+        return result.IsSuccess ? NoContent() : result.ToProblem();
+    }
+
     [HttpGet("cards")]
     public async Task<IActionResult> Cards(CancellationToken cancellationToken)
     {
@@ -113,6 +128,13 @@ public class MembersController(IMemberService memberService) : ControllerBase
     {
         var result = await memberService.IssueCardAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("cards/{id:int}/deactivate")]
+    public async Task<IActionResult> DeactivateCard(int id, CancellationToken cancellationToken)
+    {
+        var result = await memberService.DeactivateCardAsync(id, cancellationToken);
+        return result.IsSuccess ? NoContent() : result.ToProblem();
     }
 
     [HttpGet("reports/shares")]

@@ -1,4 +1,5 @@
 using Application.Service.SystemCatalog;
+using Domain.Auditing;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -57,6 +58,21 @@ public class SystemCatalogServiceTests
         Assert.Equal("إدارة التأسيس", modules[0].Groups[0].NameAr);
         Assert.Equal("خارطة الملفات المؤسسية", modules[0].Groups[0].Pages[0].NameAr);
         Assert.Equal("إدارة التطوع", modules[^1].NameAr);
+    }
+
+    [Fact]
+    public async Task GetRouteAccessAsync_RecognizesSharedMappedRoutesAndNormalizesQueries()
+    {
+        await using var dbcontext = ServiceTestFactory.CreateDbContext();
+        var service = new SystemCatalogService(dbcontext);
+        await service.SeedFirstPagesAsync();
+
+        var result = await service.GetRouteAccessAsync("/tasks/manage?source=header");
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value.IsCatalogRoute);
+        Assert.True(result.Value.IsAllowed);
+        Assert.Contains("system.executive-supervision.task_update", result.Value.PermissionKeys);
     }
 
     [Fact]
@@ -595,6 +611,24 @@ public class SystemCatalogServiceTests
         Assert.False(await dbcontext.SystemPages.AnyAsync(x => x.Key == "old.page"));
     }
 
+    [Fact]
+    public async Task GetRouteAccessAsync_AuditsDeniedDirectRouteWithoutDuplicateSpam()
+    {
+        await using var dbcontext = ServiceTestFactory.CreateDbContext();
+        var service = new SystemCatalogService(dbcontext, new CatalogUserContext("operator-1", ["Operator"]));
+        await service.SeedFirstPagesAsync();
+
+        var first = await service.GetRouteAccessAsync("/beneficiaries/create");
+        var second = await service.GetRouteAccessAsync("/beneficiaries/create");
+
+        Assert.True(first.IsSuccess);
+        Assert.False(first.Value.IsAllowed);
+        Assert.False(second.Value.IsAllowed);
+        var audit = Assert.Single(dbcontext.AuditLogs.Where(x => x.Action == "PermissionDenied" && x.EntityName == "CatalogRoute"));
+        Assert.Equal("/beneficiaries/create", audit.EntityId);
+        Assert.Contains("ip=127.0.0.1", audit.Details);
+    }
+
     private static HashSet<string> GetBlazorPageRoutes()
     {
         var root = FindRepositoryRoot();
@@ -629,5 +663,12 @@ public class SystemCatalogServiceTests
             directory = directory.Parent;
 
         return directory?.FullName ?? throw new DirectoryNotFoundException("Could not find ManagementSystem.slnx.");
+    }
+
+    private sealed class CatalogUserContext(string userId, IReadOnlyCollection<string> roles) : ICurrentUserContext
+    {
+        public string? UserId { get; } = userId;
+        public IReadOnlyCollection<string> Roles { get; } = roles;
+        public string? RemoteIpAddress => "127.0.0.1";
     }
 }

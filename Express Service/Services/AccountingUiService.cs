@@ -12,6 +12,18 @@ public class AccountingUiService(IAccountingService service)
         return result.IsSuccess ? result.Value : null;
     }
 
+    public async Task<List<FiscalPeriodResponse>> GetFiscalPeriodsAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await service.GetFiscalPeriodsAsync(cancellationToken);
+        return result.IsSuccess ? result.Value.ToList() : [];
+    }
+
+    public async Task<(bool Success, string Message)> SaveFiscalPeriodAsync(int? id, SaveFiscalPeriodRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await service.SaveFiscalPeriodAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم حفظ الفترة المالية.") : (false, result.Error.Description);
+    }
+
     public async Task<List<FinanceAccountResponse>> GetAccountsAsync(AccountingAccountType? type = null, CancellationToken cancellationToken = default)
     {
         var result = await service.GetAccountsAsync(type, cancellationToken);
@@ -58,6 +70,18 @@ public class AccountingUiService(IAccountingService service)
     {
         var result = await service.SaveLedgerEntryAsync(id, request, cancellationToken);
         return result.IsSuccess ? (true, "تم حفظ قيد اليومية.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> SetLedgerPostingAsync(int id, bool isPosted, string? notes = null, CancellationToken cancellationToken = default)
+    {
+        var result = await service.SetLedgerPostingAsync(id, new SetLedgerPostingRequest(isPosted, notes), cancellationToken);
+        return result.IsSuccess ? (true, isPosted ? "تم ترحيل القيد." : "تم إلغاء ترحيل القيد.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> CreateOpeningBalanceAsync(CreateOpeningBalanceRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await service.CreateOpeningBalanceAsync(request, cancellationToken);
+        return result.IsSuccess ? (true, "تم ترحيل الرصيد الافتتاحي.") : (false, result.Error.Description);
     }
 
     public async Task<List<ReceiptVoucherResponse>> GetReceiptsAsync(ReceiptVoucherKind? kind = null, AccountingRecordStatus? status = null, CancellationToken cancellationToken = default)
@@ -184,5 +208,23 @@ public class AccountingUiService(IAccountingService service)
     {
         var result = await service.SaveBudgetAsync(id, request, cancellationToken);
         return result.IsSuccess ? (true, "تم حفظ الموازنة.") : (false, result.Error.Description);
+    }
+
+    public async Task<List<BankReconciliationResponse>> GetBankReconciliationsAsync(int? bankAccountId = null, CancellationToken cancellationToken = default)
+    {
+        var result = await service.GetBankReconciliationsAsync(bankAccountId, cancellationToken);
+        return result.IsSuccess ? result.Value.ToList() : [];
+    }
+
+    public async Task<(bool Success, string Message)> SaveBankReconciliationAsync(int? id, SaveBankReconciliationRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await service.SaveBankReconciliationAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم حفظ المطابقة البنكية.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> ApproveBankReconciliationAsync(int id, string? notes, CancellationToken cancellationToken = default)
+    {
+        var result = await service.ApproveBankReconciliationAsync(id, new ApproveBankReconciliationRequest(notes), cancellationToken);
+        return result.IsSuccess ? (true, "تم اعتماد المطابقة البنكية.") : (false, result.Error.Description);
     }
 }

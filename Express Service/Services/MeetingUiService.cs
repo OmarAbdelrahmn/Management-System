@@ -216,6 +216,13 @@ public class MeetingUiService(
         return result.IsSuccess ? (true, "تم إغلاق التصويت.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> CastVoteAsync(int voteSessionId, VoteChoice choice, string? rejectionReason, CancellationToken cancellationToken = default)
+    {
+        var userId = CurrentUserId ?? string.Empty;
+        var result = await votingService.CastVoteAsync(voteSessionId, new CastVoteRequest(userId, choice, rejectionReason), cancellationToken);
+        return result.IsSuccess ? (true, "تم تسجيل صوتك.") : (false, result.Error.Description);
+    }
+
     public async Task<(bool Success, string Message)> SignMinuteAsync(int meetingId, CancellationToken cancellationToken = default)
     {
         var userId = CurrentUserId ?? "system";

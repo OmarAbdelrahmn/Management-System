@@ -16,6 +16,15 @@ public record CreateBoardMemberRequest(
     bool IsChairman,
     bool IsSecretary);
 
+public record UpdateBoardRequest(string Name, string Code);
+
+public record SaveBoardMembersRequest(IEnumerable<CreateBoardMemberRequest> Members);
+
+public record RenewBoardCycleRequest(
+    DateTime CycleStartsAt,
+    DateTime CycleEndsAt,
+    int ConsecutiveCycleCount);
+
 public record BoardResponse(
     int Id,
     string Name,

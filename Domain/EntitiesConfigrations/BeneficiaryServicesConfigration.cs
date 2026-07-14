@@ -33,9 +33,9 @@ public class BeneficiaryPaymentOrderConfigration : IEntityTypeConfiguration<Bene
         entity.Property(x => x.DecisionNotes).HasMaxLength(1000);
         entity.HasIndex(x => x.OrderNumber).IsUnique();
         entity.HasIndex(x => new { x.OrderType, x.Status });
-        entity.HasOne(x => x.BeneficiaryAidRequest).WithMany().HasForeignKey(x => x.BeneficiaryAidRequestId).OnDelete(DeleteBehavior.SetNull);
-        entity.HasOne(x => x.EntitySupportRequest).WithMany().HasForeignKey(x => x.EntitySupportRequestId).OnDelete(DeleteBehavior.SetNull);
-        entity.HasOne(x => x.BeneficiaryProfile).WithMany().HasForeignKey(x => x.BeneficiaryProfileId).OnDelete(DeleteBehavior.SetNull);
+        entity.HasOne(x => x.BeneficiaryAidRequest).WithMany().HasForeignKey(x => x.BeneficiaryAidRequestId).OnDelete(DeleteBehavior.NoAction);
+        entity.HasOne(x => x.EntitySupportRequest).WithMany().HasForeignKey(x => x.EntitySupportRequestId).OnDelete(DeleteBehavior.NoAction);
+        entity.HasOne(x => x.BeneficiaryProfile).WithMany().HasForeignKey(x => x.BeneficiaryProfileId).OnDelete(DeleteBehavior.NoAction);
     }
 }
 

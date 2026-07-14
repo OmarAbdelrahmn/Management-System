@@ -10,6 +10,11 @@
     <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-chart-pie"></i></span><span>الإحصائيات</span><strong class="tile-number">@(dashboard?.StatisticDefinitionsCount ?? 0)</strong><span class="tile-footer">لوحة</span></article>
     <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-clock-rotate-left"></i></span><span>التشغيلات</span><strong class="tile-number">@(dashboard?.RunsCount ?? 0)</strong><span class="tile-footer">سجل</span></article>
     <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-calendar-check"></i></span><span>آخر توليد</span><strong class="tile-number">@(dashboard?.LastGeneratedAt?.ToString("MM-dd") ?? "-")</strong><span class="tile-footer">تاريخ</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-building-columns"></i></span><span>مجالس نشطة</span><strong class="tile-number">@(dashboard?.ActiveBoards ?? 0)</strong><span class="tile-footer">حوكمة</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-people-group"></i></span><span>اجتماعات مفتوحة</span><strong class="tile-number">@(dashboard?.OpenMeetings ?? 0)</strong><span class="tile-footer">تشغيل</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-red"><i class="fa-solid fa-square-poll-vertical"></i></span><span>تصويت مفتوح</span><strong class="tile-number">@(dashboard?.OpenVoteSessions ?? 0)</strong><span class="tile-footer">قرارات</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-list-check"></i></span><span>مهام حوكمة مفتوحة</span><strong class="tile-number">@(dashboard?.PendingGovernanceTasks ?? 0)</strong><span class="tile-footer">متأخرة: @(dashboard?.OverdueGovernanceTasks ?? 0)</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-percent"></i></span><span>إنجاز الحوكمة</span><strong class="tile-number">@(dashboard?.GovernanceTaskCompletionPercent ?? 0)</strong><span class="tile-footer">%</span></article>
 </section>
 
 <section class="panel" style="margin-top:14px">

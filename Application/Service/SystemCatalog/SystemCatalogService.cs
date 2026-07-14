@@ -1,13 +1,14 @@
 using Application.Abstraction;
 using Application.Contracts.SystemCatalog;
 using Domain;
+using Domain.Auditing;
 using Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Service.SystemCatalog;
 
-public class SystemCatalogService(ApplicationDbcontext dbcontext) : ISystemCatalogService
+public class SystemCatalogService(ApplicationDbcontext dbcontext, ICurrentUserContext? currentUserContext = null) : ISystemCatalogService
 {
     private static readonly Error PageNotFound = new("SystemCatalog.PageNotFound", "System page was not found.", StatusCodes.Status404NotFound);
     private static readonly IReadOnlyDictionary<string, CatalogPageImplementation> ImplementedRafedPages =
@@ -337,6 +338,27 @@ public class SystemCatalogService(ApplicationDbcontext dbcontext) : ISystemCatal
 
         await dbcontext.SaveChangesAsync(cancellationToken);
 
+        var catalogPermissions = await dbcontext.SystemPages
+            .AsNoTracking()
+            .Include(x => x.SystemModule)
+            .Select(x => new { x.PermissionKey, x.NameAr, Category = x.SystemModule!.NameAr, x.Route })
+            .ToListAsync(cancellationToken);
+        var existingPermissionKeys = await dbcontext.AppPermissions
+            .Select(x => x.Key)
+            .ToHashSetAsync(cancellationToken);
+        foreach (var permission in catalogPermissions.Where(x => !existingPermissionKeys.Contains(x.PermissionKey)))
+        {
+            dbcontext.AppPermissions.Add(new AppPermission
+            {
+                Key = permission.PermissionKey,
+                NameAr = permission.NameAr,
+                Category = permission.Category,
+                Description = permission.Route
+            });
+        }
+        if (dbcontext.ChangeTracker.HasChanges())
+            await dbcontext.SaveChangesAsync(cancellationToken);
+
         var totalModules = await dbcontext.SystemModules.CountAsync(cancellationToken);
         var totalGroups = await dbcontext.SystemPageGroups.CountAsync(cancellationToken);
         var totalPages = await dbcontext.SystemPages.CountAsync(cancellationToken);
@@ -430,6 +452,7 @@ public class SystemCatalogService(ApplicationDbcontext dbcontext) : ISystemCatal
 
     public async Task<Result<IEnumerable<SystemNavigationModuleResponse>>> GetNavigationAsync(CancellationToken cancellationToken = default)
     {
+        var grantedKeys = await GetGrantedPermissionKeysAsync(cancellationToken);
         var modules = await dbcontext.SystemModules
             .AsNoTracking()
             .Include(x => x.Groups)
@@ -453,12 +476,14 @@ public class SystemCatalogService(ApplicationDbcontext dbcontext) : ISystemCatal
                             group.NameAr,
                             group.SortOrder,
                             group.Pages
+                                .Where(page => grantedKeys is null || grantedKeys.Contains(page.PermissionKey))
                                 .OrderBy(page => page.SortOrder)
                                 .Select(page =>
                                     new SystemNavigationPageResponse(
                                         page.Key,
                                         page.NameAr,
                                         page.Route,
+                                        page.PermissionKey,
                                         page.Status.ToString(),
                                         page.OriginalHref,
                                         page.OriginalIcon,
@@ -467,6 +492,72 @@ public class SystemCatalogService(ApplicationDbcontext dbcontext) : ISystemCatal
                     .ToList()));
 
         return Result.Success<IEnumerable<SystemNavigationModuleResponse>>(navigation);
+    }
+
+    public async Task<Result<CatalogRouteAccessResponse>> GetRouteAccessAsync(string route, CancellationToken cancellationToken = default)
+    {
+        var normalizedRoute = NormalizeRoute(route);
+        if (string.IsNullOrWhiteSpace(normalizedRoute))
+            return Result.Success(new CatalogRouteAccessResponse(false, true, []));
+
+        var pages = await dbcontext.SystemPages.AsNoTracking()
+            .Where(x => x.Route == normalizedRoute)
+            .Select(x => x.PermissionKey)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        if (pages.Count == 0)
+            return Result.Success(new CatalogRouteAccessResponse(false, true, []));
+
+        var grantedKeys = await GetGrantedPermissionKeysAsync(cancellationToken);
+        var isAllowed = grantedKeys is null || pages.Any(grantedKeys.Contains);
+        if (!isAllowed && currentUserContext is not null)
+        {
+            var actor = currentUserContext.UserId ?? "unknown";
+            var recentCutoff = DateTime.UtcNow.AddHours(3).AddMinutes(-1);
+            var alreadyAudited = await dbcontext.AuditLogs.AsNoTracking().AnyAsync(x =>
+                x.ActorUserId == actor && x.Action == "PermissionDenied" && x.EntityName == "CatalogRoute" &&
+                x.EntityId == normalizedRoute && x.CreatedAt >= recentCutoff, cancellationToken);
+            if (!alreadyAudited)
+            {
+                dbcontext.AuditLogs.Add(new AuditLog
+                {
+                    ActorUserId = actor,
+                    Action = "PermissionDenied",
+                    EntityName = "CatalogRoute",
+                    EntityId = normalizedRoute,
+                    Details = $"Required one of: {string.Join(", ", pages)}; ip={currentUserContext.RemoteIpAddress ?? "unknown"}"
+                });
+                await dbcontext.SaveChangesAsync(cancellationToken);
+            }
+        }
+        return Result.Success(new CatalogRouteAccessResponse(true, isAllowed, pages));
+    }
+
+    private async Task<HashSet<string>?> GetGrantedPermissionKeysAsync(CancellationToken cancellationToken)
+    {
+        if (currentUserContext is null) return null;
+        if (currentUserContext.Roles.Contains("Admin")) return null;
+        var roles = currentUserContext.Roles.Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
+        if (roles.Count == 0) return [];
+        var keys = await dbcontext.RolePermissions.AsNoTracking()
+            .Where(x => x.IsGranted && x.Role != null && roles.Contains(x.Role.Name!) && x.AppPermission != null)
+            .Select(x => x.AppPermission!.Key)
+            .ToListAsync(cancellationToken);
+        return keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeRoute(string? route)
+    {
+        if (string.IsNullOrWhiteSpace(route))
+            return string.Empty;
+
+        var path = route.Trim();
+        var queryIndex = path.IndexOfAny(['?', '#']);
+        if (queryIndex >= 0)
+            path = path[..queryIndex];
+
+        return "/" + path.Trim('/');
     }
 
     public async Task<Result> UpdatePageStatusAsync(int id, UpdateSystemPageStatusRequest request, CancellationToken cancellationToken = default)
@@ -753,6 +844,11 @@ public class SystemCatalogService(ApplicationDbcontext dbcontext) : ISystemCatal
         if (href is "meetings_calendar.php")
         {
             return Implemented("/meetings/calendar", "MeetingService", "Display meeting calendar data through the existing meeting calendar workflow.");
+        }
+
+        if (href is "meetings_admins.php")
+        {
+            return Implemented("/boards", "BoardService", "Manage board details, memberships, roles, subscription-fee status, supporting-member weights, and cycle renewal.");
         }
 
         if (href.StartsWith("meetings_database_", StringComparison.OrdinalIgnoreCase))

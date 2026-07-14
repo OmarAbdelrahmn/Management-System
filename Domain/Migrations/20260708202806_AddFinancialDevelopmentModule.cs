@@ -246,7 +246,7 @@ namespace Domain.Migrations
                         column: x => x.EndowmentContractId,
                         principalTable: "EndowmentContracts",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateIndex(

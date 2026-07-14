@@ -266,17 +266,46 @@ public class TaskManagementService(ApplicationDbcontext dbcontext, ICurrentUserC
 
     public async Task<Result<ApprovalRouteResponse>> CreateApprovalRouteAsync(CreateApprovalRouteRequest request, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(request.NameAr) || string.IsNullOrWhiteSpace(request.EntityType))
+        if (string.IsNullOrWhiteSpace(request.NameAr) || string.IsNullOrWhiteSpace(request.EntityType) || !IsValidDeadline(request.DefaultDeadlineHours))
             return Result.Failure<ApprovalRouteResponse>(TaskManagementErrors.InvalidRequest);
 
         var route = new ApprovalRoute
         {
             NameAr = request.NameAr.Trim(),
             EntityType = request.EntityType.Trim(),
-            IsActive = request.IsActive
+            IsActive = request.IsActive,
+            DefaultDeadlineHours = request.DefaultDeadlineHours
         };
 
         dbcontext.ApprovalRoutes.Add(route);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapRoute(route));
+    }
+
+    public async Task<Result<ApprovalRouteResponse>> UpdateApprovalRouteAsync(int id, UpdateApprovalRouteRequest request, CancellationToken cancellationToken = default)
+    {
+        var route = await dbcontext.ApprovalRoutes
+            .Include(x => x.Steps)
+            .ThenInclude(x => x.ApproverUser)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (route is null)
+            return Result.Failure<ApprovalRouteResponse>(TaskManagementErrors.RouteNotFound);
+
+        if (string.IsNullOrWhiteSpace(request.NameAr) || string.IsNullOrWhiteSpace(request.EntityType) || !IsValidDeadline(request.DefaultDeadlineHours))
+            return Result.Failure<ApprovalRouteResponse>(TaskManagementErrors.InvalidRequest);
+
+        var normalizedName = request.NameAr.Trim();
+        var normalizedEntityType = request.EntityType.Trim();
+        var duplicate = await dbcontext.ApprovalRoutes.AnyAsync(
+            x => x.Id != id && x.NameAr == normalizedName && x.EntityType == normalizedEntityType,
+            cancellationToken);
+        if (duplicate)
+            return Result.Failure<ApprovalRouteResponse>(TaskManagementErrors.DuplicateApprovalRoute);
+
+        route.NameAr = normalizedName;
+        route.EntityType = normalizedEntityType;
+        route.IsActive = request.IsActive;
+        route.DefaultDeadlineHours = request.DefaultDeadlineHours;
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success(MapRoute(route));
     }
@@ -287,8 +316,11 @@ public class TaskManagementService(ApplicationDbcontext dbcontext, ICurrentUserC
         if (route is null)
             return Result.Failure<ApprovalRouteResponse>(TaskManagementErrors.RouteNotFound);
 
-        if (string.IsNullOrWhiteSpace(request.NameAr) || !await dbcontext.Users.AnyAsync(x => x.Id == request.ApproverUserId, cancellationToken))
+        if (request.StepOrder < 1 || string.IsNullOrWhiteSpace(request.NameAr) || !await dbcontext.Users.AnyAsync(x => x.Id == request.ApproverUserId, cancellationToken))
             return Result.Failure<ApprovalRouteResponse>(TaskManagementErrors.InvalidRequest);
+
+        if (route.Steps.Any(x => x.StepOrder == request.StepOrder))
+            return Result.Failure<ApprovalRouteResponse>(TaskManagementErrors.DuplicateApprovalStepOrder);
 
         route.Steps.Add(new ApprovalStep
         {
@@ -302,12 +334,39 @@ public class TaskManagementService(ApplicationDbcontext dbcontext, ICurrentUserC
         return Result.Success(MapRoute(updated));
     }
 
+    public async Task<Result<ApprovalRouteResponse>> UpdateApprovalStepAsync(int routeId, int stepId, UpdateApprovalStepRequest request, CancellationToken cancellationToken = default)
+    {
+        var route = await dbcontext.ApprovalRoutes
+            .Include(x => x.Steps)
+            .ThenInclude(x => x.ApproverUser)
+            .FirstOrDefaultAsync(x => x.Id == routeId, cancellationToken);
+        if (route is null)
+            return Result.Failure<ApprovalRouteResponse>(TaskManagementErrors.RouteNotFound);
+
+        var step = route.Steps.FirstOrDefault(x => x.Id == stepId);
+        if (step is null)
+            return Result.Failure<ApprovalRouteResponse>(TaskManagementErrors.ApprovalStepNotFound);
+
+        if (request.StepOrder < 1 || string.IsNullOrWhiteSpace(request.NameAr) || !await dbcontext.Users.AnyAsync(x => x.Id == request.ApproverUserId, cancellationToken))
+            return Result.Failure<ApprovalRouteResponse>(TaskManagementErrors.InvalidRequest);
+
+        var duplicate = route.Steps.Any(x => x.Id != stepId && x.StepOrder == request.StepOrder);
+        if (duplicate)
+            return Result.Failure<ApprovalRouteResponse>(TaskManagementErrors.DuplicateApprovalStepOrder);
+
+        step.StepOrder = request.StepOrder;
+        step.NameAr = request.NameAr.Trim();
+        step.ApproverUserId = request.ApproverUserId;
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success(MapRoute(route));
+    }
+
     public async Task<Result<IEnumerable<ApprovalRequestResponse>>> GetPendingApprovalRequestsAsync(string? approverUserId = null, CancellationToken cancellationToken = default)
     {
         var query = BaseApprovalRequestQuery().Where(x => x.Status == ApprovalRequestStatus.Pending);
 
         if (!string.IsNullOrWhiteSpace(approverUserId))
-            query = query.Where(x => x.ApprovalRoute != null && x.ApprovalRoute.Steps.Any(s => s.StepOrder == x.CurrentStepOrder && s.ApproverUserId == approverUserId));
+            query = query.Where(x => x.CurrentApproverUserId == approverUserId);
 
         var requests = await query.OrderBy(x => x.CreatedAt).ToListAsync(cancellationToken);
         return Result.Success<IEnumerable<ApprovalRequestResponse>>(requests.Select(MapApprovalRequest));
@@ -330,13 +389,55 @@ public class TaskManagementService(ApplicationDbcontext dbcontext, ICurrentUserC
             ReferenceId = request.ReferenceId,
             RequestedByUserId = currentUserContext.UserId ?? route.Steps.OrderBy(x => x.StepOrder).First().ApproverUserId,
             CurrentStepOrder = route.Steps.Min(x => x.StepOrder),
+            CurrentApproverUserId = route.Steps.OrderBy(x => x.StepOrder).First().ApproverUserId,
+            DueAt = request.DueAt ?? DateTime.UtcNow.AddHours(3).AddHours(route.DefaultDeadlineHours),
             Status = ApprovalRequestStatus.Pending
         };
 
         dbcontext.ApprovalRequests.Add(approval);
+        QueueApprovalNotification(
+            approval.CurrentApproverUserId,
+            "طلب اعتماد جديد",
+            $"يوجد طلب اعتماد جديد بانتظار إجراءك: {approval.Title}",
+            approval.RequestedByUserId);
         await dbcontext.SaveChangesAsync(cancellationToken);
         var created = await BaseApprovalRequestQuery().FirstAsync(x => x.Id == approval.Id, cancellationToken);
         return Result.Success(MapApprovalRequest(created));
+    }
+
+    public async Task<Result<ApprovalRequestResponse?>> EnsureApprovalRequestForEntityAsync(
+        string referenceType,
+        int referenceId,
+        string title,
+        DateTime? dueAt = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(referenceType) || referenceId < 1 || string.IsNullOrWhiteSpace(title))
+            return Result.Failure<ApprovalRequestResponse?>(TaskManagementErrors.InvalidRequest);
+
+        var normalizedType = referenceType.Trim();
+        var existing = await BaseApprovalRequestQuery()
+            .FirstOrDefaultAsync(x => x.ReferenceType == normalizedType &&
+                                      x.ReferenceId == referenceId &&
+                                      x.Status == ApprovalRequestStatus.Pending,
+                cancellationToken);
+        if (existing is not null)
+            return Result.Success<ApprovalRequestResponse?>(MapApprovalRequest(existing));
+
+        var route = await dbcontext.ApprovalRoutes
+            .AsNoTracking()
+            .Where(x => x.IsActive && x.EntityType == normalizedType)
+            .OrderBy(x => x.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (route is null)
+            return Result.Success<ApprovalRequestResponse?>(null);
+
+        var created = await CreateApprovalRequestAsync(
+            new CreateApprovalRequestRequest(route.Id, title.Trim(), normalizedType, referenceId, dueAt),
+            cancellationToken);
+        return created.IsFailure
+            ? Result.Failure<ApprovalRequestResponse?>(created.Error)
+            : Result.Success<ApprovalRequestResponse?>(created.Value);
     }
 
     public async Task<Result> DecideApprovalRequestAsync(int id, DecideApprovalRequestRequest request, CancellationToken cancellationToken = default)
@@ -352,8 +453,12 @@ public class TaskManagementService(ApplicationDbcontext dbcontext, ICurrentUserC
             return Result.Failure(TaskManagementErrors.InvalidApprovalState);
 
         var currentStep = approval.ApprovalRoute?.Steps.FirstOrDefault(x => x.StepOrder == approval.CurrentStepOrder);
-        if (currentStep is null || currentStep.ApproverUserId != request.ActionByUserId)
+        if (currentStep is null || approval.CurrentApproverUserId != request.ActionByUserId)
             return Result.Failure(TaskManagementErrors.InvalidApprovalState);
+
+        if (request.Decision == ApprovalActionDecision.Delegated ||
+            request.Decision is ApprovalActionDecision.Rejected or ApprovalActionDecision.Returned && string.IsNullOrWhiteSpace(request.Comment))
+            return Result.Failure(TaskManagementErrors.InvalidRequest);
 
         dbcontext.ApprovalActions.Add(new ApprovalAction
         {
@@ -370,11 +475,18 @@ public class TaskManagementService(ApplicationDbcontext dbcontext, ICurrentUserC
             approval.Status = ApprovalRequestStatus.Rejected;
             approval.FinalComment = request.Comment?.Trim();
             approval.ClosedAt = DateTime.UtcNow.AddHours(3);
+            QueueApprovalNotification(approval.RequestedByUserId, "تم رفض طلب الاعتماد", $"تم رفض طلب الاعتماد: {approval.Title}", request.ActionByUserId);
         }
         else if (request.Decision == ApprovalActionDecision.Returned)
         {
             approval.CurrentStepOrder = approval.ApprovalRoute!.Steps.Min(x => x.StepOrder);
+            approval.CurrentApproverUserId = approval.ApprovalRoute.Steps.OrderBy(x => x.StepOrder).First().ApproverUserId;
+            approval.DueAt = DateTime.UtcNow.AddHours(3).AddHours(approval.ApprovalRoute.DefaultDeadlineHours);
+            approval.EscalationCount = 0;
+            approval.LastEscalatedAt = null;
             approval.FinalComment = request.Comment?.Trim();
+            QueueApprovalNotification(approval.RequestedByUserId, "أُعيد طلب الاعتماد للمراجعة", $"أُعيد طلب الاعتماد للمراجعة: {approval.Title}", request.ActionByUserId);
+            QueueApprovalNotification(approval.CurrentApproverUserId, "طلب اعتماد معاد", $"أُعيد طلب الاعتماد إلى مساره: {approval.Title}", request.ActionByUserId);
         }
         else
         {
@@ -384,15 +496,113 @@ public class TaskManagementService(ApplicationDbcontext dbcontext, ICurrentUserC
                 approval.Status = ApprovalRequestStatus.Approved;
                 approval.FinalComment = request.Comment?.Trim();
                 approval.ClosedAt = DateTime.UtcNow.AddHours(3);
+                QueueApprovalNotification(approval.RequestedByUserId, "تم اعتماد الطلب", $"تم اعتماد طلبك: {approval.Title}", request.ActionByUserId);
             }
             else
             {
                 approval.CurrentStepOrder = nextStep.StepOrder;
+                approval.CurrentApproverUserId = nextStep.ApproverUserId;
+                approval.DueAt = DateTime.UtcNow.AddHours(3).AddHours(approval.ApprovalRoute.DefaultDeadlineHours);
+                approval.EscalationCount = 0;
+                approval.LastEscalatedAt = null;
+                QueueApprovalNotification(nextStep.ApproverUserId, "طلب اعتماد بانتظار الإجراء", $"انتقل طلب الاعتماد إلى خطوتك: {approval.Title}", request.ActionByUserId);
             }
         }
 
         await dbcontext.SaveChangesAsync(cancellationToken);
         return Result.Success();
+    }
+
+    public async Task<Result> CancelApprovalRequestAsync(int id, CancelApprovalRequestRequest request, CancellationToken cancellationToken = default)
+    {
+        var approval = await dbcontext.ApprovalRequests.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (approval is null)
+            return Result.Failure(TaskManagementErrors.ApprovalRequestNotFound);
+
+        if (approval.Status != ApprovalRequestStatus.Pending || approval.RequestedByUserId != request.RequestedByUserId)
+            return Result.Failure(TaskManagementErrors.InvalidApprovalState);
+
+        approval.Status = ApprovalRequestStatus.Cancelled;
+        approval.FinalComment = request.Comment?.Trim();
+        approval.ClosedAt = DateTime.UtcNow.AddHours(3);
+        QueueApprovalNotification(approval.CurrentApproverUserId, "تم إلغاء طلب اعتماد", $"أُلغي طلب الاعتماد: {approval.Title}", request.RequestedByUserId);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
+    public async Task<Result> DelegateApprovalRequestAsync(int id, DelegateApprovalRequestRequest request, CancellationToken cancellationToken = default)
+    {
+        var approval = await dbcontext.ApprovalRequests
+            .Include(x => x.ApprovalRoute)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (approval is null)
+            return Result.Failure(TaskManagementErrors.ApprovalRequestNotFound);
+
+        if (approval.Status != ApprovalRequestStatus.Pending || approval.CurrentApproverUserId != request.ActionByUserId ||
+            string.IsNullOrWhiteSpace(request.Reason) || string.IsNullOrWhiteSpace(request.DelegateToUserId) ||
+            request.DelegateToUserId == request.ActionByUserId ||
+            !await dbcontext.Users.AnyAsync(x => x.Id == request.DelegateToUserId && x.IsActive, cancellationToken))
+        {
+            return Result.Failure(TaskManagementErrors.InvalidApprovalState);
+        }
+
+        dbcontext.ApprovalActions.Add(new ApprovalAction
+        {
+            ApprovalRequestId = approval.Id,
+            StepOrder = approval.CurrentStepOrder,
+            ActionByUserId = request.ActionByUserId,
+            DelegatedToUserId = request.DelegateToUserId,
+            Decision = ApprovalActionDecision.Delegated,
+            Comment = request.Reason.Trim(),
+            ActionAt = DateTime.UtcNow.AddHours(3)
+        });
+
+        approval.CurrentApproverUserId = request.DelegateToUserId;
+        approval.DueAt = DateTime.UtcNow.AddHours(3).AddHours(approval.ApprovalRoute?.DefaultDeadlineHours ?? 72);
+        approval.EscalationCount = 0;
+        approval.LastEscalatedAt = null;
+        QueueApprovalNotification(request.DelegateToUserId, "تم تفويض طلب اعتماد", $"تم تفويض طلب الاعتماد إليك: {approval.Title}", request.ActionByUserId);
+        await dbcontext.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
+    public async Task<Result<int>> EscalateOverdueApprovalRequestsAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow.AddHours(3);
+        var overdue = await dbcontext.ApprovalRequests
+            .Where(x => x.Status == ApprovalRequestStatus.Pending && x.DueAt != null && x.DueAt <= now && x.EscalationCount == 0)
+            .ToListAsync(cancellationToken);
+
+        foreach (var approval in overdue)
+        {
+            approval.EscalationCount = 1;
+            approval.LastEscalatedAt = now;
+            QueueApprovalNotification(approval.CurrentApproverUserId, "طلب اعتماد متأخر", $"تأخر طلب الاعتماد: {approval.Title}", approval.RequestedByUserId);
+        }
+
+        if (overdue.Count > 0)
+            await dbcontext.SaveChangesAsync(cancellationToken);
+
+        return Result.Success(overdue.Count);
+    }
+
+    private void QueueApprovalNotification(string recipientUserId, string title, string body, string createdByUserId)
+    {
+        if (string.IsNullOrWhiteSpace(recipientUserId) || string.IsNullOrWhiteSpace(createdByUserId))
+            return;
+
+        dbcontext.SystemNotifications.Add(new SystemNotification
+        {
+            Title = title,
+            Body = body,
+            Channel = MessageChannel.Internal,
+            Status = NotificationStatus.Active,
+            CreatedBySystemUserId = createdByUserId,
+            Recipients =
+            {
+                new SystemNotificationRecipient { RecipientUserId = recipientUserId, DeliveryStatus = ChannelDeliveryStatus.Pending }
+            }
+        });
     }
 
     private async Task AddActivityAsync(
@@ -435,6 +645,8 @@ public class TaskManagementService(ApplicationDbcontext dbcontext, ICurrentUserC
         return fallbackUserId;
     }
 
+    private static bool IsValidDeadline(int hours) => hours is >= 1 and <= 720;
+
     private IQueryable<ManagementTask> BaseTaskQuery() =>
         dbcontext.ManagementTasks
             .AsNoTracking()
@@ -447,7 +659,8 @@ public class TaskManagementService(ApplicationDbcontext dbcontext, ICurrentUserC
             .Include(x => x.ApprovalRoute)
             .ThenInclude(x => x!.Steps)
             .ThenInclude(x => x.ApproverUser)
-            .Include(x => x.RequestedByUser);
+            .Include(x => x.RequestedByUser)
+            .Include(x => x.CurrentApproverUser);
 
     private static ManagementTaskResponse MapTask(ManagementTask task) =>
         new(
@@ -494,11 +707,12 @@ public class TaskManagementService(ApplicationDbcontext dbcontext, ICurrentUserC
             route.NameAr,
             route.EntityType,
             route.IsActive,
+            route.DefaultDeadlineHours,
             route.Steps.OrderBy(x => x.StepOrder).Select(x => new ApprovalStepResponse(x.Id, x.StepOrder, x.NameAr, x.ApproverUserId, x.ApproverUser?.FullName ?? string.Empty)).ToList());
 
     private static ApprovalRequestResponse MapApprovalRequest(ApprovalRequest request)
     {
-        var currentApprover = request.ApprovalRoute?.Steps.FirstOrDefault(x => x.StepOrder == request.CurrentStepOrder)?.ApproverUser?.FullName;
+        var currentApprover = request.CurrentApproverUser?.FullName ?? request.ApprovalRoute?.Steps.FirstOrDefault(x => x.StepOrder == request.CurrentStepOrder)?.ApproverUser?.FullName;
         return new ApprovalRequestResponse(
             request.Id,
             request.ApprovalRouteId,
@@ -512,6 +726,9 @@ public class TaskManagementService(ApplicationDbcontext dbcontext, ICurrentUserC
             request.CurrentStepOrder,
             currentApprover,
             request.FinalComment,
+            request.DueAt,
+            request.LastEscalatedAt,
+            request.EscalationCount,
             request.ClosedAt,
             request.CreatedAt);
     }

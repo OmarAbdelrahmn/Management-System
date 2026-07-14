@@ -2,13 +2,14 @@ using Application.Contracts.HumanResources;
 using Application.Service.HumanResources;
 using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Express_Service.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Secretary,Chairman")]
+[RequirePermissionPrefix("system.human-resources.")]
 public class HumanResourcesController(IHumanResourceService humanResources) : ControllerBase
 {
     [HttpGet("dashboard")]

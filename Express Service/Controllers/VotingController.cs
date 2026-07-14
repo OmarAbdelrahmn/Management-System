@@ -1,5 +1,6 @@
 using Application.Contracts.Voting;
 using Application.Service.Voting;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,7 +19,7 @@ public class VotingController(IVotingService service) : ControllerBase
     }
 
     [HttpPost("agenda-items/{agendaItemId:int}/open")]
-    [Authorize(Roles = "Admin,BoardSecretary")]
+    [RequirePermission("system.documentation-archive.meetings_management")]
     public async Task<IActionResult> Open(int agendaItemId, CancellationToken cancellationToken)
     {
         var result = await service.OpenAsync(agendaItemId, cancellationToken);
@@ -26,7 +27,7 @@ public class VotingController(IVotingService service) : ControllerBase
     }
 
     [HttpPost("{id:int}/votes")]
-    [Authorize(Roles = "BoardMember,BoardChairman,Admin")]
+    [RequirePermissionPrefix("system.documentation-archive.meetings_")]
     public async Task<IActionResult> CastVote(int id, [FromBody] CastVoteRequest request, CancellationToken cancellationToken)
     {
         var result = await service.CastVoteAsync(id, request, cancellationToken);
@@ -34,7 +35,7 @@ public class VotingController(IVotingService service) : ControllerBase
     }
 
     [HttpPost("{id:int}/close")]
-    [Authorize(Roles = "Admin,BoardSecretary")]
+    [RequirePermission("system.documentation-archive.meetings_management")]
     public async Task<IActionResult> Close(int id, CancellationToken cancellationToken)
     {
         var result = await service.CloseAsync(id, cancellationToken);

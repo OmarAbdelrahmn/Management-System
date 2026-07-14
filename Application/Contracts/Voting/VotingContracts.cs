@@ -17,6 +17,7 @@ public record VoteSessionResponse(
 
 public record VoteSummaryResponse(
     int PresentMembers,
+    decimal PresentWeight,
     int ApproveCount,
     decimal ApproveWeight,
     int RejectCount,

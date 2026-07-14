@@ -2,13 +2,14 @@ using Application.Contracts.MovementMaintenance;
 using Application.Service.MovementMaintenance;
 using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Express_Service.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Secretary,Chairman")]
+[RequirePermissionPrefix("system.movement-maintenance.")]
 public class MovementMaintenanceController(IMovementMaintenanceService service) : ControllerBase
 {
     [HttpGet("dashboard")]

@@ -2,13 +2,14 @@ using Application.Contracts.PublicRelationsMedia;
 using Application.Service.PublicRelationsMedia;
 using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Express_Service.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Secretary,Chairman")]
+[RequirePermissionPrefix("system.pr-media.")]
 public class PublicRelationsMediaController(IPublicRelationsMediaService service) : ControllerBase
 {
     [HttpGet("dashboard")]

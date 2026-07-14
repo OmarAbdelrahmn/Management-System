@@ -7,6 +7,8 @@ namespace Application.Service.Accounting;
 public interface IAccountingService
 {
     Task<Result<AccountingDashboardResponse>> GetDashboardAsync(CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<FiscalPeriodResponse>>> GetFiscalPeriodsAsync(CancellationToken cancellationToken = default);
+    Task<Result<FiscalPeriodResponse>> SaveFiscalPeriodAsync(int? id, SaveFiscalPeriodRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<FinanceAccountResponse>>> GetAccountsAsync(AccountingAccountType? type, CancellationToken cancellationToken = default);
     Task<Result<FinanceAccountResponse>> SaveAccountAsync(int? id, SaveFinanceAccountRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<FinanceBankAccountResponse>>> GetBankAccountsAsync(bool? isActive, CancellationToken cancellationToken = default);
@@ -15,6 +17,8 @@ public interface IAccountingService
     Task<Result<FinanceCostCenterResponse>> SaveCostCenterAsync(int? id, SaveFinanceCostCenterRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<LedgerEntryResponse>>> GetLedgerEntriesAsync(AccountingRecordStatus? status, CancellationToken cancellationToken = default);
     Task<Result<LedgerEntryResponse>> SaveLedgerEntryAsync(int? id, SaveLedgerEntryRequest request, CancellationToken cancellationToken = default);
+    Task<Result<LedgerEntryResponse>> SetLedgerPostingAsync(int id, SetLedgerPostingRequest request, CancellationToken cancellationToken = default);
+    Task<Result<LedgerEntryResponse>> CreateOpeningBalanceAsync(CreateOpeningBalanceRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<ReceiptVoucherResponse>>> GetReceiptsAsync(ReceiptVoucherKind? kind, AccountingRecordStatus? status, CancellationToken cancellationToken = default);
     Task<Result<ReceiptVoucherResponse>> SaveReceiptAsync(int? id, SaveReceiptVoucherRequest request, CancellationToken cancellationToken = default);
     Task<Result<ReceiptVoucherResponse>> DecideReceiptAsync(int id, DecideAccountingRecordRequest request, CancellationToken cancellationToken = default);
@@ -36,4 +40,8 @@ public interface IAccountingService
     Task<Result<FinancialReviewItemResponse>> DecideReviewItemAsync(int id, DecideFinancialReviewItemRequest request, CancellationToken cancellationToken = default);
     Task<Result<IEnumerable<FinanceBudgetResponse>>> GetBudgetsAsync(int? fiscalYear, CancellationToken cancellationToken = default);
     Task<Result<FinanceBudgetResponse>> SaveBudgetAsync(int? id, SaveFinanceBudgetRequest request, CancellationToken cancellationToken = default);
+    Task<Result<FinanceBudgetResponse>> DecideBudgetAsync(int id, DecideBudgetRequest request, CancellationToken cancellationToken = default);
+    Task<Result<IEnumerable<BankReconciliationResponse>>> GetBankReconciliationsAsync(int? bankAccountId, CancellationToken cancellationToken = default);
+    Task<Result<BankReconciliationResponse>> SaveBankReconciliationAsync(int? id, SaveBankReconciliationRequest request, CancellationToken cancellationToken = default);
+    Task<Result<BankReconciliationResponse>> ApproveBankReconciliationAsync(int id, ApproveBankReconciliationRequest request, CancellationToken cancellationToken = default);
 }

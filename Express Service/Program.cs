@@ -1,4 +1,6 @@
 using Application.Service.Emails;
+using Application.Service.Attachments;
+using Application.Service.TaskManagement;
 using Domain;
 using Domain.Entities;
 using Domain.Identity;
@@ -135,6 +137,18 @@ if (builder.Configuration.GetValue("Hangfire:Enabled", false))
         {
             TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Arab Standard Time")
         });
+
+    RecurringJob.AddOrUpdate<IAttachmentService>(
+        "purge-expired-attachments",
+        job => job.PurgeExpiredAsync(CancellationToken.None),
+        Cron.Daily,
+        new RecurringJobOptions { TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Arab Standard Time") });
+
+    RecurringJob.AddOrUpdate<ITaskManagementService>(
+        "escalate-overdue-approval-requests",
+        job => job.EscalateOverdueApprovalRequestsAsync(CancellationToken.None),
+        Cron.Hourly,
+        new RecurringJobOptions { TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Arab Standard Time") });
 }
 
 app.MapControllers();

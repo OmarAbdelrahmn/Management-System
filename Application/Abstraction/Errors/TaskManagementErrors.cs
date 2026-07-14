@@ -16,6 +16,15 @@ public static class TaskManagementErrors
     public static readonly Error RouteNotFound =
         new("Approvals.RouteNotFound", "Approval route was not found.", StatusCodes.Status404NotFound);
 
+    public static readonly Error ApprovalStepNotFound =
+        new("Approvals.StepNotFound", "Approval step was not found.", StatusCodes.Status404NotFound);
+
+    public static readonly Error DuplicateApprovalRoute =
+        new("Approvals.DuplicateRoute", "An approval route with the same name and entity type already exists.", StatusCodes.Status409Conflict);
+
+    public static readonly Error DuplicateApprovalStepOrder =
+        new("Approvals.DuplicateStepOrder", "Step order must be unique within an approval route.", StatusCodes.Status409Conflict);
+
     public static readonly Error ApprovalRequestNotFound =
         new("Approvals.RequestNotFound", "Approval request was not found.", StatusCodes.Status404NotFound);
 

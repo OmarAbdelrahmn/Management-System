@@ -27,6 +27,8 @@ public class SystemReportRunConfigration : IEntityTypeConfiguration<SystemReport
         entity.Property(x => x.Format).IsRequired().HasMaxLength(60);
         entity.Property(x => x.FiltersJson).HasMaxLength(4000);
         entity.Property(x => x.RequestedBy).HasMaxLength(200);
+        entity.Property(x => x.ArchiveFileName).HasMaxLength(300);
+        entity.Property(x => x.ArchiveContentType).HasMaxLength(160);
         entity.HasIndex(x => new { x.ReportKey, x.GeneratedAt });
         entity.HasOne(x => x.SystemReportDefinition).WithMany(x => x.Runs).HasForeignKey(x => x.SystemReportDefinitionId).OnDelete(DeleteBehavior.SetNull);
     }

@@ -11,34 +11,39 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-route"></i><div><h2>تعريف مسار اعتماد</h2><p>المسار يحدد نوع العملية وخطوات الموافقين بالترتيب.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-route"></i><div><h2>@(editingRouteId.HasValue ? "تعديل مسار اعتماد" : "تعريف مسار اعتماد")</h2><p>المسار يحدد نوع العملية وخطوات الموافقين بالترتيب.</p></div></div>
     <div class="form-grid">
         <label>اسم المسار<input @bind="routeName" /></label>
         <label>نوع العملية<input @bind="entityType" placeholder="Task / Meeting / Member" /></label>
+        <label>مهلة الإجراء (ساعة)<input type="number" min="1" max="720" @bind="deadlineHours" /></label>
         <label class="check-row"><input type="checkbox" @bind="routeActive" /> فعال</label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="CreateRouteAsync">حفظ المسار</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveRouteAsync">@(editingRouteId.HasValue ? "حفظ التعديل" : "حفظ المسار")</button>@if (editingRouteId.HasValue){<button class="secondary" @onclick="ResetRouteForm">إلغاء التعديل</button>}</div>
 </section>
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-list-ol"></i><div><h2>إضافة خطوة</h2><p>أضف موافقين للمسار الحالي حسب الترتيب.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-list-ol"></i><div><h2>@(editingStepId.HasValue ? "تعديل خطوة" : "إضافة خطوة")</h2><p>أضف موافقين للمسار الحالي حسب الترتيب.</p></div></div>
     <div class="form-grid">
         <label>المسار<select @bind="selectedRouteId">@foreach (var route in routes){<option value="@route.Id">@route.NameAr</option>}</select></label>
         <label>الترتيب<input type="number" @bind="stepOrder" /></label>
         <label>اسم الخطوة<input @bind="stepName" /></label>
         <label>الموافق<select @bind="approverUserId">@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="AddStepAsync">إضافة خطوة</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveStepAsync">@(editingStepId.HasValue ? "حفظ التعديل" : "إضافة خطوة")</button>@if (editingStepId.HasValue){<button class="secondary" @onclick="ResetStepForm">إلغاء التعديل</button>}</div>
 </section>
 
 <section class="table-section">
     <div class="table-title"><span><i class="fa-solid fa-diagram-project"></i> المسارات</span><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
     <table>
-        <thead><tr><th>المسار</th><th>النوع</th><th>الحالة</th><th>الخطوات</th></tr></thead>
+        <thead><tr><th>المسار</th><th>النوع</th><th>المهلة</th><th>الحالة</th><th>الخطوات</th><th>إدارة</th></tr></thead>
         <tbody>
             @foreach (var route in routes)
             {
-                <tr><td>@route.NameAr</td><td>@route.EntityType</td><td>@(route.IsActive ? "فعال" : "موقوف")</td><td>@string.Join(" ← ", route.Steps.Select(x => $"{x.StepOrder}. {x.NameAr} ({x.ApproverName})"))</td></tr>
+                <tr>
+                    <td>@route.NameAr</td><td>@route.EntityType</td><td>@route.DefaultDeadlineHours ساعة</td><td>@(route.IsActive ? "فعال" : "موقوف")</td>
+                    <td>@foreach (var step in route.Steps){<div>@step.StepOrder. @step.NameAr (@step.ApproverName) <button class="secondary" @onclick="() => EditStep(route.Id, step)">تعديل</button></div>}</td>
+                    <td><button class="secondary" @onclick="() => EditRoute(route)">تعديل المسار</button> <button class="@(route.IsActive ? "danger" : "primary")" @onclick="() => ToggleRouteAsync(route)">@(route.IsActive ? "إيقاف" : "تفعيل")</button></td>
+                </tr>
             }
         </tbody>
     </table>
@@ -49,11 +54,14 @@
     private List<UserPickerResponse> users = [];
     private string routeName = string.Empty;
     private string entityType = "Task";
+    private int deadlineHours = 72;
     private bool routeActive = true;
+    private int? editingRouteId;
     private int selectedRouteId;
     private int stepOrder = 1;
     private string stepName = string.Empty;
     private string approverUserId = string.Empty;
+    private int? editingStepId;
     private bool success;
     private string? message;
 
@@ -67,29 +75,75 @@
     private async Task LoadAsync()
     {
         routes = await Tasks.GetApprovalRoutesAsync();
-        selectedRouteId = routes.FirstOrDefault()?.Id ?? 0;
+        if (!routes.Any(x => x.Id == selectedRouteId))
+            selectedRouteId = routes.FirstOrDefault()?.Id ?? 0;
     }
 
-    private async Task CreateRouteAsync()
+    private async Task SaveRouteAsync()
     {
-        var result = await Tasks.CreateApprovalRouteAsync(new CreateApprovalRouteRequest(routeName, entityType, routeActive));
+        var result = editingRouteId.HasValue
+            ? await Tasks.UpdateApprovalRouteAsync(editingRouteId.Value, new UpdateApprovalRouteRequest(routeName, entityType, routeActive, deadlineHours))
+            : await Tasks.CreateApprovalRouteAsync(new CreateApprovalRouteRequest(routeName, entityType, routeActive, deadlineHours));
         success = result.Success;
         message = result.Message;
         if (success)
-            routeName = string.Empty;
+            ResetRouteForm();
         await LoadAsync();
     }
 
-    private async Task AddStepAsync()
+    private async Task SaveStepAsync()
     {
-        var result = await Tasks.AddApprovalStepAsync(selectedRouteId, new AddApprovalStepRequest(stepOrder, stepName, approverUserId));
+        var result = editingStepId.HasValue
+            ? await Tasks.UpdateApprovalStepAsync(selectedRouteId, editingStepId.Value, new UpdateApprovalStepRequest(stepOrder, stepName, approverUserId))
+            : await Tasks.AddApprovalStepAsync(selectedRouteId, new AddApprovalStepRequest(stepOrder, stepName, approverUserId));
         success = result.Success;
         message = result.Message;
         if (success)
         {
-            stepName = string.Empty;
-            stepOrder++;
+            ResetStepForm();
         }
         await LoadAsync();
+    }
+
+    private void EditRoute(ApprovalRouteResponse route)
+    {
+        editingRouteId = route.Id;
+        routeName = route.NameAr;
+        entityType = route.EntityType;
+        routeActive = route.IsActive;
+        deadlineHours = route.DefaultDeadlineHours;
+    }
+
+    private async Task ToggleRouteAsync(ApprovalRouteResponse route)
+    {
+        var result = await Tasks.UpdateApprovalRouteAsync(route.Id, new UpdateApprovalRouteRequest(route.NameAr, route.EntityType, !route.IsActive, route.DefaultDeadlineHours));
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private void EditStep(int routeId, ApprovalStepResponse step)
+    {
+        selectedRouteId = routeId;
+        editingStepId = step.Id;
+        stepOrder = step.StepOrder;
+        stepName = step.NameAr;
+        approverUserId = step.ApproverUserId;
+    }
+
+    private void ResetRouteForm()
+    {
+        editingRouteId = null;
+        routeName = string.Empty;
+        entityType = "Task";
+        routeActive = true;
+        deadlineHours = 72;
+    }
+
+    private void ResetStepForm()
+    {
+        editingStepId = null;
+        stepName = string.Empty;
+        stepOrder++;
     }
 }

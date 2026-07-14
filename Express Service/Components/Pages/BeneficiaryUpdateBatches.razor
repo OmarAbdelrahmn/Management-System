@@ -11,7 +11,7 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-clipboard-list"></i><div><h2>إنشاء مهمة أو تقرير تحديث</h2><p>يغطي التحديث الجماعي، التحديث الذاتي، تحديث طلب الإعانة، والتقارير غير المحدثة أو الخاطئة.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-clipboard-list"></i><div><h2>@(editingBatchId.HasValue ? "تعديل مهمة أو تقرير تحديث" : "إنشاء مهمة أو تقرير تحديث")</h2><p>يغطي التحديث الجماعي، التحديث الذاتي، تحديث طلب الإعانة، والتقارير غير المحدثة أو الخاطئة.</p></div></div>
     <div class="form-grid">
         <label>النوع<select @bind="batchKind"><option value="@BeneficiaryUpdateBatchKind.BulkUpdate">تحديث جماعي</option><option value="@BeneficiaryUpdateBatchKind.SelfService">تحديث ذاتي</option><option value="@BeneficiaryUpdateBatchKind.AidRequest">تحديث لطلب إعانة</option><option value="@BeneficiaryUpdateBatchKind.ManualStatus">تحديث حالة يدوي</option><option value="@BeneficiaryUpdateBatchKind.ReportNoUpdate">ملفات غير محدثة</option><option value="@BeneficiaryUpdateBatchKind.ReportWrongUpdate">ملفات محدثة خاطئة</option><option value="@BeneficiaryUpdateBatchKind.ReportSelfUpdate">ملفات تحديث ذاتي</option><option value="@BeneficiaryUpdateBatchKind.ReportFieldUpdate">ملفات تحديث ميداني</option></select></label>
         <label>العنوان<input @bind="title" /></label>
@@ -20,7 +20,7 @@
         <label>تاريخ الاستحقاق<input type="date" @bind="dueDate" /></label>
         <label class="span-2">ملاحظات<textarea @bind="notes"></textarea></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="CreateAsync">إنشاء المهمة</button><button class="secondary" @onclick="LoadAsync">تحديث القائمة</button></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingBatchId.HasValue ? "حفظ التعديل" : "إنشاء المهمة")</button><button class="secondary" @onclick="ResetForm">جديد</button><button class="secondary" @onclick="LoadAsync">تحديث القائمة</button></div>
 </section>
 
 <section class="panel" style="margin-top:14px">
@@ -47,7 +47,7 @@
                     <td>@batch.AssignedTo</td>
                     <td>@batch.CompletedProfiles / @batch.TotalProfiles</td>
                     <td>@batch.DueDate?.ToString("yyyy-MM-dd")</td>
-                    <td><button class="secondary" @onclick="@(() => UpdateProgressAsync(batch.Id))">تحديث</button></td>
+                    <td><button class="secondary" @onclick="() => Edit(batch)">تعديل</button> <button class="secondary" @onclick="() => UpdateProgressAsync(batch.Id)">تحديث التقدم</button></td>
                 </tr>
             }
         </tbody>
@@ -62,6 +62,7 @@
     private int totalProfiles;
     private DateTime? dueDate;
     private string? notes;
+    private int? editingBatchId;
     private BeneficiaryOperationStatus progressStatus = BeneficiaryOperationStatus.Approved;
     private int completedProfiles;
     private string? progressNotes;
@@ -72,18 +73,16 @@
 
     private async Task LoadAsync() => batches = await Beneficiaries.GetUpdateBatchesAsync();
 
-    private async Task CreateAsync()
+    private async Task SaveAsync()
     {
-        var result = await Beneficiaries.CreateUpdateBatchAsync(new CreateBeneficiaryUpdateBatchRequest(batchKind, title, assignedTo, totalProfiles, dueDate, notes));
+        var result = editingBatchId.HasValue
+            ? await Beneficiaries.UpdateUpdateBatchAsync(editingBatchId.Value, new UpdateBeneficiaryUpdateBatchRequest(batchKind, title, assignedTo, totalProfiles, dueDate, notes))
+            : await Beneficiaries.CreateUpdateBatchAsync(new CreateBeneficiaryUpdateBatchRequest(batchKind, title, assignedTo, totalProfiles, dueDate, notes));
         success = result.Success;
         message = result.Message;
         if (success)
         {
-            title = string.Empty;
-            assignedTo = null;
-            totalProfiles = 0;
-            dueDate = null;
-            notes = null;
+            ResetForm();
             await LoadAsync();
         }
     }
@@ -94,5 +93,27 @@
         success = result.Success;
         message = result.Message;
         await LoadAsync();
+    }
+
+    private void Edit(BeneficiaryUpdateBatchResponse batch)
+    {
+        editingBatchId = batch.Id;
+        batchKind = Enum.Parse<BeneficiaryUpdateBatchKind>(batch.Kind);
+        title = batch.Title;
+        assignedTo = batch.AssignedTo;
+        totalProfiles = batch.TotalProfiles;
+        dueDate = batch.DueDate;
+        notes = batch.Notes;
+    }
+
+    private void ResetForm()
+    {
+        editingBatchId = null;
+        batchKind = BeneficiaryUpdateBatchKind.BulkUpdate;
+        title = string.Empty;
+        assignedTo = null;
+        totalProfiles = 0;
+        dueDate = null;
+        notes = null;
     }
 }

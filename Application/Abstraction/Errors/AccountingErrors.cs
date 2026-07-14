@@ -16,4 +16,6 @@ public static class AccountingErrors
     public static readonly Error BudgetNotFound = new("Accounting.BudgetNotFound", "Budget was not found.", StatusCodes.Status404NotFound);
     public static readonly Error DuplicateNumber = new("Accounting.DuplicateNumber", "Accounting number is already used.", StatusCodes.Status409Conflict);
     public static readonly Error InvalidRequest = new("Accounting.InvalidRequest", "Accounting request is invalid.", StatusCodes.Status400BadRequest);
+    public static readonly Error FiscalPeriodLocked = new("Accounting.FiscalPeriodLocked", "The fiscal period is closed for this accounting date.", StatusCodes.Status409Conflict);
+    public static readonly Error PostedRecordImmutable = new("Accounting.PostedRecordImmutable", "Posted or approved accounting records cannot be edited directly.", StatusCodes.Status409Conflict);
 }

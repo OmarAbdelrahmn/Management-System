@@ -19,6 +19,7 @@
         <label>من<input type="time" @bind="fromTime" /></label>
         <label>إلى<input type="time" @bind="toTime" /></label>
         <label class="span-2">السبب<input @bind="reason" /></label>
+        <label class="span-2">ملاحظة القرار<input @bind="decisionNotes" /></label>
     </div>
     <div class="actions-row"><button class="primary" @onclick="SaveAsync">حفظ الإذن</button><button class="secondary" @onclick="LoadAsync">تحديث</button></div>
 </section>
@@ -30,7 +31,7 @@
         <tbody>
             @foreach (var item in excuses)
             {
-                <tr><td>@item.EmployeeName</td><td>@item.WorkDate.ToString("yyyy-MM-dd")</td><td>@item.ExcuseType</td><td>@item.FromTime - @item.ToTime</td><td><span class="status">@item.Status</span></td><td><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved))">اعتماد</button><button class="secondary" @onclick="@(() => DecideAsync(item.Id, HumanResourceRequestStatus.Rejected))">رفض</button></td><td><button class="secondary" @onclick="@(() => LoadActivityAsync(item))">السجل</button></td></tr>
+                <tr><td>@item.EmployeeName</td><td>@item.WorkDate.ToString("yyyy-MM-dd")</td><td>@item.ExcuseType</td><td>@item.FromTime - @item.ToTime</td><td><span class="status">@item.Status</span></td><td>@if (item.Status == "Pending"){<button class="secondary" @onclick="() => DecideAsync(item.Id, HumanResourceRequestStatus.Approved)">اعتماد</button><button class="secondary" @onclick="() => DecideAsync(item.Id, HumanResourceRequestStatus.Rejected)">رفض</button><button class="danger" @onclick="() => DecideAsync(item.Id, HumanResourceRequestStatus.Cancelled)">إلغاء</button>}</td><td><button class="secondary" @onclick="() => LoadActivityAsync(item)">السجل</button></td></tr>
             }
         </tbody>
     </table>
@@ -63,6 +64,7 @@
     private TimeOnly fromTime = new(8, 0);
     private TimeOnly toTime = new(9, 0);
     private string reason = string.Empty;
+    private string? decisionNotes;
     private bool success;
     private string? message;
 
@@ -85,7 +87,7 @@
 
     private async Task DecideAsync(int id, HumanResourceRequestStatus status)
     {
-        var result = await HR.DecideAttendanceExcuseAsync(id, status, null);
+        var result = await HR.DecideAttendanceExcuseAsync(id, status, decisionNotes);
         success = result.Success;
         message = result.Message;
         await LoadAsync();

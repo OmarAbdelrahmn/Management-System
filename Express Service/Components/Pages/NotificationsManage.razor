@@ -11,15 +11,23 @@
 }
 
 <section class="panel">
-    <div class="panel-heading"><i class="fa-solid fa-bell"></i><div><h2>إشعار جديد</h2><p>ينشئ إشعاراً داخلياً أو يسجل طلب إرسال لقناة خارجية حسب الاختيار.</p></div></div>
+    <div class="panel-heading"><i class="fa-solid fa-bell"></i><div><h2>@(editingNotificationId.HasValue ? "تعديل إشعار مجدول" : "إشعار جديد")</h2><p>ينشئ إشعاراً داخلياً أو يسجل طلب إرسال لقناة خارجية حسب الاختيار.</p></div></div>
     <div class="form-grid">
         <label>العنوان<input @bind="title" /></label>
         <label>القناة<select @bind="channel"><option value="@MessageChannel.Internal">داخلي</option><option value="@MessageChannel.Email">Email</option><option value="@MessageChannel.Sms">SMS</option><option value="@MessageChannel.Push">Push</option></select></label>
         <label>موعد الإرسال<input type="datetime-local" @bind="scheduledAt" /></label>
-        <label class="span-2">المستلمون<select multiple @bind="selectedRecipients">@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
+        <label class="span-2">المستلمون<select multiple @bind="selectedRecipients" disabled="@editingNotificationId.HasValue">@foreach (var user in users){<option value="@user.Id">@user.FullName</option>}</select></label>
         <label class="span-2">النص<textarea @bind="body"></textarea></label>
     </div>
-    <div class="actions-row"><button class="primary" @onclick="CreateAsync">إنشاء الإشعار</button><a class="secondary" href="/notifications/database">قاعدة الإشعارات</a></div>
+    <div class="actions-row"><button class="primary" @onclick="SaveAsync">@(editingNotificationId.HasValue ? "حفظ التعديل" : "إنشاء الإشعار")</button>@if (editingNotificationId.HasValue){<button class="secondary" @onclick="ResetForm">إلغاء التعديل</button>}<a class="secondary" href="/notifications/database">قاعدة الإشعارات</a></div>
+</section>
+
+<section class="table-section">
+    <div class="table-title"><span><i class="fa-solid fa-clock"></i> الإشعارات المجدولة القابلة للتعديل</span><button class="secondary" @onclick="LoadScheduledAsync">تحديث</button></div>
+    <table>
+        <thead><tr><th>العنوان</th><th>القناة</th><th>موعد الإرسال</th><th>المستلمون</th><th>إجراء</th></tr></thead>
+        <tbody>@foreach (var notification in scheduledNotifications){<tr><td>@notification.Title</td><td>@notification.Channel</td><td>@notification.ScheduledAt?.ToString("yyyy-MM-dd HH:mm")</td><td>@notification.Recipients.Count</td><td><button class="secondary" @onclick="() => Edit(notification)">تعديل</button></td></tr>}</tbody>
+    </table>
 </section>
 
 @code {
@@ -29,22 +37,54 @@
     private MessageChannel channel = MessageChannel.Internal;
     private DateTime? scheduledAt;
     private string[] selectedRecipients = [];
+    private List<NotificationResponse> scheduledNotifications = [];
+    private int? editingNotificationId;
     private bool success;
     private string? message;
 
-    protected override async Task OnInitializedAsync() => users = await Messaging.GetUsersAsync();
-
-    private async Task CreateAsync()
+    protected override async Task OnInitializedAsync()
     {
-        var result = await Messaging.CreateNotificationAsync(new CreateNotificationRequest(title, body, channel, selectedRecipients, scheduledAt));
+        users = await Messaging.GetUsersAsync();
+        await LoadScheduledAsync();
+    }
+
+    private async Task SaveAsync()
+    {
+        var result = editingNotificationId.HasValue
+            ? await Messaging.UpdateScheduledNotificationAsync(editingNotificationId.Value, new UpdateScheduledNotificationRequest(title, body, channel, scheduledAt))
+            : await Messaging.CreateNotificationAsync(new CreateNotificationRequest(title, body, channel, selectedRecipients, scheduledAt));
         success = result.Success;
         message = result.Message;
         if (success)
-        {
-            title = string.Empty;
-            body = string.Empty;
-            selectedRecipients = [];
-            scheduledAt = null;
-        }
+            ResetForm();
+        await LoadScheduledAsync();
+    }
+
+    private async Task LoadScheduledAsync()
+    {
+        var now = DateTime.UtcNow.AddHours(3);
+        scheduledNotifications = (await Messaging.GetNotificationsAsync(NotificationStatus.Active))
+            .Where(x => x.ScheduledAt > now && x.Recipients.All(r => r.DeliveryStatus == ChannelDeliveryStatus.Pending.ToString()))
+            .ToList();
+    }
+
+    private void Edit(NotificationResponse notification)
+    {
+        editingNotificationId = notification.Id;
+        title = notification.Title;
+        body = notification.Body;
+        channel = Enum.Parse<MessageChannel>(notification.Channel);
+        scheduledAt = notification.ScheduledAt;
+        selectedRecipients = notification.Recipients.Select(x => x.RecipientUserId).ToArray();
+    }
+
+    private void ResetForm()
+    {
+        editingNotificationId = null;
+        title = string.Empty;
+        body = string.Empty;
+        channel = MessageChannel.Internal;
+        scheduledAt = null;
+        selectedRecipients = [];
     }
 }

@@ -1,13 +1,14 @@
 using Application.Abstraction;
 using Application.Abstraction.Errors;
 using Application.Contracts.ExecutiveSupervision;
+using Application.Service.TaskManagement;
 using Domain;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Service.ExecutiveSupervision;
 
-public class ExecutiveSupervisionService(ApplicationDbcontext dbcontext) : IExecutiveSupervisionService
+public class ExecutiveSupervisionService(ApplicationDbcontext dbcontext, ITaskManagementService? approvalWorkflow = null) : IExecutiveSupervisionService
 {
     public async Task<Result<ExecutiveSupervisionDashboardResponse>> GetDashboardAsync(CancellationToken cancellationToken = default)
     {
@@ -99,6 +100,9 @@ public class ExecutiveSupervisionService(ApplicationDbcontext dbcontext) : IExec
         entity.RequestedAt = request.RequestedAt;
         entity.DecidedAt = request.Status == ExecutiveWorkflowStatus.Pending ? null : DateTime.UtcNow.AddHours(3);
         await dbcontext.SaveChangesAsync(cancellationToken);
+        if (!id.HasValue && entity.Status == ExecutiveWorkflowStatus.Pending && approvalWorkflow is not null)
+            await approvalWorkflow.EnsureApprovalRequestForEntityAsync(
+                nameof(ExecutiveApprovalRequest), entity.Id, entity.Subject, cancellationToken: cancellationToken);
         return Result.Success(MapApproval(entity));
     }
 

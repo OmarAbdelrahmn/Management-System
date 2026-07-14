@@ -69,6 +69,11 @@
     </table>
 </section>
 
+@if (editingRequestId.HasValue)
+{
+    <AttachmentPanel EntityType="BeneficiaryAidRequest" EntityId="@editingRequestId.Value" />
+}
+
 @code {
     private List<BeneficiaryResponse> beneficiaries = [];
     private List<BeneficiaryEntityResponse> entities = [];

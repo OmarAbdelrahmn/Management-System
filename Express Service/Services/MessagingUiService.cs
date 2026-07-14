@@ -104,10 +104,28 @@ public class MessagingUiService(
         return result.IsSuccess ? result.Value.ToList() : [];
     }
 
+    public async Task<int> GetUnreadNotificationCountAsync(CancellationToken cancellationToken = default)
+    {
+        var userId = CurrentUserId;
+        if (string.IsNullOrWhiteSpace(userId))
+            return 0;
+
+        return await dbcontext.SystemNotificationRecipients
+            .AsNoTracking()
+            .Where(x => x.RecipientUserId == userId && !x.IsRead && x.SystemNotification!.Status == NotificationStatus.Active)
+            .CountAsync(cancellationToken);
+    }
+
     public async Task<(bool Success, string Message)> CreateNotificationAsync(CreateNotificationRequest request, CancellationToken cancellationToken = default)
     {
         var result = await messagingService.CreateNotificationAsync(request, cancellationToken);
         return result.IsSuccess ? (true, "تم إنشاء الإشعار.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> UpdateScheduledNotificationAsync(int id, UpdateScheduledNotificationRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await messagingService.UpdateScheduledNotificationAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث الإشعار المجدول.") : (false, result.Error.Description);
     }
 
     public async Task<(bool Success, string Message)> CancelNotificationAsync(int id, string reason, CancellationToken cancellationToken = default)

@@ -49,6 +49,7 @@
                         {
                             <button class="secondary" @onclick="@(() => DecideAsync(operation.Id, true))">اعتماد</button>
                             <button class="secondary" @onclick="@(() => DecideAsync(operation.Id, false))">رفض</button>
+                            <button class="danger" @onclick="@(() => CancelAsync(operation.Id))">إلغاء</button>
                         }
                     </td>
                 </tr>
@@ -109,6 +110,21 @@
     private async Task DecideAsync(int id, bool approved)
     {
         var result = await Beneficiaries.DecideGuardianOperationAsync(id, approved, decisionNotes);
+        success = result.Success;
+        message = result.Message;
+        await LoadAsync();
+    }
+
+    private async Task CancelAsync(int id)
+    {
+        if (string.IsNullOrWhiteSpace(decisionNotes))
+        {
+            success = false;
+            message = "أدخل سبب الإلغاء أولاً.";
+            return;
+        }
+
+        var result = await Beneficiaries.CancelGuardianOperationAsync(id, decisionNotes);
         success = result.Success;
         message = result.Message;
         await LoadAsync();

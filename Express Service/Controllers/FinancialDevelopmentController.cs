@@ -2,13 +2,14 @@ using Application.Contracts.FinancialDevelopment;
 using Application.Service.FinancialDevelopment;
 using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Express_Service.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Secretary,Chairman")]
+[RequirePermissionPrefix("system.financial-development.")]
 public class FinancialDevelopmentController(IFinancialDevelopmentService service) : ControllerBase
 {
     [HttpGet("dashboard")]

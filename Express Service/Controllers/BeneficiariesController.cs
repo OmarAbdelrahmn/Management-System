@@ -2,13 +2,14 @@ using Application.Contracts.Beneficiaries;
 using Application.Service.Beneficiaries;
 using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
+using Express_Service.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Express_Service.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Secretary,Chairman")]
+[RequirePermissionPrefix("system.beneficiary-accounts.")]
 public class BeneficiariesController(IBeneficiaryService beneficiaries) : ControllerBase
 {
     [HttpGet("dashboard")]
@@ -131,6 +132,13 @@ public class BeneficiariesController(IBeneficiaryService beneficiaries) : Contro
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPost("update-requests/{id:int}/cancel")]
+    public async Task<IActionResult> CancelUpdateRequest(int id, [FromBody] CancelBeneficiaryUpdateRequest request, CancellationToken cancellationToken)
+    {
+        var result = await beneficiaries.CancelUpdateRequestAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("entities")]
     public async Task<IActionResult> Entities(
         [FromQuery] string? search,
@@ -210,6 +218,13 @@ public class BeneficiariesController(IBeneficiaryService beneficiaries) : Contro
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpPost("guardian-operations/{id:int}/cancel")]
+    public async Task<IActionResult> CancelGuardianOperation(int id, [FromBody] CancelBeneficiaryGuardianOperationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await beneficiaries.CancelGuardianOperationAsync(id, request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("update-batches")]
     public async Task<IActionResult> UpdateBatches(
         [FromQuery] BeneficiaryUpdateBatchKind? kind,
@@ -224,6 +239,13 @@ public class BeneficiariesController(IBeneficiaryService beneficiaries) : Contro
     public async Task<IActionResult> CreateUpdateBatch([FromBody] CreateBeneficiaryUpdateBatchRequest request, CancellationToken cancellationToken)
     {
         var result = await beneficiaries.CreateUpdateBatchAsync(request, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPut("update-batches/{id:int}")]
+    public async Task<IActionResult> UpdateUpdateBatch(int id, [FromBody] UpdateBeneficiaryUpdateBatchRequest request, CancellationToken cancellationToken)
+    {
+        var result = await beneficiaries.UpdateUpdateBatchAsync(id, request, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 

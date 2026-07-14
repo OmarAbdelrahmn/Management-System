@@ -102,6 +102,12 @@ public class BeneficiaryUiService(IBeneficiaryService beneficiaries)
         return result.IsSuccess ? (true, approved ? "تم اعتماد طلب التحديث." : "تم رفض طلب التحديث.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> CancelUpdateRequestAsync(int id, string reason, CancellationToken cancellationToken = default)
+    {
+        var result = await beneficiaries.CancelUpdateRequestAsync(id, new CancelBeneficiaryUpdateRequest(reason), cancellationToken);
+        return result.IsSuccess ? (true, "تم إلغاء طلب التحديث.") : (false, result.Error.Description);
+    }
+
     public async Task<List<BeneficiaryEntityResponse>> GetEntitiesAsync(string? search = null, BeneficiaryEntityStatus? status = null, CancellationToken cancellationToken = default)
     {
         var result = await beneficiaries.GetEntitiesAsync(search, status, cancellationToken);
@@ -156,6 +162,12 @@ public class BeneficiaryUiService(IBeneficiaryService beneficiaries)
         return result.IsSuccess ? (true, approved ? "تم اعتماد عملية الوصي." : "تم رفض عملية الوصي.") : (false, result.Error.Description);
     }
 
+    public async Task<(bool Success, string Message)> CancelGuardianOperationAsync(int id, string reason, CancellationToken cancellationToken = default)
+    {
+        var result = await beneficiaries.CancelGuardianOperationAsync(id, new CancelBeneficiaryGuardianOperationRequest(reason), cancellationToken);
+        return result.IsSuccess ? (true, "تم إلغاء عملية الوصي.") : (false, result.Error.Description);
+    }
+
     public async Task<List<BeneficiaryUpdateBatchResponse>> GetUpdateBatchesAsync(BeneficiaryUpdateBatchKind? kind = null, BeneficiaryOperationStatus? status = null, CancellationToken cancellationToken = default)
     {
         var result = await beneficiaries.GetUpdateBatchesAsync(kind, status, cancellationToken);
@@ -166,6 +178,12 @@ public class BeneficiaryUiService(IBeneficiaryService beneficiaries)
     {
         var result = await beneficiaries.CreateUpdateBatchAsync(request, cancellationToken);
         return result.IsSuccess ? (true, "تم إنشاء مهمة تحديث البيانات.") : (false, result.Error.Description);
+    }
+
+    public async Task<(bool Success, string Message)> UpdateUpdateBatchAsync(int id, UpdateBeneficiaryUpdateBatchRequest request, CancellationToken cancellationToken = default)
+    {
+        var result = await beneficiaries.UpdateUpdateBatchAsync(id, request, cancellationToken);
+        return result.IsSuccess ? (true, "تم تحديث مهمة البيانات.") : (false, result.Error.Description);
     }
 
     public async Task<(bool Success, string Message)> UpdateBatchProgressAsync(int id, BeneficiaryOperationStatus status, int completedProfiles, string? notes, CancellationToken cancellationToken = default)

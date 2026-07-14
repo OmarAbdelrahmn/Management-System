@@ -181,6 +181,9 @@ public class MinuteService(
         if (meeting is null)
             return Result.Failure(MeetingErrors.NotFound);
 
+        if (boardAccessService is not null && !await boardAccessService.CanChairMeetingAsync(meetingId, cancellationToken))
+            return Result.Failure(PermissionErrors.Forbidden);
+
         if (meeting.Minute is null || !meeting.Minute.IsReadOnly)
             return Result.Failure(MinuteErrors.NotFound);
 
