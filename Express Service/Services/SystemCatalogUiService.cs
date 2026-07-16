@@ -6,6 +6,8 @@ namespace Express_Service.Services;
 
 public class SystemCatalogUiService(ISystemCatalogService systemCatalogService)
 {
+    private bool catalogReady;
+
     public async Task<(bool Success, string Message)> SeedSystemCatalogAsync(CancellationToken cancellationToken = default)
     {
         var result = await systemCatalogService.SeedFirstPagesAsync(cancellationToken);
@@ -18,7 +20,7 @@ public class SystemCatalogUiService(ISystemCatalogService systemCatalogService)
     {
         await EnsureSeededAsync(cancellationToken);
         var result = await systemCatalogService.GetModulesAsync(cancellationToken);
-        return result.IsSuccess ? result.Value.ToList() : [];
+        return result.IsSuccess ? result.Value.Select(UseDistinctModuleName).ToList() : [];
     }
 
     public async Task<List<SystemPageGroupResponse>> GetGroupsAsync(string? moduleKey = null, CancellationToken cancellationToken = default)
@@ -51,9 +53,17 @@ public class SystemCatalogUiService(ISystemCatalogService systemCatalogService)
 
     public async Task<List<SystemNavigationModuleResponse>> GetNavigationAsync(CancellationToken cancellationToken = default)
     {
-        await EnsureSeededAsync(cancellationToken);
         var result = await systemCatalogService.GetNavigationAsync(cancellationToken);
-        return result.IsSuccess ? result.Value.ToList() : [];
+        if (result.IsSuccess && result.Value.Any())
+        {
+            catalogReady = true;
+            return result.Value.Select(UseDistinctModuleName).ToList();
+        }
+
+        await systemCatalogService.SeedFirstPagesAsync(cancellationToken);
+        result = await systemCatalogService.GetNavigationAsync(cancellationToken);
+        catalogReady = result.IsSuccess && result.Value.Any();
+        return result.IsSuccess ? result.Value.Select(UseDistinctModuleName).ToList() : [];
     }
 
     public async Task<List<SystemNavigationPageResponse>> SearchAccessiblePagesAsync(string? search, int take = 8, CancellationToken cancellationToken = default)
@@ -88,10 +98,30 @@ public class SystemCatalogUiService(ISystemCatalogService systemCatalogService)
 
     private async Task EnsureSeededAsync(CancellationToken cancellationToken)
     {
-        var navigation = await systemCatalogService.GetNavigationAsync(cancellationToken);
-        if (navigation.IsSuccess && navigation.Value.Any())
+        if (catalogReady)
             return;
 
+        var navigation = await systemCatalogService.GetNavigationAsync(cancellationToken);
+        if (navigation.IsSuccess && navigation.Value.Any())
+        {
+            catalogReady = true;
+            return;
+        }
+
         await systemCatalogService.SeedFirstPagesAsync(cancellationToken);
+        catalogReady = true;
     }
+
+    private static SystemModuleResponse UseDistinctModuleName(SystemModuleResponse module) =>
+        module with { NameAr = GetDistinctModuleName(module.Key, module.NameAr) };
+
+    private static SystemNavigationModuleResponse UseDistinctModuleName(SystemNavigationModuleResponse module) =>
+        module with { NameAr = GetDistinctModuleName(module.Key, module.NameAr) };
+
+    private static string GetDistinctModuleName(string key, string fallback) => key switch
+    {
+        "excellence-performance" => "التميز المؤسسي وقياس الأداء",
+        "excellence-governance" => "التميز المؤسسي والحوكمة",
+        _ => fallback
+    };
 }

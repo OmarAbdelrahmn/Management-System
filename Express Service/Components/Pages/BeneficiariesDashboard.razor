@@ -52,18 +52,25 @@
     <table>
         <thead><tr><th>رقم الملف</th><th>الاسم</th><th>الهوية</th><th>الجوال</th><th>المدينة</th><th>الفئة</th><th>الحالة</th><th>إجراء</th></tr></thead>
         <tbody>
-            @foreach (var profile in profiles)
+            @if (profiles.Count == 0)
             {
-                <tr>
-                    <td>@profile.BeneficiaryNumber</td>
-                    <td>@profile.FullName</td>
-                    <td>@profile.NationalId</td>
-                    <td>@profile.Mobile</td>
-                    <td>@profile.City</td>
-                    <td>@profile.Category @profile.Grade</td>
-                    <td><span class="status">@DisplayStatus(profile.Status)</span></td>
-                    <td><a class="secondary" href="@($"/beneficiaries/update/{profile.Id}")">تحديث</a></td>
-                </tr>
+                <tr><td colspan="8"><div class="empty-table-state"><i class="fa-solid fa-address-card"></i><strong>لا توجد نتائج</strong><span>غيّر الفلاتر أو أضف ملف مستفيد جديداً.</span></div></td></tr>
+            }
+            else
+            {
+                @foreach (var profile in profiles)
+                {
+                    <tr>
+                        <td>@profile.BeneficiaryNumber</td>
+                        <td>@profile.FullName</td>
+                        <td>@profile.NationalId</td>
+                        <td>@profile.Mobile</td>
+                        <td>@profile.City</td>
+                        <td>@profile.Category @profile.Grade</td>
+                        <td><span class="status">@DisplayStatus(profile.Status)</span></td>
+                        <td><a class="secondary" href="@($"/beneficiaries/update/{profile.Id}")">تحديث</a></td>
+                    </tr>
+                }
             }
         </tbody>
     </table>

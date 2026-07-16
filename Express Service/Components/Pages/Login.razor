@@ -2,41 +2,73 @@
 @attribute [AllowAnonymous]
 @layout EmptyLayout
 
-<div class="login-shell">
-    <section class="login-card">
-        <div class="login-brand">
-            <strong>نظام رافد الإلكتروني</strong>
-            <span>جمعية صرح العطاء النسائية</span>
-            <small>تسجيل الدخول إلى إدارة الاجتماعات والمجالس</small>
-        </div>
+<PageTitle>تسجيل الدخول | مؤسسة سعيد مبارك الشهراني للتجارة</PageTitle>
+<HeadContent><meta name="robots" content="noindex, nofollow" /></HeadContent>
+
+<main class="auth-page">
+    <header class="auth-topbar">
+        <a class="landing-brand" href="/" aria-label="العودة إلى الصفحة الرئيسية">
+            <span class="landing-brand-mark">S</span>
+            <span>مؤسسة سعيد مبارك الشهراني للتجارة</span>
+        </a>
+        <a class="auth-home-link" href="/"><i class="fa-solid fa-arrow-right"></i> الصفحة الرئيسية</a>
+    </header>
+
+    <div class="auth-layout">
+        <section class="auth-story" aria-labelledby="auth-welcome-title">
+            <p class="landing-eyebrow"><span></span> بوابة الإدارة الإلكترونية</p>
+            <h1 id="auth-welcome-title">مرحباً بعودتك إلى<br /><em>منصة أعمالك</em></h1>
+            <p>أدر عمليات المؤسسة ومهامها من مساحة واحدة آمنة، منظمة، وسهلة الاستخدام.</p>
+            <div class="auth-benefits" aria-label="مزايا المنصة">
+                <span><i class="fa-solid fa-shield-halved"></i> دخول آمن</span>
+                <span><i class="fa-solid fa-layer-group"></i> إدارة متكاملة</span>
+                <span><i class="fa-solid fa-mobile-screen-button"></i> تعمل على جميع الأجهزة</span>
+            </div>
+        </section>
+
+        <section class="auth-card" aria-labelledby="login-title">
+            <div class="auth-card-heading">
+                <span class="auth-card-mark"><i class="fa-solid fa-building"></i></span>
+                <div>
+                    <span>بوابة الموظفين</span>
+                    <h2 id="login-title">تسجيل الدخول</h2>
+                    <p>أدخل بيانات حسابك للوصول إلى لوحة الإدارة.</p>
+                </div>
+            </div>
 
         @if (HasError)
         {
-            <div class="login-error">بيانات الدخول غير صحيحة أو الحساب غير فعال.</div>
+            <div class="auth-error" role="alert" aria-live="polite"><i class="fa-solid fa-circle-exclamation"></i><span><strong>تعذر تسجيل الدخول</strong>تحقق من البريد الإلكتروني وكلمة المرور أو حالة الحساب.</span></div>
         }
 
-        <form method="post" action="/ui/login" class="login-form">
+        <form method="post" action="/ui/login" class="auth-form">
             <input type="hidden" name="returnUrl" value="@ReturnUrl" />
 
-            <label>إسم المستخدم:
-                <input name="email" type="email" autocomplete="username" required />
+            <label for="login-email">البريد الإلكتروني</label>
+            <div class="auth-input-wrap">
+                <i class="fa-regular fa-envelope" aria-hidden="true"></i>
+                <input id="login-email" name="email" type="email" inputmode="email" autocomplete="username" placeholder="name@example.com" required autofocus />
+            </div>
+
+            <label for="login-password">كلمة المرور</label>
+            <div class="auth-input-wrap">
+                <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                <input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="أدخل كلمة المرور" required />
+            </div>
+
+            <label class="auth-remember" for="login-remember">
+                <input id="login-remember" name="remember" type="checkbox" />
+                <span>تذكر بيانات الدخول على هذا الجهاز</span>
             </label>
 
-            <label>كلمة المرور:
-                <input name="password" type="password" autocomplete="current-password" required />
-            </label>
-
-            <label class="check">
-                <input name="remember" type="checkbox" />
-                تذكر بيانات الدخول
-            </label>
-
-            <button class="primary" type="submit">تسجيل الدخول</button>
+            <button class="auth-submit" type="submit">تسجيل الدخول <i class="fa-solid fa-arrow-left"></i></button>
+            <p class="auth-security-note"><i class="fa-solid fa-lock"></i> اتصالك بالمنصة محمي وآمن</p>
         </form>
+        </section>
+    </div>
 
-        <footer>جميع الحقوق محفوظة © نظام الإدارة المحلي</footer>
-    </section>
-</div>
+    <footer class="auth-footer"><span>© @DateTime.Now.Year مؤسسة سعيد مبارك الشهراني للتجارة. جميع الحقوق محفوظة.</span><span>النظام الإداري الإلكتروني</span></footer>
+</main>
 
 @code {
     [SupplyParameterFromQuery]

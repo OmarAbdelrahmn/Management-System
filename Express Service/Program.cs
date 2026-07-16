@@ -8,6 +8,7 @@ using Express_Service;
 using Express_Service.Hangfire;
 using Express_Service.Hubs;
 using Hangfire;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using QuestPDF.Infrastructure;
 using Serilog;
@@ -25,6 +26,10 @@ builder.Host.UseSerilog((context, services, configuration) =>
 builder.Services.AddControllers();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddDataProtection()
+    .SetApplicationName(builder.Configuration["DataProtection:ApplicationName"] ?? "ManagementSystem")
+    .PersistKeysToDbContext<ApplicationDbcontext>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
@@ -76,7 +81,7 @@ app.Use(async (context, next) =>
 {
     var path = context.Request.Path;
     var isProtectedUiPath =
-        path == "/" ||
+        path.StartsWithSegments("/dashboard") ||
         path.StartsWithSegments("/meetings") ||
         path.StartsWithSegments("/members") ||
         path.StartsWithSegments("/beneficiaries") ||
@@ -102,17 +107,10 @@ app.Use(async (context, next) =>
         path.StartsWithSegments("/channels") ||
         path.StartsWithSegments("/admin") ||
         path.StartsWithSegments("/system") ||
-        path.StartsWithSegments("/rafed") ||
-        path.StartsWithSegments("/_blazor");
+        path.StartsWithSegments("/rafed");
 
     if (isProtectedUiPath && context.User.Identity?.IsAuthenticated != true)
     {
-        if (path.StartsWithSegments("/_blazor"))
-        {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return;
-        }
-
         var returnUrl = context.Request.PathBase + context.Request.Path + context.Request.QueryString;
         context.Response.Redirect($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
         return;
@@ -152,6 +150,7 @@ if (builder.Configuration.GetValue("Hangfire:Enabled", false))
 }
 
 app.MapControllers();
+app.MapStaticAssets();
 app.MapPost("/ui/login", async (HttpContext httpContext, SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, ApplicationDbcontext dbcontext) =>
 {
     var form = await httpContext.Request.ReadFormAsync();
@@ -160,7 +159,7 @@ app.MapPost("/ui/login", async (HttpContext httpContext, SignInManager<Applicati
     var remember = form["remember"].ToString() == "on";
     var returnUrl = form["returnUrl"].ToString();
     var safeReturnUrl = string.IsNullOrWhiteSpace(returnUrl) || !returnUrl.StartsWith('/') || returnUrl.StartsWith("//")
-        ? "/"
+        ? "/dashboard"
         : returnUrl;
 
     var user = await userManager.FindByEmailAsync(email);

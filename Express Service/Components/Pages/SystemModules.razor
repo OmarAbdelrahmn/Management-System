@@ -14,17 +14,17 @@
     <div class="panel-heading">
         <i class="fa-solid fa-layer-group"></i>
         <div>
-                <h2>كتالوج رافد الكامل</h2>
-            <p>خريطة رافد الكاملة: 18 إدارة، 84 مجموعة، و688 صفحة مع تمييز المنفذ والمخطط.</p>
+                <h2>كتالوج النظام الكامل</h2>
+            <p>خريطة النظام الكاملة: 18 إدارة، 84 مجموعة، و688 صفحة مع تمييز المنفذ والمخطط.</p>
         </div>
-        <button class="primary" @onclick="SeedAsync" disabled="@busy">تجهيز خريطة رافد</button>
+        <button class="primary" @onclick="SeedAsync" disabled="@busy">تجهيز خريطة النظام</button>
     </div>
 </section>
 
 <section class="circle-tiles" style="margin-top:14px">
     <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-boxes-stacked"></i></span><span>الوحدات</span><strong class="tile-number">@modules.Count</strong><span class="tile-footer">خدمات رئيسية</span></article>
-    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-layer-group"></i></span><span>المجموعات</span><strong class="tile-number">@modules.Sum(x => x.TotalGroups)</strong><span class="tile-footer">تقسيم رافد</span></article>
-    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-file-lines"></i></span><span>الصفحات</span><strong class="tile-number">@modules.Sum(x => x.TotalPages)</strong><span class="tile-footer">روابط رافد</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-purple"><i class="fa-solid fa-layer-group"></i></span><span>المجموعات</span><strong class="tile-number">@modules.Sum(x => x.TotalGroups)</strong><span class="tile-footer">تقسيم النظام</span></article>
+    <article class="circle-tile-content"><span class="circle-icon bg-blue"><i class="fa-solid fa-file-lines"></i></span><span>الصفحات</span><strong class="tile-number">@modules.Sum(x => x.TotalPages)</strong><span class="tile-footer">روابط النظام</span></article>
     <article class="circle-tile-content"><span class="circle-icon bg-orange"><i class="fa-solid fa-list-check"></i></span><span>مخططة</span><strong class="tile-number">@modules.Sum(x => x.PlannedPages)</strong><span class="tile-footer">جاهزة للتحليل</span></article>
     <article class="circle-tile-content"><span class="circle-icon bg-navy"><i class="fa-solid fa-spinner"></i></span><span>قيد التنفيذ</span><strong class="tile-number">@modules.Sum(x => x.InProgressPages)</strong><span class="tile-footer">نشتغل عليها</span></article>
     <article class="circle-tile-content"><span class="circle-icon bg-teal"><i class="fa-solid fa-circle-check"></i></span><span>منفذة</span><strong class="tile-number">@modules.Sum(x => x.ImplementedPages)</strong><span class="tile-footer">جاهزة</span></article>

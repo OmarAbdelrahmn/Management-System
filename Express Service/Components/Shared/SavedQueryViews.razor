@@ -1,4 +1,5 @@
-@inject AdminUiService Admin
+@using Microsoft.Extensions.DependencyInjection
+@inject IServiceScopeFactory ScopeFactory
 
 <section class="panel saved-query-views" style="margin-top:14px">
     <div class="panel-heading">
@@ -6,7 +7,7 @@
         <div><h2>العروض المحفوظة</h2><p>احفظ الفلاتر الحالية أو طبّق عرضاً سابقاً.</p></div>
     </div>
     <div class="form-grid compact">
-        <label>اسم العرض<input @bind="viewName" maxlength="120" /></label>
+        <label>اسم العرض<input @bind="viewName" @bind:event="oninput" maxlength="120" /></label>
         <label>العروض<select @bind="selectedId"><option value="0">اختر عرضاً</option>@foreach (var view in views){<option value="@view.Id">@view.Name</option>}</select></label>
     </div>
     <div class="actions-row">
@@ -40,13 +41,16 @@
 
     private async Task LoadAsync()
     {
-        views = string.IsNullOrWhiteSpace(ScreenKey) ? [] : await Admin.GetQueryViewsAsync(ScreenKey);
+        views = string.IsNullOrWhiteSpace(ScreenKey)
+            ? []
+            : await UseAdminAsync(admin => admin.GetQueryViewsAsync(ScreenKey));
         if (selectedId != 0 && views.All(x => x.Id != selectedId)) selectedId = 0;
     }
 
     private async Task SaveAsync()
     {
-        var result = await Admin.SaveQueryViewAsync(new SaveQueryViewRequest(ScreenKey, viewName.Trim(), CurrentFilterJson));
+        var result = await UseAdminAsync(admin => admin.SaveQueryViewAsync(
+            new SaveQueryViewRequest(ScreenKey, viewName.Trim(), CurrentFilterJson)));
         success = result.Success;
         message = result.Message;
         if (result.Success) { viewName = string.Empty; await LoadAsync(); }
@@ -74,9 +78,16 @@
 
     private async Task DeleteAsync()
     {
-        var result = await Admin.DeleteQueryViewAsync(selectedId);
+        var result = await UseAdminAsync(admin => admin.DeleteQueryViewAsync(selectedId));
         success = result.Success;
         message = result.Message;
         if (result.Success) { selectedId = 0; await LoadAsync(); }
+    }
+
+    private async Task<TResult> UseAdminAsync<TResult>(Func<AdminUiService, Task<TResult>> operation)
+    {
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var admin = scope.ServiceProvider.GetRequiredService<AdminUiService>();
+        return await operation(admin);
     }
 }

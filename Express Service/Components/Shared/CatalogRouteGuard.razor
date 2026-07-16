@@ -1,6 +1,7 @@
 @implements IDisposable
 @inject SystemCatalogUiService Catalog
 @inject NavigationManager Navigation
+@inject ILogger<CatalogRouteGuard> Logger
 
 @if (!checkedAccess)
 {
@@ -9,7 +10,7 @@
 else if (!isAllowed)
 {
     <section class="panel">
-        <div class="panel-heading"><i class="fa-solid fa-lock"></i><div><h2>غير مصرح بالوصول</h2><p>لا تملك صلاحية فتح هذه الخدمة مباشرة.</p></div></div>
+        <div class="panel-heading"><i class="fa-solid @(accessCheckFailed ? "fa-triangle-exclamation" : "fa-lock")"></i><div><h2>@(accessCheckFailed ? "تعذر التحقق من صلاحية الخدمة" : "غير مصرح بالوصول")</h2><p>@(accessCheckFailed ? "حدث خلل مؤقت أثناء التحقق من الصلاحيات. أعد تحميل الصفحة أو حاول لاحقاً." : "لا تملك صلاحية فتح هذه الخدمة مباشرة.")</p></div></div>
     </section>
 }
 else
@@ -22,6 +23,7 @@ else
 
     private bool checkedAccess;
     private bool isAllowed = true;
+    private bool accessCheckFailed;
 
     protected override async Task OnInitializedAsync()
     {
@@ -34,10 +36,28 @@ else
     private async Task CheckAccessAsync()
     {
         checkedAccess = false;
+        accessCheckFailed = false;
         await InvokeAsync(StateHasChanged);
         var route = "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Trim('/');
-        var access = await Catalog.GetRouteAccessAsync(route);
-        isAllowed = access.IsAllowed;
+        if (string.Equals(route, "/dashboard", StringComparison.OrdinalIgnoreCase))
+        {
+            isAllowed = true;
+            checkedAccess = true;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        try
+        {
+            var access = await Catalog.GetRouteAccessAsync(route);
+            isAllowed = access.IsAllowed;
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to check catalog access for route {Route}.", route);
+            isAllowed = false;
+            accessCheckFailed = true;
+        }
         checkedAccess = true;
         await InvokeAsync(StateHasChanged);
     }

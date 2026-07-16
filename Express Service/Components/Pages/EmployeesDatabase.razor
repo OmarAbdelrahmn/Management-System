@@ -27,18 +27,25 @@
     <table>
         <thead><tr><th>الرقم</th><th>الاسم</th><th>القسم</th><th>المسمى</th><th>الجوال</th><th>الحالة</th><th>الراتب</th><th>إجراء</th></tr></thead>
         <tbody>
-            @foreach (var employee in employees)
+            @if (employees.Count == 0)
             {
-                <tr>
-                    <td>@employee.EmployeeNumber</td>
-                    <td>@employee.FullName</td>
-                    <td>@employee.DepartmentName</td>
-                    <td>@employee.JobTitleName</td>
-                    <td>@employee.Mobile</td>
-                    <td><span class="status">@employee.Status</span></td>
-                    <td>@employee.TotalSalary</td>
-                    <td><a class="secondary" href="@($"/hr/employees/update/{employee.Id}")">تعديل</a></td>
-                </tr>
+                <tr><td colspan="8"><div class="empty-table-state"><i class="fa-solid fa-user-group"></i><strong>لا توجد نتائج</strong><span>غيّر الفلاتر أو أضف موظفاً جديداً.</span></div></td></tr>
+            }
+            else
+            {
+                @foreach (var employee in employees)
+                {
+                    <tr>
+                        <td>@employee.EmployeeNumber</td>
+                        <td>@employee.FullName</td>
+                        <td>@employee.DepartmentName</td>
+                        <td>@employee.JobTitleName</td>
+                        <td>@employee.Mobile</td>
+                        <td><span class="status">@employee.Status</span></td>
+                        <td>@employee.TotalSalary</td>
+                        <td><a class="secondary" href="@($"/hr/employees/update/{employee.Id}")">تعديل</a></td>
+                    </tr>
+                }
             }
         </tbody>
     </table>

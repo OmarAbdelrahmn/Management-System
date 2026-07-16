@@ -1,0 +1,72 @@
+@page "/"
+@attribute [AllowAnonymous]
+@layout EmptyLayout
+
+<PageTitle>مؤسسة سعيد مبارك الشهراني للتجارة</PageTitle>
+<HeadContent>
+    <meta property="og:url" content="/" />
+</HeadContent>
+
+<main class="landing-page">
+    <nav class="landing-nav" aria-label="التنقل الرئيسي">
+        <a class="landing-brand" href="/" aria-label="الصفحة الرئيسية">
+            <span class="landing-brand-mark"><i class="fa-solid fa-s"></i></span>
+            <span>مؤسسة سعيد مبارك الشهراني للتجارة</span>
+        </a>
+
+        <div class="landing-nav-links">
+            <a href="#about">عن المؤسسة</a>
+            <a href="#services">خدماتنا</a>
+            <a class="landing-login-link" href="/login"><i class="fa-solid fa-arrow-right-to-bracket"></i> دخول النظام</a>
+        </div>
+    </nav>
+
+    <section class="landing-hero" aria-labelledby="hero-title">
+        <div class="landing-orb landing-orb-one"></div>
+        <div class="landing-orb landing-orb-two"></div>
+        <div class="landing-hero-copy">
+            <p class="landing-eyebrow"><span></span> حلول تجارية موثوقة</p>
+            <h1 id="hero-title">تجارة تُبنى على<br /><em>الثقة والالتزام</em></h1>
+            <p class="landing-lead">مؤسسة سعيد مبارك الشهراني للتجارة، شريككم في تقديم خدمات تجارية منظمة وفعّالة تلبي احتياجات أعمالكم.</p>
+            <div class="landing-hero-actions">
+                <a class="landing-primary-cta" href="/login">الدخول إلى النظام <i class="fa-solid fa-arrow-left"></i></a>
+                <a class="landing-text-cta" href="#services">استكشف خدماتنا <i class="fa-solid fa-arrow-down"></i></a>
+            </div>
+        </div>
+
+        <div class="landing-hero-visual" aria-hidden="true">
+            <div class="landing-hero-card landing-card-main">
+                <div class="landing-card-icon"><i class="fa-solid fa-building"></i></div>
+                <strong>شريككم التجاري</strong>
+                <span>خبرة • جودة • التزام</span>
+                <div class="landing-card-line"><i></i><i></i><i></i></div>
+            </div>
+            <div class="landing-hero-card landing-card-float"><i class="fa-solid fa-handshake"></i><span>ثقة مستمرة</span></div>
+            <div class="landing-grid-pattern"></div>
+        </div>
+    </section>
+
+    <section id="about" class="landing-intro">
+        <p class="landing-section-label">من نحن</p>
+        <h2>نؤمن بأن الشراكة الناجحة تبدأ بخدمة يمكن الاعتماد عليها.</h2>
+        <p>نسعى إلى تقديم تجربة تجارية مهنية وواضحة، مع الحرص على الجودة والالتزام في كل تعامل.</p>
+    </section>
+
+    <section id="services" class="landing-services" aria-labelledby="services-title">
+        <div class="landing-section-heading">
+            <div><p class="landing-section-label">ما نقدمه</p><h2 id="services-title">أسس تعاملنا</h2></div>
+            <p>قيم عملية تشكل أساس علاقتنا مع عملائنا وشركائنا.</p>
+        </div>
+        <div class="landing-service-grid">
+            <article><span><i class="fa-solid fa-gem"></i></span><h3>الجودة</h3><p>اهتمام بالتفاصيل ومعايير واضحة في تقديم الخدمة.</p></article>
+            <article><span><i class="fa-solid fa-people-group"></i></span><h3>الشراكة</h3><p>علاقات تجارية قائمة على التفاهم والمنفعة المتبادلة.</p></article>
+            <article><span><i class="fa-solid fa-shield-halved"></i></span><h3>الموثوقية</h3><p>التزام ثابت وشفافية في كل خطوة من خطوات العمل.</p></article>
+        </div>
+    </section>
+
+    <footer class="landing-footer">
+        <a class="landing-brand" href="/"><span class="landing-brand-mark"><i class="fa-solid fa-s"></i></span><span>مؤسسة سعيد مبارك الشهراني للتجارة</span></a>
+        <span>© @DateTime.Now.Year جميع الحقوق محفوظة</span>
+        <a href="/login">دخول النظام <i class="fa-solid fa-arrow-left"></i></a>
+    </footer>
+</main>

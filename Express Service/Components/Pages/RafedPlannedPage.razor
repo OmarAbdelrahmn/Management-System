@@ -12,8 +12,8 @@
 }
 else if (systemPage is null)
 {
-    <h1 class="page-title">صفحة غير موجودة في كتالوج رافد</h1>
-    <section class="panel"><div class="panel-body">لم يتم العثور على الصفحة المطلوبة ضمن خريطة رافد المحلية.</div></section>
+    <h1 class="page-title">صفحة غير موجودة في كتالوج النظام</h1>
+    <section class="panel"><div class="panel-body">لم يتم العثور على الصفحة المطلوبة ضمن خريطة النظام المحلية.</div></section>
 }
 else
 {
@@ -29,7 +29,7 @@ else
             <span class="status @(systemPage.Status == "Implemented" ? "ok" : "warn")">@systemPage.Status</span>
         </div>
         <div class="panel-body">
-            <p>هذه صفحة مطابقة لخريطة رافد، لكنها لم تتحول بعد إلى خدمة تشغيلية كاملة في النظام المحلي.</p>
+            <p>هذه صفحة مطابقة لخريطة النظام، لكنها لم تتحول بعد إلى خدمة تشغيلية كاملة في النظام المحلي.</p>
             <p><strong>الصفحة الأصلية:</strong> @systemPage.OriginalHref</p>
             <p><strong>الخدمة المقترحة:</strong> @systemPage.ServiceName</p>
             <p><strong>خطة الخدمة:</strong> @systemPage.ServicePlan</p>

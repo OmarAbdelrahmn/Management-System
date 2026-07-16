@@ -1,17 +1,27 @@
-@page "/"
+@page "/dashboard"
 @attribute [Authorize]
 @inject MeetingUiService UiService
+@inject ILogger<MeetingsDashboard> Logger
+
+@if (!string.IsNullOrWhiteSpace(loadError))
+{
+    <section class="dashboard-load-error" role="alert">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div><strong>تعذر تحميل مؤشرات لوحة التحكم</strong><p>@loadError</p></div>
+        <a class="secondary" href="/dashboard">إعادة المحاولة</a>
+    </section>
+}
 
 <section class="news">
     <div class="marquee">
-        <span>مرحباً بك في نظام إدارة الاجتماعات والمجالس - تم توحيد وظائف رافد الخاصة بالاعتماد والجدولة والمحاضر والتصويت الحي ضمن واجهة عربية واحدة.</span>
+        <span>مرحباً بك في نظام إدارة الاجتماعات والمجالس - تم توحيد وظائف النظام الخاصة بالاعتماد والجدولة والمحاضر والتصويت الحي ضمن واجهة عربية واحدة.</span>
     </div>
 </section>
 
 <section class="welcome_module">
     <div class="welcome-panel">
         <h1>لوحة إدارة الاجتماعات والمجالس</h1>
-        <p>واجهة تشغيلية بنمط رافد لقسم إدارة التوثيق والمستندات: متابعة المهام، إنشاء اجتماعات المجلس، إرسال الدعوات، فتح التصويت، اعتماد الرئيس، وأرشفة المحاضر المقفلة.</p>
+        <p>واجهة تشغيلية بنمط النظام لقسم إدارة التوثيق والمستندات: متابعة المهام، إنشاء اجتماعات المجلس، إرسال الدعوات، فتح التصويت، اعتماد الرئيس، وأرشفة المحاضر المقفلة.</p>
     </div>
 
     <div class="date-panel">
@@ -53,7 +63,7 @@
                 <a href="/meetings/live-voting"><i class="fa-solid fa-square-poll-vertical"></i> التصويت الحي</a>
                 <a href="/meetings/chairman"><i class="fa-solid fa-signature"></i> اعتماد الرئيس</a>
                 <a href="/meetings/archive"><i class="fa-solid fa-file-pdf"></i> المحاضر Read-Only</a>
-                <a href="/meetings/rafed"><i class="fa-solid fa-table-list"></i> شاشات رافد الموسعة</a>
+                <a href="/meetings/rafed"><i class="fa-solid fa-table-list"></i> شاشات النظام الموسعة</a>
             </div>
         </div>
     </article>
@@ -83,20 +93,32 @@
 
 @code {
     private DashboardCard[] cards = [];
+    private string? loadError;
 
     protected override async Task OnInitializedAsync()
     {
-        var dashboard = await UiService.GetDashboardAsync();
-        cards =
-        [
-            new("دعوات بانتظار الرد", dashboard.PendingInvitations.ToString(), "fa-solid fa-inbox", "bg-purple", "/meetings/waiting-room"),
-            new("الاجتماعات الجارية", dashboard.InProgress.ToString(), "fa-solid fa-clock", "bg-red", "/meetings/live-voting"),
-            new("بانتظار اعتماد الاجتماع", dashboard.PendingApprovals.ToString(), "fa-solid fa-hourglass-half", "bg-navy", "/meetings/rafed"),
-            new("الاجتماعات المجدولة", dashboard.Scheduled.ToString(), "fa-solid fa-calendar-days", "bg-blue", "/meetings/rafed"),
-            new("المحاضر المعتمدة", dashboard.PublishedMinutes.ToString(), "fa-solid fa-file-circle-check", "bg-teal", "/meetings/archive"),
-            new("مسودات متكررة", dashboard.RepeatDrafts.ToString(), "fa-solid fa-repeat", "bg-orange", "/meetings/rafed")
-        ];
+        try
+        {
+            var dashboard = await UiService.GetDashboardAsync();
+            cards = BuildCards(dashboard);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load the meetings dashboard metrics.");
+            loadError = "البيانات غير متاحة حالياً. يمكنك متابعة استخدام روابط الخدمات والمحاولة مرة أخرى لاحقاً.";
+            cards = BuildCards(new DashboardUiModel(0, 0, 0, 0, 0, 0));
+        }
     }
+
+    private static DashboardCard[] BuildCards(DashboardUiModel dashboard) =>
+    [
+        new("دعوات بانتظار الرد", dashboard.PendingInvitations.ToString(), "fa-solid fa-inbox", "bg-purple", "/meetings/waiting-room"),
+        new("الاجتماعات الجارية", dashboard.InProgress.ToString(), "fa-solid fa-clock", "bg-red", "/meetings/live-voting"),
+        new("بانتظار اعتماد الاجتماع", dashboard.PendingApprovals.ToString(), "fa-solid fa-hourglass-half", "bg-navy", "/meetings/rafed"),
+        new("الاجتماعات المجدولة", dashboard.Scheduled.ToString(), "fa-solid fa-calendar-days", "bg-blue", "/meetings/rafed"),
+        new("المحاضر المعتمدة", dashboard.PublishedMinutes.ToString(), "fa-solid fa-file-circle-check", "bg-teal", "/meetings/archive"),
+        new("مسودات متكررة", dashboard.RepeatDrafts.ToString(), "fa-solid fa-repeat", "bg-orange", "/meetings/rafed")
+    ];
 
     private record DashboardCard(string Label, string Count, string Icon, string Color, string Url);
 }

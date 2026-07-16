@@ -3,11 +3,11 @@
 @rendermode InteractiveServer
 @inject SystemCatalogUiService Catalog
 
-<h1 class="page-title">صفحة رافد المخططة</h1>
+<h1 class="page-title">صفحة النظام المخططة</h1>
 
 @if (catalogPage is null)
 {
-    <section class="panel"><div class="panel-body">هذا الرابط غير مسجل ضمن كتالوج رافد.</div></section>
+    <section class="panel"><div class="panel-body">هذا الرابط غير مسجل ضمن كتالوج النظام.</div></section>
 }
 else
 {
@@ -18,14 +18,14 @@ else
             <span class="status warn">@catalogPage.Status</span>
         </div>
         <div class="panel-body">
-            <p>هذه واجهة مخططة بوضوح ضمن مطابقة رافد. لم تُنفذ العملية بعد، لذلك لا تعرض بيانات تجريبية أو إجراءات غير فعالة.</p>
+            <p>هذه واجهة مخططة بوضوح ضمن مطابقة النظام. لم تُنفذ العملية بعد، لذلك لا تعرض بيانات تجريبية أو إجراءات غير فعالة.</p>
             <table><tbody>
                 <tr><td>المسار المحلي</td><td>@catalogPage.Route</td></tr>
-                <tr><td>رابط رافد الأصلي</td><td>@catalogPage.OriginalHref</td></tr>
+                <tr><td>رابط النظام الأصلي</td><td>@catalogPage.OriginalHref</td></tr>
                 <tr><td>الخدمة المستهدفة</td><td>@catalogPage.ServiceName</td></tr>
                 <tr><td>خطة التنفيذ</td><td>@catalogPage.ServicePlan</td></tr>
             </tbody></table>
-            <div class="actions-row" style="margin-top:12px"><a class="secondary" href="/system/modules">العودة إلى كتالوج رافد</a></div>
+            <div class="actions-row" style="margin-top:12px"><a class="secondary" href="/system/modules">العودة إلى كتالوج النظام</a></div>
         </div>
     </section>
 }

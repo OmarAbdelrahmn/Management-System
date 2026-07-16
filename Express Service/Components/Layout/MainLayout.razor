@@ -2,28 +2,22 @@
 @inject SystemCatalogUiService Catalog
 @inject MessagingUiService Messaging
 @inject NavigationManager Navigation
+@inject ILogger<MainLayout> Logger
 
 <header id="nav-sticky" class="rafed-header">
     <div class="header-brand">
-        <button class="mobile-menu-toggle" @onclick="ToggleMobileMenu" aria-label="فتح القائمة"><i class="fa-solid fa-bars"></i></button>
-        <div><strong>نظام الإدارة الإلكتروني</strong><span>منصة الخدمات الإدارية المتكاملة</span></div>
+        <button class="mobile-menu-toggle" type="button" data-shell-toggle="menu" aria-label="فتح القائمة" aria-controls="side-navigation" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+        <a class="header-brand-lockup" href="/dashboard" aria-label="الذهاب إلى لوحة التحكم">
+            <span class="header-brand-mark"><i class="fa-solid fa-building"></i></span>
+            <span class="header-brand-copy">
+                <strong>مؤسسة سعيد مبارك الشهراني</strong>
+                <span>للتجارة · منصة الخدمات الإدارية</span>
+            </span>
+        </a>
+        <button class="mobile-actions-toggle" type="button" data-shell-toggle="actions" aria-label="فتح قائمة المستخدم" aria-controls="header-actions" aria-expanded="false"><i class="fa-solid fa-circle-user"></i></button>
     </div>
 
-    <div class="header-search">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input id="search_input" placeholder="بحث في خدماتك المتاحة..." @bind="searchText" @bind:event="oninput" @bind:after="SearchAsync" aria-label="بحث في الخدمات" />
-        @if (searchResults.Count > 0)
-        {
-            <div class="header-search-results">
-                @foreach (var page in searchResults)
-                {
-                    <a href="@(page.Route)" @onclick="ClearSearch">@(page.NameAr)</a>
-                }
-            </div>
-        }
-    </div>
-
-    <div class="header-actions">
+    <div id="header-actions" class="header-actions">
         @if (HasRoute("/tasks/mine") || HasRoute("/tasks/database") || HasRoute("/tasks/create"))
         {
         <details class="header-dropdown">
@@ -45,41 +39,65 @@
             </div>
         </details>
         }
-        <a href="/swagger" title="واجهة API"><i class="fa-solid fa-globe-africa"></i> الموقع الإلكتروني</a>
-        <div class="user-menu">
-            <span class="avatar"><i class="fa-solid fa-user"></i></span>
-            <AuthorizeView>
-                <Authorized>
-                    <div>
-                        <strong>@context.User.Identity?.Name</strong>
-                        <small><a href="/logout">خروج</a></small>
+        <AuthorizeView>
+            <Authorized>
+                <details class="header-dropdown user-dropdown">
+                    <summary class="user-summary" aria-label="قائمة المستخدم">
+                        <span class="avatar"><i class="fa-solid fa-user"></i></span>
+                        <span class="user-summary-copy">
+                            <strong>@context.User.Identity?.Name</strong>
+                            <small>@GetRoleLabel(context.User)</small>
+                        </span>
+                        <i class="fa-solid fa-angle-down user-menu-chevron"></i>
+                    </summary>
+                    <div class="header-dropdown-menu user-dropdown-menu">
+                        <div class="user-dropdown-profile">
+                            <span class="avatar avatar-large"><i class="fa-solid fa-user"></i></span>
+                            <div>
+                                <strong>@context.User.Identity?.Name</strong>
+                                <small>@GetRoleLabel(context.User)</small>
+                            </div>
+                        </div>
+                        <div class="user-dropdown-links">
+                            <a href="/dashboard"><i class="fa-solid fa-gauge-high"></i><span>لوحة التحكم</span></a>
+                            @if (HasRoute("/tasks/mine"))
+                            {
+                                <a href="/tasks/mine"><i class="fa-solid fa-list-check"></i><span>مهامي</span></a>
+                            }
+                            @if (HasRoute("/notifications/manage"))
+                            {
+                                <a href="/notifications/manage"><i class="fa-solid fa-bell"></i><span>التنبيهات</span></a>
+                            }
+                        </div>
+                        <div class="user-dropdown-footer">
+                            <a class="logout-link" href="/logout"><i class="fa-solid fa-arrow-right-from-bracket"></i><span>تسجيل الخروج</span></a>
+                        </div>
                     </div>
-                </Authorized>
-            </AuthorizeView>
-        </div>
+                </details>
+            </Authorized>
+        </AuthorizeView>
     </div>
 </header>
 
-@if (mobileMenuOpen)
-{
-    <button class="menu-overlay" @onclick="ToggleMobileMenu" aria-label="إغلاق القائمة"></button>
-}
-<aside class="menu-container @(mobileMenuOpen ? "is-open" : string.Empty)">
+<button class="menu-overlay" type="button" data-shell-close aria-label="إغلاق القائمة"></button>
+<aside id="side-navigation" class="menu-container" aria-label="الشريط الجانبي">
     <div class="logo">
         <div class="logo-card">
-            <i class="fa-solid fa-building-columns"></i>
-            <strong>نظام رافد</strong>
-            <span>الإدارة الإلكترونية</span>
-            <small>الخدمات الإدارية المتكاملة</small>
+            <span class="sidebar-brand-mark"><i class="fa-solid fa-building-columns"></i></span>
+            <span class="sidebar-brand-copy">
+                <strong>مؤسسة سعيد مبارك الشهراني</strong>
+                <span>للتجارة</span>
+            </span>
+            <small>منصة الخدمات الإدارية المتكاملة</small>
         </div>
     </div>
 
-    <nav id="side-menu" class="side-panel">
+    <nav id="side-menu" class="side-panel" aria-label="التنقل الرئيسي">
         @if (navigation.Count == 0)
         {
             <details open>
                 <summary><i class="fa-solid fa-layer-group"></i><span>خطة خدمات النظام</span><i class="fa-solid fa-angle-down angle"></i></summary>
-                <a href="/system/modules">تجهيز خريطة رافد</a>
+                <a href="/system/modules">تجهيز خريطة النظام</a>
             </details>
         }
         else
@@ -97,7 +115,7 @@
                         <div class="side-separator">@group.NameAr</div>
                         @foreach (var navPage in group.Pages)
                         {
-                            <a class="@(IsCurrentRoute(navPage.Route) ? "active" : string.Empty)" href="@navPage.Route" title="@navPage.OriginalHref" @onclick="CloseMobileMenu">
+                            <a class="@(IsCurrentRoute(navPage.Route) ? "active" : string.Empty)" href="@navPage.Route" title="@navPage.OriginalHref" data-shell-close>
                                 @navPage.NameAr
                                 @if (navPage.Status != "Implemented")
                                 {
@@ -113,22 +131,56 @@
 </aside>
 
 <main class="page-container-legacy">
-    <CatalogRouteGuard>
-        @Body
-    </CatalogRouteGuard>
+    @if (!layoutReady)
+    {
+        <section class="panel"><div class="panel-body">جارٍ تحميل خدمات النظام...</div></section>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(layoutWarning))
+        {
+            <section class="system-warning" role="status">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>@layoutWarning</span>
+            </section>
+        }
+        <CatalogRouteGuard>
+            @Body
+        </CatalogRouteGuard>
+    }
 </main>
 
 @code {
     private List<SystemNavigationModuleResponse> navigation = [];
-    private List<SystemNavigationPageResponse> searchResults = [];
-    private string searchText = string.Empty;
     private int unreadNotificationCount;
-    private bool mobileMenuOpen;
+    private bool layoutReady;
+    private string? layoutWarning;
 
     protected override async Task OnInitializedAsync()
     {
-        navigation = await Catalog.GetNavigationAsync();
-        unreadNotificationCount = await Messaging.GetUnreadNotificationCountAsync();
+        try
+        {
+            navigation = await Catalog.GetNavigationAsync();
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load the shared system navigation.");
+            navigation = [];
+            layoutWarning = "تعذر تحميل قائمة الخدمات حالياً، لكن يمكنك متابعة استخدام الصفحة المفتوحة.";
+        }
+
+        try
+        {
+            unreadNotificationCount = await Messaging.GetUnreadNotificationCountAsync();
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Failed to load the unread notification count.");
+            unreadNotificationCount = 0;
+            layoutWarning ??= "تعذر تحديث بعض بيانات الشريط العلوي، ويمكنك متابعة العمل بشكل طبيعي.";
+        }
+
+        layoutReady = true;
     }
 
     private static string SidebarIcon(string? iconCss)
@@ -145,9 +197,9 @@
     private bool IsCurrentRoute(string route) => string.Equals(Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/'), route.TrimStart('/').TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
     private bool HasRoute(string route) => navigation.SelectMany(x => x.Groups).SelectMany(x => x.Pages).Any(x => string.Equals(x.Route, route, StringComparison.OrdinalIgnoreCase));
     private bool ModuleContainsCurrentRoute(SystemNavigationModuleResponse module) => module.Groups.SelectMany(x => x.Pages).Any(x => IsCurrentRoute(x.Route));
-    private async Task SearchAsync() => searchResults = await Catalog.SearchAccessiblePagesAsync(searchText);
-    private void ClearSearch() { searchText = string.Empty; searchResults = []; }
-    private void ToggleMobileMenu() => mobileMenuOpen = !mobileMenuOpen;
-    private void CloseMobileMenu() => mobileMenuOpen = false;
-}
+    private static string GetRoleLabel(System.Security.Claims.ClaimsPrincipal user) =>
+        user.IsInRole("Admin") ? "مدير النظام" :
+        user.IsInRole("Chairman") ? "رئيس مجلس الإدارة" :
+        user.IsInRole("Secretary") ? "أمين النظام" :
+        user.IsInRole("Member") ? "عضو" : "مستخدم النظام";
 }

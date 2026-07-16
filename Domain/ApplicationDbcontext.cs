@@ -1,6 +1,7 @@
 using Domain.Auditing;
 using Domain.Entities;
 using Domain.Identity;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
@@ -11,8 +12,9 @@ namespace Domain;
 public class ApplicationDbcontext(
     DbContextOptions<ApplicationDbcontext> options,
     ICurrentUserContext? currentUserContext = null)
-    : IdentityDbContext<ApplicationUser, ApplicationRole, string>(options)
+    : IdentityDbContext<ApplicationUser, ApplicationRole, string>(options), IDataProtectionKeyContext
 {
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
     public DbSet<Board> Boards => Set<Board>();
     public DbSet<BoardCycle> BoardCycles => Set<BoardCycle>();
     public DbSet<BoardMembership> BoardMemberships => Set<BoardMembership>();

@@ -1,7 +1,8 @@
 @using Application.Contracts.Attachments
 @using Application.Service.Attachments
+@using Microsoft.Extensions.DependencyInjection
 @using Microsoft.Extensions.Options
-@inject IAttachmentService Attachments
+@inject IServiceScopeFactory ScopeFactory
 @inject IOptions<AttachmentOptions> AttachmentSettings
 
 @if (EntityId > 0)
@@ -49,10 +50,12 @@
     private async Task LoadAsync()
     {
         if (EntityId <= 0) { attachments = []; versions = []; access = new(false, false); return; }
-        var accessResult = await Attachments.GetEntityAccessAsync(EntityType, EntityId.ToString());
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var attachmentService = scope.ServiceProvider.GetRequiredService<IAttachmentService>();
+        var accessResult = await attachmentService.GetEntityAccessAsync(EntityType, EntityId.ToString());
         access = accessResult.IsSuccess ? accessResult.Value : new(false, false);
         if (!access.CanView) { attachments = []; versions = []; return; }
-        var result = await Attachments.GetForEntityAsync(EntityType, EntityId.ToString());
+        var result = await attachmentService.GetForEntityAsync(EntityType, EntityId.ToString());
         attachments = result.IsSuccess ? result.Value.ToList() : [];
     }
 
@@ -64,7 +67,9 @@
         try
         {
             await using var stream = file.OpenReadStream(MaximumUploadBytes);
-            var result = await Attachments.UploadAsync(new AttachmentUploadInput(stream, file.Name, file.ContentType, file.Size, EntityType, EntityType, EntityId.ToString(), null));
+            await using var scope = ScopeFactory.CreateAsyncScope();
+            var attachmentService = scope.ServiceProvider.GetRequiredService<IAttachmentService>();
+            var result = await attachmentService.UploadAsync(new AttachmentUploadInput(stream, file.Name, file.ContentType, file.Size, EntityType, EntityType, EntityId.ToString(), null));
             success = result.IsSuccess; message = result.IsSuccess ? "تم رفع المرفق." : result.Error.Description; await LoadAsync();
         }
         catch (IOException)
@@ -80,7 +85,9 @@
         try
         {
             await using var stream = file.OpenReadStream(MaximumUploadBytes);
-            var result = await Attachments.AddVersionAsync(id, new AttachmentUploadInput(stream, file.Name, file.ContentType, file.Size, EntityType, null, null, null));
+            await using var scope = ScopeFactory.CreateAsyncScope();
+            var attachmentService = scope.ServiceProvider.GetRequiredService<IAttachmentService>();
+            var result = await attachmentService.AddVersionAsync(id, new AttachmentUploadInput(stream, file.Name, file.ContentType, file.Size, EntityType, null, null, null));
             success = result.IsSuccess; message = result.IsSuccess ? "تم حفظ النسخة الجديدة." : result.Error.Description; await LoadAsync();
         }
         catch (IOException)
@@ -92,20 +99,26 @@
 
     private async Task DeleteAsync(int id)
     {
-        var result = await Attachments.DeleteAsync(id);
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var attachmentService = scope.ServiceProvider.GetRequiredService<IAttachmentService>();
+        var result = await attachmentService.DeleteAsync(id);
         success = result.IsSuccess; message = result.IsSuccess ? "تم حذف المرفق وفق سياسة الاحتفاظ." : result.Error.Description; await LoadAsync();
     }
 
     private async Task LoadVersionsAsync(int id)
     {
-        var result = await Attachments.GetVersionsAsync(id);
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var attachmentService = scope.ServiceProvider.GetRequiredService<IAttachmentService>();
+        var result = await attachmentService.GetVersionsAsync(id);
         versions = result.IsSuccess ? result.Value.ToList() : [];
         success = result.IsSuccess; message = result.IsSuccess ? null : result.Error.Description;
     }
 
     private async Task UnlinkAsync(int linkId)
     {
-        var result = await Attachments.UnlinkAsync(linkId);
+        await using var scope = ScopeFactory.CreateAsyncScope();
+        var attachmentService = scope.ServiceProvider.GetRequiredService<IAttachmentService>();
+        var result = await attachmentService.UnlinkAsync(linkId);
         success = result.IsSuccess; message = result.IsSuccess ? "تم إلغاء ربط المرفق بالسجل." : result.Error.Description;
         versions = [];
         await LoadAsync();

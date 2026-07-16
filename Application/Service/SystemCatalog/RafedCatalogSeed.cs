@@ -61,7 +61,7 @@ internal static class RafedCatalogSeed
                 new(@"executive-supervision.decisions_export", @"تصدير نماذج القرارات", @"/rafed/executive-supervision.decisions_export", @"system.executive-supervision.decisions_export", @"RafedPlannedService", @"Planned Rafed parity page for original decisions_export.php. Implement domain service before marking complete.", @"Preserve Rafed sidebar label, group, icon, and RTL workflow. Original page: decisions_export.php.", @"decisions_export.php", @"images/icons/decisions_export.png", SystemPageStatus.Planned, 4),
             ]),
         ]),
-        new(@"excellence-performance", @"إدارة التميز المؤسسي", @"Institutional Excellence Performance", @"مقياس الآداء", @"menu-icon fal fa-stars fa-fw", 2,
+        new(@"excellence-performance", @"التميز المؤسسي وقياس الأداء", @"Institutional Excellence Performance", @"مقياس الآداء", @"menu-icon fal fa-stars fa-fw", 2,
         [
             new(@"excellence-performance.g01", @"إدارة التميز المؤسسي", 1,
             [
@@ -224,7 +224,7 @@ internal static class RafedCatalogSeed
                 new(@"beneficiary-accounts.gehat_accounts_external", @"طلبات تسجيل الجهات", @"/rafed/beneficiary-accounts.gehat_accounts_external", @"system.beneficiary-accounts.gehat_accounts_external", @"RafedPlannedService", @"Planned Rafed parity page for original gehat_accounts_external.php. Implement domain service before marking complete.", @"Preserve Rafed sidebar label, group, icon, and RTL workflow. Original page: gehat_accounts_external.php.", @"gehat_accounts_external.php", @"images/icons/gehat_accounts_external.png", SystemPageStatus.Planned, 7),
             ]),
         ]),
-        new(@"excellence-governance", @"إدارة التميز المؤسسي", @"Institutional Excellence Governance", @"إدارة الحوكمة، إدارة الخطة الإستراتيجية", @"menu-icon fal fa-stars fa-fw", 6,
+        new(@"excellence-governance", @"التميز المؤسسي والحوكمة", @"Institutional Excellence Governance", @"إدارة الحوكمة، إدارة الخطة الإستراتيجية", @"menu-icon fal fa-stars fa-fw", 6,
         [
             new(@"excellence-governance.g01", @"إدارة الحوكمة", 1,
             [
